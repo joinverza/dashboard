@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { lazy, Suspense } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -22,7 +22,6 @@ const SettingsPage = lazy(() => import("@/pages/Settings"));
 const HelpCenterPage = lazy(() => import("@/pages/HelpCenter"));
 const PlaceholderPage = lazy(() => import("@/pages/PlaceholderPage"));
 const NotFound = lazy(() => import("@/pages/not-found"));
-const LandingPage = lazy(() => import("@/pages/LandingPage"));
 const LoginPage = lazy(() => import("@/pages/Login"));
 const SignupPage = lazy(() => import("@/pages/Signup"));
 const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPassword"));
@@ -43,6 +42,7 @@ const VerifierProfilePage = lazy(() => import("@/pages/VerifierProfile"));
 const PaymentConfirmationPage = lazy(() => import("@/pages/PaymentConfirmation"));
 const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicy"));
 const TermsOfServicePage = lazy(() => import("@/pages/TermsOfService"));
+const OnboardingPage = lazy(() => import("@/pages/Onboarding"));
 
 function Router() {
   const { user } = useAuth();
@@ -50,16 +50,17 @@ function Router() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Switch>
-        <Route path="/" component={LandingPage} />
+        <Route path="/" component={LoginPage} />
         <Route path="/login" component={LoginPage} />
         <Route path="/signup" component={SignupPage} />
         <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/reset-password" component={ResetPasswordPage} />
         <Route path="/privacy" component={PrivacyPolicyPage} />
         <Route path="/terms" component={TermsOfServicePage} />
+        <Route path="/onboarding" component={OnboardingPage} />
         
         {/* User Dashboard Routes */}
-        {(user?.role === 'user' || !user) && (
+        {user?.role === 'user' && (
           <>
             <Route path="/app" component={UserDashboard} />
             <Route path="/app/credentials" component={CredentialsPage} />
@@ -102,6 +103,11 @@ function Router() {
             <Route path="/app/request-verification" component={RequestVerificationPage} />
           </>
         )}
+
+        {/* Redirect unauthenticated users trying to access app */}
+        <Route path="/app/:rest*">
+          <Redirect to="/login" />
+        </Route>
 
         {/* Verifier Routes */}
         {user?.role === 'verifier' && (

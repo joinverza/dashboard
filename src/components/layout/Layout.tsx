@@ -38,6 +38,16 @@ export default function Layout({ children }: LayoutProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const isAuthPage = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/onboarding'].includes(location);
+
+  if (isAuthPage || !user) {
+    return (
+      <div className="min-h-screen bg-background dark:bg-black text-foreground relative font-sans selection:bg-verza-emerald/30 selection:text-verza-emerald">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background dark:bg-black text-foreground relative overflow-hidden font-sans selection:bg-verza-emerald/30 selection:text-verza-emerald">
       {/* Background Elements - God Mode */}

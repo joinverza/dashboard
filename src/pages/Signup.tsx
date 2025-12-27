@@ -42,7 +42,7 @@ export default function SignupPage() {
     setTimeout(() => {
       login("user");
       setIsLoading(false);
-      setLocation("/app");
+      setLocation("/onboarding");
     }, 1500);
   };
 
