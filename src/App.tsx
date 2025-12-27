@@ -22,6 +22,11 @@ const PlaceholderPage = lazy(() => import("@/pages/PlaceholderPage"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const LandingPage = lazy(() => import("@/pages/LandingPage"));
 
+const MarketplacePage = lazy(() => import("@/pages/Marketplace"));
+const WalletPage = lazy(() => import("@/pages/Wallet"));
+const CredentialsPage = lazy(() => import("@/pages/Credentials"));
+const VerifierProfilePage = lazy(() => import("@/pages/VerifierProfile"));
+
 function Router() {
   const { user } = useAuth();
   
@@ -34,24 +39,18 @@ function Router() {
         {(user?.role === 'user' || !user) && (
           <>
             <Route path="/app" component={UserDashboard} />
-            <Route path="/app/store">
-              <PlaceholderPage
-                title="Store"
-                description="Manage your store products and inventory"
-              />
-            </Route>
+            <Route path="/app/credentials" component={CredentialsPage} />
+            <Route path="/app/marketplace" component={MarketplacePage} />
+            <Route path="/app/verifier-profile/:id" component={VerifierProfilePage} />
+            {/* Keeping store route for backward compatibility or direct access */}
+            <Route path="/app/store" component={MarketplacePage} />
             <Route path="/app/analytics">
               <PlaceholderPage
                 title="Analytics"
                 description="View detailed analytics and insights"
               />
             </Route>
-            <Route path="/app/wallet">
-              <PlaceholderPage
-                title="Wallet"
-                description="Manage your wallet and transactions"
-              />
-            </Route>
+            <Route path="/app/wallet" component={WalletPage} />
             <Route path="/app/invoice">
               <PlaceholderPage
                 title="Invoice"
