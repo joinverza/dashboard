@@ -65,7 +65,7 @@ export const PageLoader = () => {
   useEffect(() => {
     const timer = setInterval(() => {
       setProgress((prev) => {
-        const next = prev + Math.random() * 5;
+        const next = prev + (Math.random() * 10 + 5); // Faster increment (avg 10%) -> ~1s duration
         if (next >= 100) return 100;
         return next;
       });

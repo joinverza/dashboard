@@ -22,7 +22,7 @@ export default function PageTransition({ children }: PageTransitionProps) {
         setCurrentChildren(children);
         setCurrentLocation(location);
         setIsLoading(false);
-      }, 300);
+      }, 1500); // Wait for 1.5s to let the loader animation play out
       return () => clearTimeout(timer);
     } else {
       setCurrentChildren(children);
