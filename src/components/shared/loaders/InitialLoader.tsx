@@ -26,6 +26,7 @@ export const InitialLoader = ({
     // Clear any existing timeouts to prevent duplication in Strict Mode
     timeoutsRef.current.forEach(window.clearTimeout);
     timeoutsRef.current = [];
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setBootText([]); // Reset text
 
     bootSequence.forEach((text, i) => {

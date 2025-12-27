@@ -5,12 +5,26 @@ import NotificationPopover from "@/components/shared/NotificationPopover";
 import MessagePopover from "@/components/shared/MessagePopover";
 import UserProfileDropdown from "@/components/shared/UserProfileDropdown";
 import { Separator } from "@/components/ui/separator";
+import { useAuth, type UserRole } from "@/features/auth/AuthContext";
+import { useLocation } from "wouter";
 
 interface HeaderProps {
   onMobileMenuOpen?: () => void;
 }
 
 export default function Header({ onMobileMenuOpen }: HeaderProps) {
+  const { user, login } = useAuth();
+  const [, setLocation] = useLocation();
+
+  const handleRoleChange = (role: UserRole) => {
+    login(role);
+    // Optional: Redirect to the dashboard of the selected role
+    if (role === "user") setLocation("/app");
+    else if (role === "verifier") setLocation("/verifier");
+    else if (role === "enterprise") setLocation("/enterprise");
+    else if (role === "admin") setLocation("/admin");
+  };
+
   return (
     <motion.header
       initial={{ opacity: 0, y: -20 }}
@@ -29,6 +43,19 @@ export default function Header({ onMobileMenuOpen }: HeaderProps) {
         >
           <Menu className="w-5 h-5 text-verza-emerald" />
         </motion.button>
+        
+        {/* Role Switcher for Development/Demo */}
+        <select
+          value={user?.role || "user"}
+          onChange={(e) => handleRoleChange(e.target.value as UserRole)}
+          className="hidden md:block p-1 border rounded text-sm bg-background border-border text-foreground focus:outline-none focus:ring-1 focus:ring-verza-emerald"
+          title="Switch Role (Dev Tool)"
+        >
+          <option value="user">User</option>
+          <option value="verifier">Verifier</option>
+          <option value="enterprise">Enterprise</option>
+          <option value="admin">Admin</option>
+        </select>
       </div>
 
       <div className="flex items-center gap-1 md:gap-2">

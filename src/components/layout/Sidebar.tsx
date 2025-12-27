@@ -1,37 +1,20 @@
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard,
-  Store,
-  BarChart3,
-  Wallet,
-  FileText,
-  FolderOpen,
-  Settings,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import versalogo from "@/assets/versalogoSVG.svg";
-
-
-const navItems = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/store", label: "Store", icon: Store },
-  { path: "/analytics", label: "Analytics", icon: BarChart3 },
-  { path: "/wallet", label: "Wallet", icon: Wallet },
-  { path: "/invoice", label: "Invoice", icon: FileText },
-  { path: "/category", label: "Category", icon: FolderOpen },
-  // { path: "/message", label: "Message", icon: MessageSquare },
-  { path: "/settings", label: "Setting", icon: Settings },
-];
+import type { NavItem } from "@/config/navigation";
 
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  navItems: NavItem[];
 }
 
-export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggle, navItems }: SidebarProps) {
   const [location] = useLocation();
 
   return (

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, type ReactNode } from "react";
 import type {
   MetricCard,
@@ -10,6 +11,9 @@ import type {
 
 interface MockDataContextType {
   metricCards: MetricCard[];
+  verifierMetricCards: MetricCard[];
+  enterpriseMetricCards: MetricCard[];
+  adminMetricCards: MetricCard[];
   chartData: Record<string, ChartDataPoint[]>;
   productCards: ProductCard[];
   messages: Message[];
@@ -49,6 +53,111 @@ const mockMetricCards: MetricCard[] = [
     percentChange: 12.5,
     isPositive: true,
     icon: "trending-up",
+  },
+];
+
+const mockVerifierMetricCards: MetricCard[] = [
+  {
+    id: "v1",
+    label: "Pending Verifications",
+    value: "42",
+    percentChange: 5.2,
+    isPositive: true,
+    icon: "alert-circle",
+  },
+  {
+    id: "v2",
+    label: "Verified Items",
+    value: "1,205",
+    percentChange: 18.3,
+    isPositive: true,
+    icon: "check-circle",
+  },
+  {
+    id: "v3",
+    label: "Rejection Rate",
+    value: "2.4%",
+    percentChange: -0.5,
+    isPositive: true, // Lower is better
+    icon: "x-circle",
+  },
+  {
+    id: "v4",
+    label: "Avg. Response Time",
+    value: "1.2h",
+    percentChange: -15,
+    isPositive: true, // Lower is better
+    icon: "clock",
+  },
+];
+
+const mockEnterpriseMetricCards: MetricCard[] = [
+  {
+    id: "e1",
+    label: "Total Supply Chain",
+    value: "12,500",
+    percentChange: 8.4,
+    isPositive: true,
+    icon: "package",
+  },
+  {
+    id: "e2",
+    label: "Active Partners",
+    value: "156",
+    percentChange: 12,
+    isPositive: true,
+    icon: "users",
+  },
+  {
+    id: "e3",
+    label: "Carbon Footprint",
+    value: "450t",
+    percentChange: -5.2,
+    isPositive: true, // Lower is better
+    icon: "leaf",
+  },
+  {
+    id: "e4",
+    label: "Revenue",
+    value: "$4.2M",
+    percentChange: 22.1,
+    isPositive: true,
+    icon: "dollar-sign",
+  },
+];
+
+const mockAdminMetricCards: MetricCard[] = [
+  {
+    id: "a1",
+    label: "Total Users",
+    value: "45,231",
+    percentChange: 15.4,
+    isPositive: true,
+    icon: "users",
+  },
+  {
+    id: "a2",
+    label: "System Health",
+    value: "99.9%",
+    percentChange: 0,
+    isPositive: true,
+    icon: "activity",
+  },
+  {
+    id: "a3",
+    label: "Active Sessions",
+    value: "3,402",
+    percentChange: 5.6,
+    isPositive: true,
+    icon: "monitor",
+  },
+  {
+    id: "a4",
+    label: "Storage Used",
+    value: "4.2TB",
+    percentChange: 8.1,
+    isPositive: false, // Higher cost
+    icon: "database",
   },
 ];
 
@@ -225,6 +334,9 @@ const MockDataContext = createContext<MockDataContextType | undefined>(
 export function MockDataProvider({ children }: { children: ReactNode }) {
   const value: MockDataContextType = {
     metricCards: mockMetricCards,
+    verifierMetricCards: mockVerifierMetricCards,
+    enterpriseMetricCards: mockEnterpriseMetricCards,
+    adminMetricCards: mockAdminMetricCards,
     chartData: mockChartData,
     productCards: mockProductCards,
     messages: mockMessages,

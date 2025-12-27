@@ -11,6 +11,8 @@ import {
   Tooltip,
   Filler,
   Legend,
+  type ChartOptions,
+  type TooltipItem,
 } from "chart.js";
 import { Line, Bar } from "react-chartjs-2";
 import type { ChartDataPoint, ChartType } from "@/types/dashboard";
@@ -60,7 +62,7 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
     ],
   };
 
-  const options: any = {
+  const options: ChartOptions<'line' | 'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -76,8 +78,8 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
         padding: 12,
         displayColors: false,
         callbacks: {
-          label: (context: any) => {
-            const value = context.raw;
+          label: (context: TooltipItem<'line' | 'bar'>) => {
+            const value = context.raw as number;
             return `$${value.toLocaleString()}`;
           },
         },
@@ -100,16 +102,16 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
       },
       y: {
         grid: {
-          color: "rgba(156, 163, 175, 0.1)",
+          color: "rgba(255, 255, 255, 0.1)",
         },
         ticks: {
           color: "#9CA3AF",
           font: {
             size: 12,
           },
-          callback: (value: any) => {
-            if (value >= 1000) {
-              return `${value / 1000}k`;
+          callback: (value) => {
+            if (typeof value === 'number') {
+               return `$${value >= 1000 ? `${value / 1000}k` : value}`;
             }
             return value;
           },
@@ -139,9 +141,9 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
       data-testid="overview-chart"
     >
       {chartType === "area" ? (
-        <Line ref={chartRef} data={chartData} options={options} />
+        <Line ref={chartRef} data={chartData} options={options as any} />
       ) : (
-        <Bar ref={chartRef} data={chartData} options={options} />
+        <Bar ref={chartRef} data={chartData} options={options as any} />
       )}
     </motion.div>
   );

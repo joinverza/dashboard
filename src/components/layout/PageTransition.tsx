@@ -16,6 +16,7 @@ export default function PageTransition({ children }: PageTransitionProps) {
 
   useEffect(() => {
     if (location !== currentLocation) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(true);
       const timer = setTimeout(() => {
         setCurrentChildren(children);

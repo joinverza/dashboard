@@ -1,13 +1,39 @@
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+
+const GlitchLine = () => {
+  const width = useMemo(() => [
+    10 + Math.random() * 40,
+    20 + Math.random() * 40,
+    10 + Math.random() * 40
+  ], []);
+
+  const duration = useMemo(() => 0.2 + Math.random() * 0.5, []);
+
+  return (
+    <motion.div
+      className="h-1 bg-[#8DC63F] rounded-full"
+      animate={{
+        width: width,
+        opacity: [0.2, 0.8, 0.2]
+      }}
+      transition={{
+        duration: duration,
+        repeat: Infinity,
+        repeatType: "reverse"
+      }}
+    />
+  );
+};
+
+const WORDS = ["INITIALIZING", "VERIFYING", "CONNECTING", "SECURING"];
 
 const LoadingText = () => {
-  const words = ["INITIALIZING", "VERIFYING", "CONNECTING", "SECURING"];
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % words.length);
+      setIndex((prev) => (prev + 1) % WORDS.length);
     }, 800);
     return () => clearInterval(interval);
   }, []);
@@ -21,7 +47,7 @@ const LoadingText = () => {
         exit={{ y: -20, opacity: 0 }}
         className="text-[#8DC63F] text-xs font-mono tracking-[0.3em]"
       >
-        {words[index]}
+        {WORDS[index]}
       </motion.span>
     </div>
   );
@@ -154,19 +180,7 @@ export const PageLoader = () => {
       {/* Random Data Glitch Overlay */}
       <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col gap-2 items-end opacity-30">
         {[...Array(5)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="h-1 bg-[#8DC63F] rounded-full"
-            animate={{
-              width: [10 + Math.random() * 40, 20 + Math.random() * 40, 10 + Math.random() * 40],
-              opacity: [0.2, 0.8, 0.2]
-            }}
-            transition={{
-              duration: 0.2 + Math.random() * 0.5,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-          />
+          <GlitchLine key={i} />
         ))}
       </div>
     </div>

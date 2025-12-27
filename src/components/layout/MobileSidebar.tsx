@@ -1,37 +1,18 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { X } from "lucide-react";
-import {
-  LayoutDashboard,
-  Store,
-  BarChart3,
-  Wallet,
-  FileText,
-  FolderOpen,
-  Settings,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from '@/contexts/ThemeContext';
 import versalogo from "@/assets/versalogoSVG.svg";
-
-
-const navItems = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/store", label: "Store", icon: Store },
-  { path: "/analytics", label: "Analytics", icon: BarChart3 },
-  { path: "/wallet", label: "Wallet", icon: Wallet },
-  { path: "/invoice", label: "Invoice", icon: FileText },
-  { path: "/category", label: "Category", icon: FolderOpen },
-  // { path: "/message", label: "Message", icon: MessageSquare },
-  { path: "/settings", label: "Setting", icon: Settings },
-];
+import type { NavItem } from "@/config/navigation";
 
 interface MobileSidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  navItems: NavItem[];
 }
 
-export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
+export default function MobileSidebar({ isOpen, onClose, navItems }: MobileSidebarProps) {
   const [location] = useLocation();
   const { theme } = useTheme();
 
