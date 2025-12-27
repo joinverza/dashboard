@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route } from "wouter";
 import { lazy, Suspense } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -20,23 +20,15 @@ const MessagePage = lazy(() => import("@/pages/Message"));
 const SettingsPage = lazy(() => import("@/pages/Settings"));
 const PlaceholderPage = lazy(() => import("@/pages/PlaceholderPage"));
 const NotFound = lazy(() => import("@/pages/not-found"));
+const LandingPage = lazy(() => import("@/pages/LandingPage"));
 
 function Router() {
   const { user } = useAuth();
   
-  const getHomePath = (role?: string) => {
-    switch (role) {
-      case 'verifier': return '/verifier';
-      case 'enterprise': return '/enterprise';
-      case 'admin': return '/admin';
-      default: return '/app';
-    }
-  };
-
   return (
     <Suspense fallback={<PageLoader />}>
       <Switch>
-        <Route path="/" component={() => <Redirect to={getHomePath(user?.role)} />} />
+        <Route path="/" component={LandingPage} />
         
         {/* User Dashboard Routes */}
         {(user?.role === 'user' || !user) && (
