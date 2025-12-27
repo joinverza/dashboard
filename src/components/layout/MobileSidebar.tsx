@@ -2,7 +2,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTheme } from '@/contexts/ThemeContext';
 import versalogo from "@/assets/versalogoSVG.svg";
 import type { NavItem } from "@/config/navigation";
 
@@ -14,7 +13,6 @@ interface MobileSidebarProps {
 
 export default function MobileSidebar({ isOpen, onClose, navItems }: MobileSidebarProps) {
   const [location] = useLocation();
-  const { theme } = useTheme();
 
   return (
     <AnimatePresence>
@@ -36,8 +34,7 @@ export default function MobileSidebar({ isOpen, onClose, navItems }: MobileSideb
             exit={{ x: "-100%", opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className={cn(
-              "fixed left-0 top-0 h-screen w-64 border-r border-verza-emerald/20 z-50 md:hidden",
-              theme === 'dark' ? 'bg-black' : 'bg-white'
+              "glass-sidebar fixed left-0 top-0 h-screen w-72 z-50 md:hidden"
             )}
             style={{
               boxShadow: "0 0 40px rgba(141, 198, 63, 0.1)",
@@ -49,27 +46,29 @@ export default function MobileSidebar({ isOpen, onClose, navItems }: MobileSideb
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.1 }}
-                className="flex items-center gap-3 mb-8"
+                className="flex items-center gap-3 mb-10"
               >
-                <img
-                  src={versalogo}
-                  alt="Verza logo"
-                  className="w-7 h-7 object-contain"
-                />
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="text-xl font-bold bg-gradient-to-r from-verza-emerald to-verza-kelly bg-clip-text text-transparent"
-                >
-                  Verza
-                </motion.span>
+                <div className="relative p-1 rounded-xl bg-gradient-to-br from-white/10 to-transparent border border-white/5">
+                  <img
+                    src={versalogo}
+                    alt="Verza logo"
+                    className="w-8 h-8 object-contain drop-shadow-[0_0_10px_rgba(141,198,63,0.3)]"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold text-foreground tracking-tight">
+                    Verza
+                  </span>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
+                    Dashboard
+                  </span>
+                </div>
               </motion.div>
 
               {/* Navigation */}
-              <nav className="space-y-2">
+              <nav className="flex flex-col gap-3">
                 {navItems.map((item, index) => {
-                  const isActive = location === item.path;
+                  const isActive = location === item.path || (location !== '/' && item.path !== '/' && location.startsWith(item.path));
                   const Icon = item.icon;
 
                   return (
@@ -78,17 +77,32 @@ export default function MobileSidebar({ isOpen, onClose, navItems }: MobileSideb
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.1 + index * 0.05 }}
-                        whileHover={{ x: 4 }}
+                        whileHover={{ x: 4, backgroundColor: "rgba(255, 255, 255, 0.05)" }}
                         whileTap={{ scale: 0.98 }}
                         className={cn(
-                          "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer",
+                          "group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer border border-transparent",
                           isActive
-                            ? "bg-gradient-to-r from-verza-emerald/20 to-verza-kelly/20 border border-verza-emerald/40 text-verza-emerald"
-                            : "text-verza-gray hover:text-verza-emerald hover:bg-verza-emerald/10"
+                            ? "bg-verza-emerald/10 border-verza-emerald/20 shadow-[0_0_20px_-5px_rgba(141,198,63,0.3)]"
+                            : "text-muted-foreground hover:text-foreground hover:border-white/5"
                         )}
                       >
-                        <Icon className="w-5 h-5" />
-                        <span className="font-medium">{item.label}</span>
+                        <div className={cn(
+                          "p-1.5 rounded-lg transition-colors duration-300",
+                          isActive ? "bg-verza-emerald text-white" : "bg-white/5 text-muted-foreground group-hover:bg-white/10 group-hover:text-foreground"
+                        )}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <span className={cn(
+                          "font-medium text-sm tracking-wide",
+                          isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                        )}>{item.label}</span>
+                        
+                        {isActive && (
+                          <motion.div
+                            layoutId="active-indicator-mobile"
+                            className="ml-auto w-1.5 h-1.5 rounded-full bg-verza-emerald shadow-[0_0_8px_rgba(141,198,63,0.8)]"
+                          />
+                        )}
                       </motion.div>
                     </Link>
                   );

@@ -6,7 +6,6 @@ import {
   ShoppingBag,
   Lock,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import type { MetricCard as MetricCardType } from "@/types/dashboard";
 import { cn } from "@/lib/utils";
 
@@ -33,25 +32,27 @@ export default function MetricCard({ metric, index }: MetricCardProps) {
       transition={{ delay: index * 0.1, duration: 0.4 }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
     >
-      <Card
-        className="p-4 md:p-5 bg-card/80 backdrop-blur-sm border-card-border hover:border-verza-emerald/30 transition-colors"
+      <div
+        className={cn(
+          "glass-card p-6 rounded-2xl transition-all duration-300 group",
+          "hover:bg-white/50 dark:hover:bg-black/80 hover:shadow-[0_0_30px_-5px_rgba(141,198,63,0.15)]"
+        )}
         data-testid={`metric-card-${metric.id}`}
       >
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <span className="text-sm text-muted-foreground">{metric.label}</span>
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <span className="text-sm font-medium text-muted-foreground tracking-wide">{metric.label}</span>
           <motion.div
             className={cn(
-              "p-2 rounded-lg",
-              metric.isPositive ? "bg-verza-emerald/20" : "bg-red-500/20"
+              "p-2.5 rounded-xl transition-colors duration-300",
+              metric.isPositive 
+                ? "bg-verza-emerald/10 text-verza-emerald group-hover:bg-verza-emerald group-hover:text-white" 
+                : "bg-red-500/10 text-red-500 group-hover:bg-red-500 group-hover:text-white"
             )}
             whileHover={{ scale: 1.1 }}
             transition={{ duration: 0.2 }}
           >
             <Icon
-              className={cn(
-                "h-4 w-4",
-                metric.isPositive ? "text-verza-emerald" : "text-red-500"
-              )}
+              className="h-5 w-5"
             />
           </motion.div>
         </div>
@@ -60,7 +61,7 @@ export default function MetricCard({ metric, index }: MetricCardProps) {
           initial={{ scale: 0.9 }}
           animate={{ scale: 1 }}
           transition={{ delay: index * 0.1 + 0.2, duration: 0.3 }}
-          className="text-2xl md:text-3xl font-bold text-foreground mb-2"
+          className="text-3xl md:text-4xl font-bold text-foreground mb-3 tracking-tight"
         >
           {metric.value}
         </motion.div>
@@ -68,21 +69,23 @@ export default function MetricCard({ metric, index }: MetricCardProps) {
         <div className="flex items-center gap-2 text-sm">
           <span
             className={cn(
-              "flex items-center gap-1 font-medium",
-              metric.isPositive ? "text-verza-emerald" : "text-red-500"
+              "flex items-center gap-1 font-semibold px-2 py-0.5 rounded-lg",
+              metric.isPositive 
+                ? "text-verza-emerald bg-verza-emerald/5" 
+                : "text-red-500 bg-red-500/5"
             )}
           >
             {metric.isPositive ? (
-              <TrendingUp className="h-3 w-3" />
+              <TrendingUp className="h-3.5 w-3.5" />
             ) : (
-              <TrendingDown className="h-3 w-3" />
+              <TrendingDown className="h-3.5 w-3.5" />
             )}
             {metric.isPositive ? "+" : ""}
             {metric.percentChange}%
           </span>
-          <span className="text-muted-foreground">than last day</span>
+          <span className="text-muted-foreground text-xs">vs last period</span>
         </div>
-      </Card>
+      </div>
     </motion.div>
   );
 }

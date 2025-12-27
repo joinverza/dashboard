@@ -39,44 +39,50 @@ export default function Layout({ children }: LayoutProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+    <div className="min-h-screen bg-background dark:bg-black text-foreground relative overflow-hidden">
       {/* Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-verza-emerald/5 via-transparent to-transparent opacity-40 dark:opacity-20" />
+        
+        {/* Dark Mode Green Light Burst */}
+        <div className="hidden dark:block absolute bottom-0 left-1/2 -translate-x-1/2 w-[80vw] h-[40vh] bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-verza-emerald/20 via-verza-forest/10 to-transparent blur-[120px] opacity-40 pointer-events-none" />
+
         <motion.div
           animate={{
             rotate: [0, 360],
-            scale: [1, 1.05, 1],
+            scale: [1, 1.2, 1],
           }}
           transition={{
-            duration: 30,
+            duration: 40,
             repeat: Infinity,
             ease: "linear",
           }}
-          className="absolute -top-32 -left-32 w-64 h-64 bg-gradient-to-br from-verza-emerald/5 to-verza-kelly/5 rounded-full blur-3xl opacity-50"
+          className="absolute -top-[20%] -left-[10%] w-[800px] h-[800px] bg-verza-emerald/10 rounded-full blur-[100px] opacity-40 dark:opacity-20"
         />
         <motion.div
           animate={{
             rotate: [360, 0],
-            scale: [1, 1.1, 1],
+            scale: [1, 1.3, 1],
           }}
           transition={{
-            duration: 35,
+            duration: 45,
             repeat: Infinity,
             ease: "linear",
           }}
-          className="absolute -bottom-32 -right-32 w-96 h-96 bg-gradient-to-br from-verza-kelly/5 to-verza-emerald/5 rounded-full blur-3xl opacity-50"
+          className="absolute -bottom-[20%] -right-[10%] w-[800px] h-[800px] bg-verza-kelly/10 rounded-full blur-[100px] opacity-40 dark:opacity-20"
         />
         <motion.div
           animate={{
-            y: [0, 20, 0],
-            x: [0, 10, 0],
+            y: [0, 40, 0],
+            x: [0, 20, 0],
+            scale: [1, 1.1, 1],
           }}
           transition={{
-            duration: 20,
+            duration: 25,
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-verza-forest/3 to-transparent rounded-full blur-3xl"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-verza-forest/5 rounded-full blur-[80px] opacity-30 dark:opacity-10"
         />
       </div>
 
