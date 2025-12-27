@@ -79,6 +79,7 @@ export default function Sidebar({ collapsed, onToggle, navItems }: SidebarProps)
                   whileTap={{ scale: 0.98 }}
                   className={cn(
                     "group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 cursor-pointer border border-transparent relative overflow-hidden",
+                    collapsed ? "justify-center" : "",
                     isActive
                       ? "bg-verza-emerald/10 border-verza-emerald/20 shadow-[0_0_20px_-5px_rgba(141,198,63,0.3)] before:absolute before:inset-0 before:bg-gradient-to-r before:from-verza-emerald/10 before:to-transparent before:opacity-100"
                       : "text-muted-foreground hover:text-foreground hover:border-white/5"

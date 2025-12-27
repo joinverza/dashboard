@@ -48,19 +48,33 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
         backgroundColor: (context) => {
           const ctx = context.chart.ctx;
           const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-          gradient.addColorStop(0, "rgba(141, 198, 63, 0.5)");
-          gradient.addColorStop(1, "rgba(141, 198, 63, 0.0)");
+          
+          // Helper to resolve CSS variable
+          const getColor = (variable: string, alpha: number) => {
+            const value = getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
+            return `hsl(${value} / ${alpha})`;
+          };
+
+          try {
+             gradient.addColorStop(0, getColor("--chart-1", 0.5));
+             gradient.addColorStop(1, getColor("--chart-1", 0));
+          } catch (e) {
+             // Fallback for initial render or SSR
+             gradient.addColorStop(0, "rgba(141, 198, 63, 0.5)");
+             gradient.addColorStop(1, "rgba(141, 198, 63, 0)");
+          }
+          
           return gradient;
         },
-        borderColor: "#8DC63F",
+        borderColor: "hsl(var(--chart-1))",
         borderWidth: 3,
         tension: 0.4,
-        pointBackgroundColor: "#09090b", // Dark background match
-        pointBorderColor: "#8DC63F",
+        pointBackgroundColor: "hsl(var(--background))", // Match theme background
+        pointBorderColor: "hsl(var(--chart-1))",
         pointBorderWidth: 2,
         pointRadius: 6,
         pointHoverRadius: 8,
-        pointHoverBackgroundColor: "#8DC63F",
+        pointHoverBackgroundColor: "hsl(var(--chart-1))",
         pointHoverBorderColor: "#fff",
       },
     ],
@@ -72,9 +86,9 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
       {
         label: "Income",
         data: values,
-        backgroundColor: "rgba(141, 198, 63, 0.8)",
-        hoverBackgroundColor: "#8DC63F",
-        borderColor: "rgba(141, 198, 63, 0.5)",
+        backgroundColor: "hsl(var(--chart-1) / 0.8)",
+        hoverBackgroundColor: "hsl(var(--chart-1))",
+        borderColor: "hsl(var(--chart-1) / 0.5)",
         borderWidth: 0,
         barThickness: 24,
         borderRadius: 8,
