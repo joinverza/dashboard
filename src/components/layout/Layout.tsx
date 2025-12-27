@@ -39,10 +39,10 @@ export default function Layout({ children }: LayoutProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background dark:bg-black text-foreground relative overflow-hidden">
-      {/* Background Elements */}
+    <div className="min-h-screen bg-background dark:bg-black text-foreground relative overflow-hidden font-sans selection:bg-verza-emerald/30 selection:text-verza-emerald">
+      {/* Background Elements - God Mode */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-verza-emerald/5 via-transparent to-transparent opacity-40 dark:opacity-20" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-verza-emerald/5 via-transparent to-transparent opacity-40 dark:opacity-20 mix-blend-screen" />
         
         {/* Dark Mode Green Light Burst */}
         <div className="hidden dark:block absolute bottom-0 left-1/2 -translate-x-1/2 w-[80vw] h-[40vh] bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-verza-emerald/20 via-verza-forest/10 to-transparent blur-[120px] opacity-40 pointer-events-none" />
@@ -57,7 +57,7 @@ export default function Layout({ children }: LayoutProps) {
             repeat: Infinity,
             ease: "linear",
           }}
-          className="absolute -top-[20%] -left-[10%] w-[800px] h-[800px] bg-verza-emerald/10 rounded-full blur-[100px] opacity-40 dark:opacity-20"
+          className="absolute -top-[20%] -left-[10%] w-[1000px] h-[1000px] bg-verza-emerald/10 rounded-full blur-[120px] opacity-40 dark:opacity-10 mix-blend-screen"
         />
         <motion.div
           animate={{
@@ -69,7 +69,7 @@ export default function Layout({ children }: LayoutProps) {
             repeat: Infinity,
             ease: "linear",
           }}
-          className="absolute -bottom-[20%] -right-[10%] w-[800px] h-[800px] bg-verza-kelly/10 rounded-full blur-[100px] opacity-40 dark:opacity-20"
+          className="absolute -bottom-[20%] -right-[10%] w-[1000px] h-[1000px] bg-verza-kelly/10 rounded-full blur-[120px] opacity-40 dark:opacity-10 mix-blend-screen"
         />
         <motion.div
           animate={{
@@ -82,7 +82,7 @@ export default function Layout({ children }: LayoutProps) {
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-verza-forest/5 rounded-full blur-[80px] opacity-30 dark:opacity-10"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-verza-forest/5 rounded-full blur-[100px] opacity-30 dark:opacity-5 mix-blend-screen"
         />
       </div>
 

@@ -45,15 +45,23 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
         label: "Income",
         data: values,
         fill: true,
-        backgroundColor: "rgba(141, 198, 63, 0.2)",
+        backgroundColor: (context) => {
+          const ctx = context.chart.ctx;
+          const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+          gradient.addColorStop(0, "rgba(141, 198, 63, 0.5)");
+          gradient.addColorStop(1, "rgba(141, 198, 63, 0.0)");
+          return gradient;
+        },
         borderColor: "#8DC63F",
-        borderWidth: 2,
+        borderWidth: 3,
         tension: 0.4,
-        pointBackgroundColor: "#8DC63F",
-        pointBorderColor: "#fff",
+        pointBackgroundColor: "#09090b", // Dark background match
+        pointBorderColor: "#8DC63F",
         pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointHoverBackgroundColor: "#8DC63F",
+        pointHoverBorderColor: "#fff",
       },
     ],
   };
@@ -65,10 +73,11 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
         label: "Income",
         data: values,
         backgroundColor: "rgba(141, 198, 63, 0.8)",
-        borderColor: "#8DC63F",
-        borderWidth: 1,
-        barThickness: 20,
-        borderRadius: 4,
+        hoverBackgroundColor: "#8DC63F",
+        borderColor: "rgba(141, 198, 63, 0.5)",
+        borderWidth: 0,
+        barThickness: 24,
+        borderRadius: 8,
       },
     ],
   };
@@ -81,13 +90,23 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
         display: false,
       },
       tooltip: {
-        backgroundColor: "rgba(10, 10, 10, 0.9)",
+        backgroundColor: "rgba(9, 9, 11, 0.8)", // Zinc-950 with opacity
         titleColor: "#fff",
         bodyColor: "#8DC63F",
-        borderColor: "#8DC63F",
+        borderColor: "rgba(255, 255, 255, 0.1)",
         borderWidth: 1,
-        padding: 12,
+        padding: 16,
+        cornerRadius: 12,
         displayColors: false,
+        titleFont: {
+          family: "Poppins",
+          size: 14,
+          weight: 600 as const, // Explicit cast for TS
+        },
+        bodyFont: {
+          family: "Poppins",
+          size: 13,
+        },
       },
     },
     scales: {
@@ -96,9 +115,10 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
           display: false,
         },
         ticks: {
-          color: "#9CA3AF",
+          color: "#9ca3af", // verza-gray
           font: {
-            size: 12,
+            family: "Poppins",
+            size: 11,
           },
         },
         border: {
@@ -107,19 +127,17 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
       },
       y: {
         grid: {
-          color: "rgba(255, 255, 255, 0.1)",
+          color: "rgba(255, 255, 255, 0.05)",
+          drawBorder: false,
         },
         ticks: {
-          color: "#9CA3AF",
+          color: "#9ca3af",
           font: {
-            size: 12,
+            family: "Poppins",
+            size: 11,
           },
-          callback: (value: string | number) => {
-            if (typeof value === "number") {
-              return `$${value >= 1000 ? `${value / 1000}k` : value}`;
-            }
-            return value;
-          },
+          padding: 10,
+          callback: (value: any) => `$${value / 1000}k`,
         },
         border: {
           display: false,
@@ -127,14 +145,10 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
       },
     },
     interaction: {
-      intersect: false,
       mode: "index" as const,
+      intersect: false,
     },
-    animation: {
-      duration: 500,
-      easing: "easeOutQuart" as const,
-    },
-  } as const;
+  };
 
   const lineOptions: ChartOptions<"line"> = {
     ...commonOptions,

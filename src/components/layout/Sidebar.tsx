@@ -75,18 +75,18 @@ export default function Sidebar({ collapsed, onToggle, navItems }: SidebarProps)
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  whileHover={{ x: collapsed ? 0 : 4, backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+                  whileHover={{ x: collapsed ? 0 : 6, backgroundColor: "rgba(255, 255, 255, 0.03)" }}
                   whileTap={{ scale: 0.98 }}
                   className={cn(
-                    "group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 cursor-pointer border border-transparent",
+                    "group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 cursor-pointer border border-transparent relative overflow-hidden",
                     isActive
-                      ? "bg-verza-emerald/10 border-verza-emerald/20 shadow-[0_0_20px_-5px_rgba(141,198,63,0.3)]"
+                      ? "bg-verza-emerald/10 border-verza-emerald/20 shadow-[0_0_20px_-5px_rgba(141,198,63,0.3)] before:absolute before:inset-0 before:bg-gradient-to-r before:from-verza-emerald/10 before:to-transparent before:opacity-100"
                       : "text-muted-foreground hover:text-foreground hover:border-white/5"
                   )}
                 >
                   <div className={cn(
-                    "p-1.5 rounded-lg transition-colors duration-300",
-                    isActive ? "bg-verza-emerald text-white" : "bg-white/5 text-muted-foreground group-hover:bg-white/10 group-hover:text-foreground"
+                    "p-2 rounded-lg transition-all duration-300 relative z-10",
+                    isActive ? "bg-verza-emerald text-white shadow-glow" : "bg-white/5 text-muted-foreground group-hover:bg-white/10 group-hover:text-foreground group-hover:shadow-sm"
                   )}>
                     <Icon className="w-4 h-4" />
                   </div>
@@ -97,7 +97,7 @@ export default function Sidebar({ collapsed, onToggle, navItems }: SidebarProps)
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       className={cn(
-                        "font-medium text-sm tracking-wide",
+                        "font-medium text-sm tracking-wide relative z-10",
                         isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
                       )}
                     >

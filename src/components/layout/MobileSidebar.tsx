@@ -80,20 +80,20 @@ export default function MobileSidebar({ isOpen, onClose, navItems }: MobileSideb
                         whileHover={{ x: 4, backgroundColor: "rgba(255, 255, 255, 0.05)" }}
                         whileTap={{ scale: 0.98 }}
                         className={cn(
-                          "group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer border border-transparent",
+                          "group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer border border-transparent relative overflow-hidden",
                           isActive
-                            ? "bg-verza-emerald/10 border-verza-emerald/20 shadow-[0_0_20px_-5px_rgba(141,198,63,0.3)]"
+                            ? "bg-verza-emerald/10 border-verza-emerald/20 shadow-[0_0_20px_-5px_rgba(141,198,63,0.3)] before:absolute before:inset-0 before:bg-gradient-to-r before:from-verza-emerald/10 before:to-transparent before:opacity-100"
                             : "text-muted-foreground hover:text-foreground hover:border-white/5"
                         )}
                       >
                         <div className={cn(
-                          "p-1.5 rounded-lg transition-colors duration-300",
-                          isActive ? "bg-verza-emerald text-white" : "bg-white/5 text-muted-foreground group-hover:bg-white/10 group-hover:text-foreground"
+                          "p-2 rounded-lg transition-all duration-300 relative z-10",
+                          isActive ? "bg-verza-emerald text-white shadow-glow" : "bg-white/5 text-muted-foreground group-hover:bg-white/10 group-hover:text-foreground"
                         )}>
                           <Icon className="w-5 h-5" />
                         </div>
                         <span className={cn(
-                          "font-medium text-sm tracking-wide",
+                          "font-medium text-sm tracking-wide relative z-10",
                           isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
                         )}>{item.label}</span>
                         
