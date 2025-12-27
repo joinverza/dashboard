@@ -1,20 +1,26 @@
 import { motion } from "framer-motion";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 
-const GlitchLine = () => {
-  const width = useMemo(() => [
-    10 + Math.random() * 40,
-    20 + Math.random() * 40,
-    10 + Math.random() * 40
-  ], []);
+const mulberry32 = (seed: number) => {
+  let t = seed >>> 0;
+  return () => {
+    t += 0x6D2B79F5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+};
 
-  const duration = useMemo(() => 0.2 + Math.random() * 0.5, []);
+const GlitchLine = ({ seed }: { seed: number }) => {
+  const rand = mulberry32(seed + 1);
+  const widths = [10 + rand() * 40, 20 + rand() * 40, 10 + rand() * 40];
+  const duration = 0.2 + rand() * 0.5;
 
   return (
     <motion.div
       className="h-1 bg-[#8DC63F] rounded-full"
       animate={{
-        width: width,
+        width: widths,
         opacity: [0.2, 0.8, 0.2]
       }}
       transition={{
@@ -180,7 +186,7 @@ export const PageLoader = () => {
       {/* Random Data Glitch Overlay */}
       <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col gap-2 items-end opacity-30">
         {[...Array(5)].map((_, i) => (
-          <GlitchLine key={i} />
+          <GlitchLine key={i} seed={i} />
         ))}
       </div>
     </div>

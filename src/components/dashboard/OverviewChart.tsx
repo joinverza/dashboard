@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Chart as ChartJS,
@@ -11,6 +10,7 @@ import {
   Tooltip,
   Filler,
   Legend,
+  type ChartData,
   type ChartOptions,
   type TooltipItem,
 } from "chart.js";
@@ -35,34 +35,45 @@ interface OverviewChartProps {
 }
 
 export default function OverviewChart({ data, chartType }: OverviewChartProps) {
-  const chartRef = useRef<any>(null);
+  const labels = data.map((d) => d.label);
+  const values = data.map((d) => d.value);
 
-  const chartData = {
-    labels: data.map((d) => d.label),
+  const lineData: ChartData<"line", number[], string> = {
+    labels,
     datasets: [
       {
         label: "Income",
-        data: data.map((d) => d.value),
-        fill: chartType === "area",
-        backgroundColor:
-          chartType === "area"
-            ? "rgba(141, 198, 63, 0.2)"
-            : "rgba(141, 198, 63, 0.8)",
+        data: values,
+        fill: true,
+        backgroundColor: "rgba(141, 198, 63, 0.2)",
         borderColor: "#8DC63F",
         borderWidth: 2,
         tension: 0.4,
         pointBackgroundColor: "#8DC63F",
         pointBorderColor: "#fff",
         pointBorderWidth: 2,
-        pointRadius: chartType === "area" ? 4 : 0,
+        pointRadius: 4,
         pointHoverRadius: 6,
-        barThickness: chartType === "bar" ? 20 : undefined,
-        borderRadius: chartType === "bar" ? 4 : undefined,
       },
     ],
   };
 
-  const options: ChartOptions<'line' | 'bar'> = {
+  const barData: ChartData<"bar", number[], string> = {
+    labels,
+    datasets: [
+      {
+        label: "Income",
+        data: values,
+        backgroundColor: "rgba(141, 198, 63, 0.8)",
+        borderColor: "#8DC63F",
+        borderWidth: 1,
+        barThickness: 20,
+        borderRadius: 4,
+      },
+    ],
+  };
+
+  const commonOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -77,12 +88,6 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
         borderWidth: 1,
         padding: 12,
         displayColors: false,
-        callbacks: {
-          label: (context: TooltipItem<'line' | 'bar'>) => {
-            const value = context.raw as number;
-            return `$${value.toLocaleString()}`;
-          },
-        },
       },
     },
     scales: {
@@ -109,9 +114,9 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
           font: {
             size: 12,
           },
-          callback: (value) => {
-            if (typeof value === 'number') {
-               return `$${value >= 1000 ? `${value / 1000}k` : value}`;
+          callback: (value: string | number) => {
+            if (typeof value === "number") {
+              return `$${value >= 1000 ? `${value / 1000}k` : value}`;
             }
             return value;
           },
@@ -129,6 +134,38 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
       duration: 500,
       easing: "easeOutQuart" as const,
     },
+  } as const;
+
+  const lineOptions: ChartOptions<"line"> = {
+    ...commonOptions,
+    plugins: {
+      ...commonOptions.plugins,
+      tooltip: {
+        ...commonOptions.plugins.tooltip,
+        callbacks: {
+          label: (context: TooltipItem<"line">) => {
+            const value = Number(context.raw);
+            return `$${value.toLocaleString()}`;
+          },
+        },
+      },
+    },
+  };
+
+  const barOptions: ChartOptions<"bar"> = {
+    ...commonOptions,
+    plugins: {
+      ...commonOptions.plugins,
+      tooltip: {
+        ...commonOptions.plugins.tooltip,
+        callbacks: {
+          label: (context: TooltipItem<"bar">) => {
+            const value = Number(context.raw);
+            return `$${value.toLocaleString()}`;
+          },
+        },
+      },
+    },
   };
 
   return (
@@ -141,9 +178,9 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
       data-testid="overview-chart"
     >
       {chartType === "area" ? (
-        <Line ref={chartRef} data={chartData} options={options as any} />
+        <Line data={lineData} options={lineOptions} />
       ) : (
-        <Bar ref={chartRef} data={chartData} options={options as any} />
+        <Bar data={barData} options={barOptions} />
       )}
     </motion.div>
   );
