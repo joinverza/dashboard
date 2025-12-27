@@ -8,7 +8,6 @@ import {
   Wallet,
   FileText,
   FolderOpen,
-  MessageSquare,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,7 +33,7 @@ interface MobileSidebarProps {
 
 export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
   const [location] = useLocation();
-  const { theme, setTheme } = useTheme();  
+  const { theme } = useTheme();
 
   return (
     <AnimatePresence>

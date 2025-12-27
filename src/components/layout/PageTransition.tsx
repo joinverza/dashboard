@@ -8,7 +8,7 @@ interface PageTransitionProps {
   children: ReactNode;
 }
 
-export default function PageTransition({ children }: PageTransitionpaProps) {
+export default function PageTransition({ children }: PageTransitionProps) {
   const [location] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [currentChildren, setCurrentChildren] = useState(children);

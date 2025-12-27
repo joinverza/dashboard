@@ -7,7 +7,6 @@ import {
   Wallet,
   FileText,
   FolderOpen,
-  MessageSquare,
   Settings,
   ChevronLeft,
   ChevronRight,
