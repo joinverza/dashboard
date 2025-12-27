@@ -1,12 +1,27 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Bell, Palette, Shield, Save } from 'lucide-react';
+import { 
+  User, 
+  Bell, 
+  Palette, 
+  Shield, 
+  Save, 
+  Key, 
+  LifeBuoy, 
+  Plus, 
+  Copy, 
+  Trash2, 
+  ExternalLink, 
+  MessageSquare 
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -21,6 +36,11 @@ export default function SettingsPage() {
     marketing: false,
     security: true,
   });
+
+  const apiKeys = [
+    { id: 1, name: "Production Key", prefix: "pk_live_", created: "Oct 24, 2023", lastUsed: "2 mins ago", status: "Active" },
+    { id: 2, name: "Test Key", prefix: "pk_test_", created: "Oct 20, 2023", lastUsed: "5 days ago", status: "Active" },
+  ];
 
   return (
     <motion.div
@@ -52,6 +72,14 @@ export default function SettingsPage() {
           <TabsTrigger value="security" className="data-[state=active]:bg-verza-emerald/20 data-[state=active]:text-verza-emerald">
             <Shield className="h-4 w-4 mr-2" />
             Security
+          </TabsTrigger>
+          <TabsTrigger value="api-keys" className="data-[state=active]:bg-verza-emerald/20 data-[state=active]:text-verza-emerald">
+            <Key className="h-4 w-4 mr-2" />
+            API Keys
+          </TabsTrigger>
+          <TabsTrigger value="support" className="data-[state=active]:bg-verza-emerald/20 data-[state=active]:text-verza-emerald">
+            <LifeBuoy className="h-4 w-4 mr-2" />
+            Support
           </TabsTrigger>
         </TabsList>
 
@@ -236,6 +264,145 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
+          </motion.div>
+        </TabsContent>
+        <TabsContent value="api-keys">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card className="bg-card/80 backdrop-blur-sm border-card-border">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>API Keys</CardTitle>
+                  <CardDescription>Manage your API keys for external access</CardDescription>
+                </div>
+                <Button className="bg-verza-emerald hover:bg-verza-kelly text-white">
+                  <Plus className="h-4 w-4 mr-2" /> Create New Key
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {apiKeys.map((key) => (
+                  <div key={key.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/20 border border-border">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{key.name}</span>
+                        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-[10px] h-5">
+                          {key.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 font-mono text-sm text-muted-foreground">
+                        <span>{key.prefix}************************</span>
+                        <Copy className="h-3 w-3 cursor-pointer hover:text-white" />
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Created: {key.created} • Last used: {key.lastUsed}
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-400 hover:bg-red-500/10">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-400 mb-2 flex items-center gap-2">
+                    <ExternalLink className="h-4 w-4" /> API Documentation
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Check out our documentation to learn how to authenticate requests using your API keys.
+                  </p>
+                  <Button variant="link" className="text-blue-400 p-0 h-auto">
+                    View Documentation &rarr;
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </TabsContent>
+
+        <TabsContent value="support">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-card/80 backdrop-blur-sm border-card-border">
+                <CardHeader>
+                  <CardTitle>Contact Support</CardTitle>
+                  <CardDescription>We're here to help with any questions or issues</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Subject</Label>
+                    <Input placeholder="What can we help you with?" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Message</Label>
+                    <Textarea placeholder="Describe your issue in detail..." className="min-h-[120px]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Priority</Label>
+                    <div className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <Input type="radio" id="low" name="priority" className="w-4 h-4" />
+                        <Label htmlFor="low" className="font-normal">Low</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Input type="radio" id="medium" name="priority" className="w-4 h-4" defaultChecked />
+                        <Label htmlFor="medium" className="font-normal">Medium</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Input type="radio" id="high" name="priority" className="w-4 h-4" />
+                        <Label htmlFor="high" className="font-normal">High</Label>
+                      </div>
+                    </div>
+                  </div>
+                  <Button className="w-full bg-verza-emerald hover:bg-verza-kelly">
+                    Submit Ticket
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-6">
+                <Card className="bg-card/80 backdrop-blur-sm border-card-border">
+                  <CardHeader>
+                    <CardTitle>FAQ</CardTitle>
+                    <CardDescription>Quick answers to common questions</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {[
+                      "How do I verify my identity?",
+                      "What payment methods are accepted?",
+                      "How long does verification take?",
+                      "Is my data secure?"
+                    ].map((q, i) => (
+                      <div key={i} className="p-3 rounded-lg bg-secondary/20 hover:bg-secondary/40 transition-colors cursor-pointer flex justify-between items-center">
+                        <span className="text-sm font-medium">{q}</span>
+                        <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-verza-emerald/20 to-transparent border-verza-emerald/20">
+                  <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
+                    <div className="w-12 h-12 rounded-full bg-verza-emerald/20 flex items-center justify-center">
+                      <MessageSquare className="h-6 w-6 text-verza-emerald" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">Live Chat</h3>
+                      <p className="text-sm text-muted-foreground">Chat with our support team in real-time</p>
+                    </div>
+                    <Button variant="outline" className="border-verza-emerald/50 text-verza-emerald hover:bg-verza-emerald hover:text-white">
+                      Start Chat
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </motion.div>
         </TabsContent>
       </Tabs>

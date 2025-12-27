@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   FileBadge, 
@@ -89,6 +90,7 @@ const CREDENTIALS = [
 const TABS = ["All", "Verified", "Pending", "Expired"];
 
 export default function CredentialsPage() {
+  const [, setLocation] = useLocation();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -135,7 +137,10 @@ export default function CredentialsPage() {
             <Filter className="w-4 h-4" />
             Filter
           </Button>
-          <Button className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow gap-2">
+          <Button 
+            className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow gap-2"
+            onClick={() => setLocation("/app/upload-credential")}
+          >
             <Plus className="w-4 h-4" /> Upload Credential
           </Button>
         </div>
@@ -285,7 +290,11 @@ export default function CredentialsPage() {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {filteredCredentials.map((cred) => (
-                    <tr key={cred.id} className="hover:bg-white/5 transition-colors">
+                    <tr 
+                      key={cred.id} 
+                      onClick={() => setLocation(`/app/credentials/${cred.id}`)}
+                      className="hover:bg-white/5 transition-colors cursor-pointer"
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">

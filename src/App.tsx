@@ -17,15 +17,32 @@ const EnterpriseDashboard = lazy(() => import("@/features/enterprise/pages/Dashb
 const AdminDashboard = lazy(() => import("@/features/admin/pages/Dashboard"));
 
 const MessagePage = lazy(() => import("@/pages/Message"));
+const NotificationsPage = lazy(() => import("@/pages/Notifications"));
 const SettingsPage = lazy(() => import("@/pages/Settings"));
+const HelpCenterPage = lazy(() => import("@/pages/HelpCenter"));
 const PlaceholderPage = lazy(() => import("@/pages/PlaceholderPage"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const LandingPage = lazy(() => import("@/pages/LandingPage"));
+const LoginPage = lazy(() => import("@/pages/Login"));
+const SignupPage = lazy(() => import("@/pages/Signup"));
+const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPassword"));
+const ResetPasswordPage = lazy(() => import("@/pages/ResetPassword"));
 
 const MarketplacePage = lazy(() => import("@/pages/Marketplace"));
 const WalletPage = lazy(() => import("@/pages/Wallet"));
+const DepositPage = lazy(() => import("@/pages/Deposit"));
+const WithdrawPage = lazy(() => import("@/pages/Withdraw"));
+const TransactionDetailPage = lazy(() => import("@/pages/TransactionDetail"));
+const TransactionStatusPage = lazy(() => import("@/pages/TransactionStatus"));
 const CredentialsPage = lazy(() => import("@/pages/Credentials"));
+const UploadCredentialPage = lazy(() => import("@/pages/UploadCredential"));
+const CredentialDetailPage = lazy(() => import("@/pages/CredentialDetail"));
+const VerificationStatusPage = lazy(() => import("@/pages/VerificationStatus"));
+const RequestVerificationPage = lazy(() => import("@/pages/RequestVerification"));
 const VerifierProfilePage = lazy(() => import("@/pages/VerifierProfile"));
+const PaymentConfirmationPage = lazy(() => import("@/pages/PaymentConfirmation"));
+const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicy"));
+const TermsOfServicePage = lazy(() => import("@/pages/TermsOfService"));
 
 function Router() {
   const { user } = useAuth();
@@ -34,12 +51,23 @@ function Router() {
     <Suspense fallback={<PageLoader />}>
       <Switch>
         <Route path="/" component={LandingPage} />
+        <Route path="/login" component={LoginPage} />
+        <Route path="/signup" component={SignupPage} />
+        <Route path="/forgot-password" component={ForgotPasswordPage} />
+        <Route path="/reset-password" component={ResetPasswordPage} />
+        <Route path="/privacy" component={PrivacyPolicyPage} />
+        <Route path="/terms" component={TermsOfServicePage} />
         
         {/* User Dashboard Routes */}
         {(user?.role === 'user' || !user) && (
           <>
             <Route path="/app" component={UserDashboard} />
             <Route path="/app/credentials" component={CredentialsPage} />
+            <Route path="/app/credentials/:id" component={CredentialDetailPage} />
+            <Route path="/app/payment/confirm" component={PaymentConfirmationPage} />
+            <Route path="/app/verification-status" component={VerificationStatusPage} />
+            <Route path="/app/verification-status/:id" component={VerificationStatusPage} />
+            <Route path="/app/upload-credential" component={UploadCredentialPage} />
             <Route path="/app/marketplace" component={MarketplacePage} />
             <Route path="/app/verifier-profile/:id" component={VerifierProfilePage} />
             {/* Keeping store route for backward compatibility or direct access */}
@@ -51,6 +79,9 @@ function Router() {
               />
             </Route>
             <Route path="/app/wallet" component={WalletPage} />
+            <Route path="/app/wallet/deposit" component={DepositPage} />
+            <Route path="/app/wallet/withdraw" component={WithdrawPage} />
+            <Route path="/app/wallet/transactions/:id" component={TransactionDetailPage} />
             <Route path="/app/invoice">
               <PlaceholderPage
                 title="Invoice"
@@ -64,7 +95,11 @@ function Router() {
               />
             </Route>
             <Route path="/app/message" component={MessagePage} />
+            <Route path="/app/notifications" component={NotificationsPage} />
             <Route path="/app/settings" component={SettingsPage} />
+            <Route path="/app/help" component={HelpCenterPage} />
+            <Route path="/app/transaction-status/:id" component={TransactionStatusPage} />
+            <Route path="/app/request-verification" component={RequestVerificationPage} />
           </>
         )}
 
