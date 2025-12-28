@@ -42,6 +42,11 @@ const EnterpriseComplianceReports = lazy(() => import("@/features/enterprise/pag
 const EnterpriseAuditTrail = lazy(() => import("@/features/enterprise/pages/AuditTrail"));
 const EnterpriseAnalytics = lazy(() => import("@/features/enterprise/pages/Analytics"));
 const EnterpriseCostAnalysis = lazy(() => import("@/features/enterprise/pages/CostAnalysis"));
+const EnterpriseIntegrations = lazy(() => import("@/features/enterprise/pages/Integrations"));
+const EnterpriseIntegrationSetup = lazy(() => import("@/features/enterprise/pages/IntegrationSetup"));
+const EnterpriseBilling = lazy(() => import("@/features/enterprise/pages/Billing"));
+const EnterprisePricingPlans = lazy(() => import("@/features/enterprise/pages/PricingPlans"));
+const EnterpriseSettings = lazy(() => import("@/features/enterprise/pages/Settings"));
 const AdminDashboard = lazy(() => import("@/features/admin/pages/Dashboard"));
 
 const MessagePage = lazy(() => import("@/pages/Message"));
