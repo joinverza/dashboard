@@ -163,6 +163,7 @@ function Router() {
             <Route path="/enterprise/requests/:id" component={EnterpriseVerificationDetail} />
             <Route path="/enterprise/api" component={EnterpriseApiManagement} />
             <Route path="/enterprise/api/docs" component={EnterpriseApiDocumentation} />
+            <Route path="/enterprise/team" component={EnterpriseTeamManagement} />
             <Route path="/enterprise/*" component={EnterpriseDashboard} />
           </>
         )}
