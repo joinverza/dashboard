@@ -35,6 +35,13 @@ const EnterpriseVerificationRequests = lazy(() => import("@/features/enterprise/
 const EnterpriseVerificationDetail = lazy(() => import("@/features/enterprise/pages/VerificationDetail"));
 const EnterpriseApiManagement = lazy(() => import("@/features/enterprise/pages/ApiManagement"));
 const EnterpriseApiDocumentation = lazy(() => import("@/features/enterprise/pages/ApiDocumentation"));
+const EnterpriseTeamManagement = lazy(() => import("@/features/enterprise/pages/TeamManagement"));
+const EnterpriseInviteTeamMember = lazy(() => import("@/features/enterprise/pages/InviteTeamMember"));
+const EnterpriseTeamMemberDetail = lazy(() => import("@/features/enterprise/pages/TeamMemberDetail"));
+const EnterpriseComplianceReports = lazy(() => import("@/features/enterprise/pages/ComplianceReports"));
+const EnterpriseAuditTrail = lazy(() => import("@/features/enterprise/pages/AuditTrail"));
+const EnterpriseAnalytics = lazy(() => import("@/features/enterprise/pages/Analytics"));
+const EnterpriseCostAnalysis = lazy(() => import("@/features/enterprise/pages/CostAnalysis"));
 const AdminDashboard = lazy(() => import("@/features/admin/pages/Dashboard"));
 
 const MessagePage = lazy(() => import("@/pages/Message"));
@@ -164,6 +171,12 @@ function Router() {
             <Route path="/enterprise/api" component={EnterpriseApiManagement} />
             <Route path="/enterprise/api/docs" component={EnterpriseApiDocumentation} />
             <Route path="/enterprise/team" component={EnterpriseTeamManagement} />
+            <Route path="/enterprise/team/invite" component={EnterpriseInviteTeamMember} />
+            <Route path="/enterprise/team/:id" component={EnterpriseTeamMemberDetail} />
+            <Route path="/enterprise/compliance" component={EnterpriseComplianceReports} />
+            <Route path="/enterprise/audit" component={EnterpriseAuditTrail} />
+            <Route path="/enterprise/analytics" component={EnterpriseAnalytics} />
+            <Route path="/enterprise/billing" component={EnterpriseCostAnalysis} />
             <Route path="/enterprise/*" component={EnterpriseDashboard} />
           </>
         )}

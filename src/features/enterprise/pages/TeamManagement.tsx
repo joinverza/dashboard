@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Search, Filter, Plus, MoreHorizontal, Mail, Shield, 
-  UserCheck, UserX, Trash2, Settings 
+  Search, Filter, Plus, MoreHorizontal, Shield, 
+  Trash2, Settings 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
