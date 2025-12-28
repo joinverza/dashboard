@@ -12,7 +12,10 @@ import {
   Copy, 
   Trash2, 
   ExternalLink, 
-  MessageSquare 
+  MessageSquare,
+  CreditCard,
+  FileText,
+  Download
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -266,6 +269,152 @@ export default function SettingsPage() {
             </Card>
           </motion.div>
         </TabsContent>
+        <TabsContent value="privacy">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card className="bg-card/80 backdrop-blur-sm border-card-border mb-6">
+              <CardHeader>
+                <CardTitle>Privacy Settings</CardTitle>
+                <CardDescription>Manage your privacy and data sharing preferences</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Profile Visibility</p>
+                    <p className="text-sm text-muted-foreground">Make your profile visible to other users</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Share Analytics</p>
+                    <p className="text-sm text-muted-foreground">Allow us to collect anonymous usage data</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Share with Partners</p>
+                    <p className="text-sm text-muted-foreground">Allow trusted partners to view your verified status</p>
+                  </div>
+                  <Switch />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card/80 backdrop-blur-sm border-card-border border-red-500/20">
+              <CardHeader>
+                <CardTitle className="text-red-500">Danger Zone</CardTitle>
+                <CardDescription>Irreversible account actions</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-4 border border-red-500/20 rounded-lg bg-red-500/5">
+                  <div>
+                    <p className="font-medium text-red-500">Delete Account</p>
+                    <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
+                  </div>
+                  <Button variant="destructive">Delete Account</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <Card className="bg-gradient-to-br from-verza-emerald/20 to-transparent border-verza-emerald/20 md:col-span-2">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle>Current Plan: Pro</CardTitle>
+                      <CardDescription>Billed annually</CardDescription>
+                    </div>
+                    <Badge className="bg-verza-emerald">Active</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-baseline gap-2 mb-4">
+                    <span className="text-3xl font-bold">$29</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                  <div className="space-y-2 mb-6">
+                    <div className="flex justify-between text-sm">
+                      <span>Verifications</span>
+                      <span>45 / 50 used</span>
+                    </div>
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                      <div className="h-full bg-verza-emerald w-[90%]" />
+                    </div>
+                  </div>
+                  <Button className="bg-verza-emerald hover:bg-verza-kelly text-white">Upgrade Plan</Button>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card/80 backdrop-blur-sm border-card-border">
+                <CardHeader>
+                  <CardTitle>Payment Method</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-3 p-3 border border-border rounded-lg">
+                    <CreditCard className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium text-sm">Visa ending in 4242</p>
+                      <p className="text-xs text-muted-foreground">Expires 12/25</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full">Update Method</Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="bg-card/80 backdrop-blur-sm border-card-border">
+              <CardHeader>
+                <CardTitle>Billing History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    { date: 'Oct 01, 2023', amount: '$29.00', status: 'Paid', invoice: '#INV-001' },
+                    { date: 'Sep 01, 2023', amount: '$29.00', status: 'Paid', invoice: '#INV-002' },
+                    { date: 'Aug 01, 2023', amount: '$29.00', status: 'Paid', invoice: '#INV-003' },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 border-b border-border last:border-0">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-secondary/30 rounded-full">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{item.date}</p>
+                          <p className="text-sm text-muted-foreground">{item.invoice}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <span className="font-medium">{item.amount}</span>
+                        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                          {item.status}
+                        </Badge>
+                        <Button variant="ghost" size="icon">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </TabsContent>
+
         <TabsContent value="api-keys">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

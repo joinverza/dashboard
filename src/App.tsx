@@ -13,7 +13,28 @@ import { PageLoader } from "@/components/shared/loaders/PageLoader";
 // Lazy load pages for code splitting
 const UserDashboard = lazy(() => import("@/features/user/pages/Dashboard"));
 const VerifierDashboard = lazy(() => import("@/features/verifier/pages/Dashboard"));
+const VerifierJobBoard = lazy(() => import("@/features/verifier/pages/JobBoard"));
+const VerifierJobDetail = lazy(() => import("@/features/verifier/pages/JobDetail"));
+const VerifierActiveJobs = lazy(() => import("@/features/verifier/pages/ActiveJobs"));
+const VerifierDocumentReview = lazy(() => import("@/features/verifier/pages/DocumentReview"));
+const VerifierEarnings = lazy(() => import("@/features/verifier/pages/Earnings"));
+const VerifierHistory = lazy(() => import("@/features/verifier/pages/History"));
+const VerifierProfileSettings = lazy(() => import("@/features/verifier/pages/Profile"));
+const VerifierReputation = lazy(() => import("@/features/verifier/pages/Reputation"));
+const VerifierReviews = lazy(() => import("@/features/verifier/pages/Reviews"));
+const VerifierAnalytics = lazy(() => import("@/features/verifier/pages/Analytics"));
+const VerifierStaking = lazy(() => import("@/features/verifier/pages/Staking"));
+const VerifierIssueCredential = lazy(() => import("@/features/verifier/pages/IssueCredential"));
+const VerifierWithdraw = lazy(() => import("@/features/verifier/pages/Withdraw"));
+const VerifierNotifications = lazy(() => import("@/features/verifier/pages/Notifications"));
+const VerifierSettings = lazy(() => import("@/features/verifier/pages/Settings"));
+const VerifierHelp = lazy(() => import("@/features/verifier/pages/Help"));
 const EnterpriseDashboard = lazy(() => import("@/features/enterprise/pages/Dashboard"));
+const EnterpriseBulkVerification = lazy(() => import("@/features/enterprise/pages/BulkVerification"));
+const EnterpriseVerificationRequests = lazy(() => import("@/features/enterprise/pages/VerificationRequests"));
+const EnterpriseVerificationDetail = lazy(() => import("@/features/enterprise/pages/VerificationDetail"));
+const EnterpriseApiManagement = lazy(() => import("@/features/enterprise/pages/ApiManagement"));
+const EnterpriseApiDocumentation = lazy(() => import("@/features/enterprise/pages/ApiDocumentation"));
 const AdminDashboard = lazy(() => import("@/features/admin/pages/Dashboard"));
 
 const MessagePage = lazy(() => import("@/pages/Message"));
@@ -113,6 +134,22 @@ function Router() {
         {user?.role === 'verifier' && (
           <>
             <Route path="/verifier" component={VerifierDashboard} />
+            <Route path="/verifier/jobs" component={VerifierJobBoard} />
+            <Route path="/verifier/jobs/:id" component={VerifierJobDetail} />
+            <Route path="/verifier/active" component={VerifierActiveJobs} />
+            <Route path="/verifier/review/:id" component={VerifierDocumentReview} />
+            <Route path="/verifier/issue/:id" component={VerifierIssueCredential} />
+            <Route path="/verifier/earnings" component={VerifierEarnings} />
+            <Route path="/verifier/withdraw" component={VerifierWithdraw} />
+            <Route path="/verifier/completed" component={VerifierHistory} />
+            <Route path="/verifier/reputation" component={VerifierReputation} />
+            <Route path="/verifier/reviews" component={VerifierReviews} />
+            <Route path="/verifier/analytics" component={VerifierAnalytics} />
+            <Route path="/verifier/staking" component={VerifierStaking} />
+            <Route path="/verifier/profile" component={VerifierProfileSettings} />
+            <Route path="/verifier/notifications" component={VerifierNotifications} />
+            <Route path="/verifier/settings" component={VerifierSettings} />
+            <Route path="/verifier/help" component={VerifierHelp} />
             <Route path="/verifier/*" component={VerifierDashboard} />
           </>
         )}
@@ -121,6 +158,11 @@ function Router() {
         {user?.role === 'enterprise' && (
           <>
             <Route path="/enterprise" component={EnterpriseDashboard} />
+            <Route path="/enterprise/bulk" component={EnterpriseBulkVerification} />
+            <Route path="/enterprise/requests" component={EnterpriseVerificationRequests} />
+            <Route path="/enterprise/requests/:id" component={EnterpriseVerificationDetail} />
+            <Route path="/enterprise/api" component={EnterpriseApiManagement} />
+            <Route path="/enterprise/api/docs" component={EnterpriseApiDocumentation} />
             <Route path="/enterprise/*" component={EnterpriseDashboard} />
           </>
         )}
