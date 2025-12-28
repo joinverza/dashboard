@@ -55,6 +55,20 @@ const AdminVerifierDetail = lazy(() => import("@/features/admin/pages/VerifierDe
 const AdminEnterpriseManagement = lazy(() => import("@/features/admin/pages/EnterpriseManagement"));
 const AdminEnterpriseDetail = lazy(() => import("@/features/admin/pages/EnterpriseDetail"));
 const AdminSystemMonitor = lazy(() => import("@/features/admin/pages/SystemMonitor"));
+const AdminDisputes = lazy(() => import("@/features/admin/pages/Disputes"));
+const AdminDisputeDetail = lazy(() => import("@/features/admin/pages/DisputeDetail"));
+const AdminAnalytics = lazy(() => import("@/features/admin/pages/Analytics"));
+const AdminGovernance = lazy(() => import("@/features/admin/pages/Governance"));
+const AdminCredentialManagement = lazy(() => import("@/features/admin/pages/CredentialManagement"));
+const AdminCredentialDetail = lazy(() => import("@/features/admin/pages/CredentialDetailAdmin"));
+const AdminCreateProposal = lazy(() => import("@/features/admin/pages/CreateProposal"));
+const AdminProposalDetail = lazy(() => import("@/features/admin/pages/ProposalDetail"));
+const AdminFinancialOverview = lazy(() => import("@/features/admin/pages/FinancialOverview"));
+const AdminRevenueDrillDown = lazy(() => import("@/features/admin/pages/RevenueDrillDown"));
+const AdminErrorLogs = lazy(() => import("@/features/admin/pages/ErrorLogs"));
+const AdminFraudDetection = lazy(() => import("@/features/admin/pages/FraudDetection"));
+const AdminPlatformSettings = lazy(() => import("@/features/admin/pages/PlatformSettings"));
+const AdminUsers = lazy(() => import("@/features/admin/pages/AdminUsers"));
 
 const MessagePage = lazy(() => import("@/pages/Message"));
 const NotificationsPage = lazy(() => import("@/pages/Notifications"));
@@ -209,6 +223,20 @@ function Router() {
             <Route path="/admin/enterprises" component={AdminEnterpriseManagement} />
             <Route path="/admin/enterprises/:id" component={AdminEnterpriseDetail} />
             <Route path="/admin/system" component={AdminSystemMonitor} />
+            <Route path="/admin/disputes" component={AdminDisputes} />
+            <Route path="/admin/disputes/:id" component={AdminDisputeDetail} />
+            <Route path="/admin/analytics" component={AdminAnalytics} />
+            <Route path="/admin/governance" component={AdminGovernance} />
+            <Route path="/admin/governance/create" component={AdminCreateProposal} />
+            <Route path="/admin/governance/:id" component={AdminProposalDetail} />
+            <Route path="/admin/credentials" component={AdminCredentialManagement} />
+            <Route path="/admin/credentials/:id" component={AdminCredentialDetail} />
+            <Route path="/admin/financial" component={AdminFinancialOverview} />
+            <Route path="/admin/financial/revenue" component={AdminRevenueDrillDown} />
+            <Route path="/admin/logs" component={AdminErrorLogs} />
+            <Route path="/admin/fraud" component={AdminFraudDetection} />
+            <Route path="/admin/settings" component={AdminPlatformSettings} />
+            <Route path="/admin/admins" component={AdminUsers} />
             <Route path="/admin/*" component={AdminDashboard} />
           </>
         )}
