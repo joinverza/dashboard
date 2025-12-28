@@ -6,12 +6,10 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Link, useLocation } from 'wouter';
+import { useLocation } from 'wouter';
 
 const STEPS = [
   { id: 1, name: 'Authorize', icon: Lock },
@@ -23,7 +21,7 @@ const STEPS = [
 export default function EnterpriseIntegrationSetup() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
+  const [, setIsConnected] = useState(false);
   const [, setLocation] = useLocation();
 
   const handleNext = () => {

@@ -48,6 +48,13 @@ const EnterpriseBilling = lazy(() => import("@/features/enterprise/pages/Billing
 const EnterprisePricingPlans = lazy(() => import("@/features/enterprise/pages/PricingPlans"));
 const EnterpriseSettings = lazy(() => import("@/features/enterprise/pages/Settings"));
 const AdminDashboard = lazy(() => import("@/features/admin/pages/Dashboard"));
+const AdminUserManagement = lazy(() => import("@/features/admin/pages/UserManagement"));
+const AdminUserDetail = lazy(() => import("@/features/admin/pages/UserDetail"));
+const AdminVerifierManagement = lazy(() => import("@/features/admin/pages/VerifierManagement"));
+const AdminVerifierDetail = lazy(() => import("@/features/admin/pages/VerifierDetail"));
+const AdminEnterpriseManagement = lazy(() => import("@/features/admin/pages/EnterpriseManagement"));
+const AdminEnterpriseDetail = lazy(() => import("@/features/admin/pages/EnterpriseDetail"));
+const AdminSystemMonitor = lazy(() => import("@/features/admin/pages/SystemMonitor"));
 
 const MessagePage = lazy(() => import("@/pages/Message"));
 const NotificationsPage = lazy(() => import("@/pages/Notifications"));
@@ -181,7 +188,12 @@ function Router() {
             <Route path="/enterprise/compliance" component={EnterpriseComplianceReports} />
             <Route path="/enterprise/audit" component={EnterpriseAuditTrail} />
             <Route path="/enterprise/analytics" component={EnterpriseAnalytics} />
-            <Route path="/enterprise/billing" component={EnterpriseCostAnalysis} />
+            <Route path="/enterprise/billing" component={EnterpriseBilling} />
+            <Route path="/enterprise/cost-analysis" component={EnterpriseCostAnalysis} />
+            <Route path="/enterprise/pricing" component={EnterprisePricingPlans} />
+            <Route path="/enterprise/integrations" component={EnterpriseIntegrations} />
+            <Route path="/enterprise/integrations/setup" component={EnterpriseIntegrationSetup} />
+            <Route path="/enterprise/settings" component={EnterpriseSettings} />
             <Route path="/enterprise/*" component={EnterpriseDashboard} />
           </>
         )}
@@ -190,6 +202,13 @@ function Router() {
         {user?.role === 'admin' && (
           <>
             <Route path="/admin" component={AdminDashboard} />
+            <Route path="/admin/users" component={AdminUserManagement} />
+            <Route path="/admin/users/:id" component={AdminUserDetail} />
+            <Route path="/admin/verifiers" component={AdminVerifierManagement} />
+            <Route path="/admin/verifiers/:id" component={AdminVerifierDetail} />
+            <Route path="/admin/enterprises" component={AdminEnterpriseManagement} />
+            <Route path="/admin/enterprises/:id" component={AdminEnterpriseDetail} />
+            <Route path="/admin/system" component={AdminSystemMonitor} />
             <Route path="/admin/*" component={AdminDashboard} />
           </>
         )}

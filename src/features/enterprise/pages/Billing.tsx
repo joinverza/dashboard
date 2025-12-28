@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   CreditCard, Check, Download, AlertTriangle, 

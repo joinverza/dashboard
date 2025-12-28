@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Plug, CheckCircle, AlertCircle, Plus, 
+  Plug, Plus, 
   ExternalLink, Settings, Trash2, RefreshCw 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
