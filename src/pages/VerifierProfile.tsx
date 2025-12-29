@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { ChatModal } from "@/components/chat/ChatModal";
 import { 
   Star, 
   ShieldCheck, 
@@ -54,6 +55,7 @@ export default function VerifierProfile({ params }: { params?: { id: string } })
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("Overview");
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   
   // Use params.id if available
   const verifierId = params?.id || "1";
@@ -69,8 +71,7 @@ export default function VerifierProfile({ params }: { params?: { id: string } })
   };
 
   const handleMessage = () => {
-    // In a real app, we would pass the verifier ID
-    setLocation(`/app/message?verifier=${verifierId}`);
+    setIsChatOpen(true);
   };
 
   const handleRequestVerification = () => {
@@ -280,6 +281,17 @@ export default function VerifierProfile({ params }: { params?: { id: string } })
           </div>
         </div>
       </div>
+      
+      <ChatModal 
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        recipient={{
+          name: VERIFIER.name,
+          role: "Verifier",
+          avatar: VERIFIER.avatar,
+          status: "online"
+        }}
+      />
     </div>
   );
 }

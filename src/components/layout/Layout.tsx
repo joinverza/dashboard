@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
+import { MessageCircle } from "lucide-react";
 import Sidebar from "./Sidebar";
 import MobileSidebar from "./MobileSidebar";
 import Header from "./Header";
@@ -8,6 +9,8 @@ import PageTransition from "./PageTransition";
 import { useSidebarState } from "@/hooks/useSidebarState";
 import { useAuth } from "@/features/auth/AuthContext";
 import { userNavItems, verifierNavItems, enterpriseNavItems, adminNavItems } from "@/config/navigation";
+import { ChatModal } from "@/components/chat/ChatModal";
+import { Button } from "@/components/ui/button";
 
 interface LayoutProps {
   children: ReactNode;
@@ -18,6 +21,7 @@ export default function Layout({ children }: LayoutProps) {
   const { collapsed, toggle } = useSidebarState();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isSupportChatOpen, setIsSupportChatOpen] = useState(false);
   const { user } = useAuth();
 
   const navItems = user?.role === "verifier" ? verifierNavItems :
@@ -115,6 +119,46 @@ export default function Layout({ children }: LayoutProps) {
           <PageTransition>{children}</PageTransition>
         </main>
       </motion.div>
+
+      {/* Support Chat FAB */}
+      <AnimatePresence>
+        {user?.role === 'user' && (
+          <>
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              className="fixed bottom-6 right-6 z-40"
+            >
+              <Button
+                onClick={() => setIsSupportChatOpen(true)}
+                className="h-14 w-14 rounded-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow flex items-center justify-center p-0"
+              >
+                <MessageCircle className="h-7 w-7" />
+              </Button>
+            </motion.div>
+
+            <ChatModal
+              isOpen={isSupportChatOpen}
+              onClose={() => setIsSupportChatOpen(false)}
+              recipient={{
+                name: "Verza Support",
+                role: "Admin",
+                status: "online",
+                avatar: "https://github.com/shadcn.png"
+              }}
+              initialMessages={[
+                {
+                  id: 'welcome',
+                  text: "Hi there! How can we help you today?",
+                  sender: 'other',
+                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }
+              ]}
+            />
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
