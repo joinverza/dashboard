@@ -12,6 +12,7 @@ import { PageLoader } from "@/components/shared/loaders/PageLoader";
 
 // Lazy load pages for code splitting
 const UserDashboard = lazy(() => import("@/features/user/pages/Dashboard"));
+const UserAnalytics = lazy(() => import("@/features/user/pages/Analytics"));
 const VerifierDashboard = lazy(() => import("@/features/verifier/pages/Dashboard"));
 const VerifierJobBoard = lazy(() => import("@/features/verifier/pages/JobBoard"));
 const VerifierJobDetail = lazy(() => import("@/features/verifier/pages/JobDetail"));
@@ -127,12 +128,7 @@ function Router() {
             <Route path="/app/verifier-profile/:id" component={VerifierProfilePage} />
             {/* Keeping store route for backward compatibility or direct access */}
             <Route path="/app/store" component={MarketplacePage} />
-            <Route path="/app/analytics">
-              <PlaceholderPage
-                title="Analytics"
-                description="View detailed analytics and insights"
-              />
-            </Route>
+            <Route path="/app/analytics" component={UserAnalytics} />
             <Route path="/app/wallet" component={WalletPage} />
             <Route path="/app/wallet/deposit" component={DepositPage} />
             <Route path="/app/wallet/withdraw" component={WithdrawPage} />
