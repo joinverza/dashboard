@@ -5,12 +5,13 @@ import {
   ArrowLeft, 
   Copy, 
   CreditCard, 
-  Landmark, 
   Wallet,
   QrCode,
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
+import { usePaystackPayment } from "react-paystack";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,26 +20,56 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ASSETS = [
+  { id: "verza", name: "Verza Token", ticker: "VZT", icon: "https://verza.io/favicon.ico" },
   { id: "ada", name: "Cardano", ticker: "ADA", icon: "https://cryptologos.cc/logos/cardano-ada-logo.png" },
-  { id: "usdm", name: "Mehen USD", ticker: "USDM", icon: "https://mehen.io/favicon.ico" }, // Placeholder icon
-  { id: "verza", name: "Verza Token", ticker: "VERZA", icon: "https://verza.io/favicon.ico" } // Placeholder
+  { id: "usdm", name: "Mehen USD", ticker: "USDM", icon: "https://mehen.io/favicon.ico" },
 ];
 
 export default function DepositPage() {
   const [, setLocation] = useLocation();
-  const [selectedAsset, setSelectedAsset] = useState("ada");
+  const [selectedAsset, setSelectedAsset] = useState("verza");
   const [depositStatus, setDepositStatus] = useState<"idle" | "pending" | "success">("idle");
-
+  const [amount, setAmount] = useState<string>("");
+  
   const currentAsset = ASSETS.find(a => a.id === selectedAsset) || ASSETS[0];
+
+  // Paystack Config
+  const paystackConfig = {
+    reference: (new Date()).getTime().toString(),
+    email: "user@example.com",
+    amount: amount ? parseInt(amount) * 100 : 0, // Amount in kobo
+    publicKey: 'pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    currency: 'NGN',
+  };
+
+  const initializePayment = usePaystackPayment(paystackConfig);
 
   const handleCopyAddress = () => {
     navigator.clipboard.writeText("addr1q9...8291");
-    // Show toast here (mocked)
+    toast.success("Wallet address copied to clipboard");
   };
 
-  const handleCardDeposit = () => {
+  const onPaystackSuccess = (_reference: any) => {
+    setDepositStatus("success");
+    toast.success("Deposit successful!");
+  };
+
+  const onPaystackClose = () => {
+    setDepositStatus("idle");
+    toast.info("Transaction cancelled");
+  };
+
+  const handleFiatDeposit = () => {
+    if (!amount || parseInt(amount) <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
     setDepositStatus("pending");
-    setTimeout(() => setDepositStatus("success"), 2000);
+    // Simulate short delay before Paystack opens or just open it
+    initializePayment({
+      onSuccess: onPaystackSuccess,
+      onClose: onPaystackClose,
+    });
   };
 
   return (
@@ -96,18 +127,61 @@ export default function DepositPage() {
               </Card>
 
               {/* Deposit Methods */}
-              <Tabs defaultValue="crypto" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 h-12">
+              <Tabs defaultValue="fiat" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 h-12">
+                  <TabsTrigger value="fiat" className="gap-2">
+                    <CreditCard className="w-4 h-4" /> Buy with Fiat
+                  </TabsTrigger>
                   <TabsTrigger value="crypto" className="gap-2">
                     <Wallet className="w-4 h-4" /> Crypto Transfer
                   </TabsTrigger>
-                  <TabsTrigger value="card" className="gap-2">
-                    <CreditCard className="w-4 h-4" /> Credit Card
-                  </TabsTrigger>
-                  <TabsTrigger value="bank" className="gap-2">
-                    <Landmark className="w-4 h-4" /> Bank Transfer
-                  </TabsTrigger>
                 </TabsList>
+
+                {/* Fiat/Paystack Tab */}
+                <TabsContent value="fiat">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Buy {currentAsset.ticker}</CardTitle>
+                      <CardDescription>Purchase {currentAsset.ticker} directly with Bank Card or Transfer via Paystack.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="space-y-2">
+                        <Label>Amount (NGN)</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₦</span>
+                          <Input 
+                            type="number" 
+                            placeholder="5000" 
+                            className="pl-8" 
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-secondary/30 rounded-lg flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">You will receive approx.</span>
+                        <span className="font-bold text-lg">
+                          {amount ? (parseInt(amount) / 1000).toFixed(2) : '0.00'} {currentAsset.ticker}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm text-blue-600 dark:text-blue-400">
+                        <CreditCard className="w-5 h-5 shrink-0" />
+                        <p>Secured by Paystack. Supports Cards, Bank Transfer, and USSD.</p>
+                      </div>
+
+                      <div className="text-xs text-muted-foreground">
+                        Includes 1.5% + ₦100 processing fee.
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow" onClick={handleFiatDeposit}>
+                        Proceed to Pay ₦{amount ? parseInt(amount).toLocaleString() : '0.00'}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </TabsContent>
 
                 {/* Crypto Wallet Tab */}
                 <TabsContent value="crypto">
@@ -144,63 +218,6 @@ export default function DepositPage() {
                       </div>
                     </CardContent>
                   </Card>
-                </TabsContent>
-
-                {/* Credit Card Tab */}
-                <TabsContent value="card">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Buy {currentAsset.ticker}</CardTitle>
-                      <CardDescription>Purchase crypto directly with your card.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="space-y-2">
-                        <Label>Amount (USD)</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                          <Input type="number" placeholder="0.00" className="pl-8" />
-                        </div>
-                      </div>
-
-                      <div className="p-4 bg-secondary/30 rounded-lg flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">You will receive approx.</span>
-                        <span className="font-bold text-lg">0.00 {currentAsset.ticker}</span>
-                      </div>
-
-                      <div className="space-y-4">
-                         <div className="space-y-2">
-                           <Label>Card Details</Label>
-                           <Input placeholder="0000 0000 0000 0000" />
-                           <div className="grid grid-cols-2 gap-4">
-                             <Input placeholder="MM/YY" />
-                             <Input placeholder="CVC" />
-                           </div>
-                         </div>
-                      </div>
-
-                      <div className="text-xs text-muted-foreground">
-                        Includes 2.5% processing fee.
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow" onClick={handleCardDeposit}>
-                        Buy Now
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                </TabsContent>
-
-                {/* Bank Transfer Tab */}
-                <TabsContent value="bank">
-                   <Card>
-                     <CardContent className="py-10 text-center space-y-4">
-                       <Landmark className="w-12 h-12 mx-auto text-muted-foreground" />
-                       <h3 className="font-semibold text-lg">Coming Soon</h3>
-                       <p className="text-muted-foreground max-w-xs mx-auto">
-                         Bank transfers are not yet available in your region. Please use Crypto Transfer or Credit Card.
-                       </p>
-                     </CardContent>
-                   </Card>
                 </TabsContent>
               </Tabs>
             </motion.div>

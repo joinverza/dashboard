@@ -9,14 +9,15 @@ import {
   ShieldCheck, 
   User, 
   ChevronRight,
-  Wallet,
   Building2,
   Clock,
   Star,
   Search,
-  Upload
+  Upload,
+  Coins
 } from "lucide-react";
 import { toast } from "sonner";
+import { usePaystackPayment } from "react-paystack";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -39,7 +40,8 @@ const VERIFIERS = [
     name: "Verza Global Verification", 
     type: "Premium", 
     rating: 4.9, 
-    price: "50 ADA", 
+    price: "50 VZT", 
+    priceFiat: 50000, // kobo (500 NGN)
     time: "~24h",
     logo: "https://i.pravatar.cc/150?u=verza"
   },
@@ -48,7 +50,8 @@ const VERIFIERS = [
     name: "FastCheck Inc.", 
     type: "Standard", 
     rating: 4.5, 
-    price: "30 ADA", 
+    price: "30 VZT", 
+    priceFiat: 30000, // kobo (300 NGN)
     time: "~48h",
     logo: "https://i.pravatar.cc/150?u=fast"
   },
@@ -59,7 +62,20 @@ export default function RequestVerificationPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedCredential, setSelectedCredential] = useState<string | null>(null);
   const [selectedVerifier, setSelectedVerifier] = useState<number | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState("wallet");
+  const [paymentMethod, setPaymentMethod] = useState("verza_token");
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Paystack Config
+  const selectedVerifierData = VERIFIERS.find(v => v.id === selectedVerifier);
+  const paystackConfig = {
+    reference: (new Date()).getTime().toString(),
+    email: "user@example.com",
+    amount: selectedVerifierData ? selectedVerifierData.priceFiat : 0, // Amount in kobo
+    publicKey: 'pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // Replace with actual public key
+    currency: 'NGN',
+  };
+
+  const initializePayment = usePaystackPayment(paystackConfig);
 
   const steps = [
     { id: 1, title: "Select Credential" },
@@ -85,13 +101,37 @@ export default function RequestVerificationPage() {
     else setLocation("/app/credentials");
   };
 
-  const handleSubmit = () => {
-    toast.success("Verification request submitted successfully!");
-    // Navigate to success page or payment modal
-    // For now, redirect to tracking page
+  const onPaystackSuccess = (_reference: any) => {
+    setIsProcessing(false);
+    toast.success("Payment successful! Verification request submitted.");
     setTimeout(() => {
       setLocation("/app/verification-status/new-req-123");
     }, 1500);
+  };
+
+  const onPaystackClose = () => {
+    setIsProcessing(false);
+    toast.info("Payment cancelled");
+  };
+
+  const handleSubmit = () => {
+    setIsProcessing(true);
+    
+    if (paymentMethod === 'paystack') {
+      initializePayment({
+        onSuccess: onPaystackSuccess,
+        onClose: onPaystackClose,
+      });
+    } else {
+      // Token Payment Simulation
+      toast.loading("Processing transaction on Verza Chain...");
+      setTimeout(() => {
+        setIsProcessing(false);
+        toast.dismiss();
+        toast.success("Verification request submitted successfully!");
+        setLocation("/app/verification-status/new-req-123");
+      }, 2000);
+    }
   };
 
   return (
@@ -320,20 +360,37 @@ export default function RequestVerificationPage() {
                     <div className="space-y-3">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Verification Fee</span>
-                        <span>50.00 ADA</span>
+                        <span>
+                          {paymentMethod === 'paystack' 
+                            ? `₦${(VERIFIERS.find(v => v.id === selectedVerifier)?.priceFiat! / 100).toLocaleString()}.00` 
+                            : VERIFIERS.find(v => v.id === selectedVerifier)?.price
+                          }
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Platform Fee (2%)</span>
-                        <span>1.00 ADA</span>
+                        <span>
+                          {paymentMethod === 'paystack' 
+                            ? `₦${((VERIFIERS.find(v => v.id === selectedVerifier)?.priceFiat! * 0.02) / 100).toLocaleString()}.00` 
+                            : '1.00 VZT'
+                          }
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Network Fee (Est.)</span>
-                        <span>0.17 ADA</span>
+                        <span>
+                           {paymentMethod === 'paystack' ? '₦0.00' : '0.17 VZT'}
+                        </span>
                       </div>
                       <Separator className="my-2" />
                       <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
-                        <span>51.17 ADA</span>
+                        <span>
+                          {paymentMethod === 'paystack' 
+                            ? `₦${((VERIFIERS.find(v => v.id === selectedVerifier)?.priceFiat! * 1.02) / 100).toLocaleString()}` 
+                            : `${(parseFloat(VERIFIERS.find(v => v.id === selectedVerifier)?.price.split(' ')[0]!) + 1.17).toFixed(2)} VZT`
+                          }
+                        </span>
                       </div>
                     </div>
                   </CardContent>
@@ -347,27 +404,27 @@ export default function RequestVerificationPage() {
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                      <div className="flex items-center space-x-2 border p-3 rounded-lg hover:bg-secondary/20 transition-colors cursor-pointer">
-                        <RadioGroupItem value="wallet" id="wallet" />
-                        <Label htmlFor="wallet" className="flex-1 cursor-pointer flex items-center gap-3">
-                          <div className="p-2 bg-blue-500/10 rounded">
-                            <Wallet className="w-4 h-4 text-blue-500" />
+                      <div className={`flex items-center space-x-2 border p-3 rounded-lg transition-all cursor-pointer ${paymentMethod === 'verza_token' ? 'border-verza-emerald bg-verza-emerald/5' : 'hover:bg-secondary/20'}`}>
+                        <RadioGroupItem value="verza_token" id="verza_token" />
+                        <Label htmlFor="verza_token" className="flex-1 cursor-pointer flex items-center gap-3">
+                          <div className="p-2 bg-verza-emerald/10 rounded">
+                            <Coins className="w-4 h-4 text-verza-emerald" />
                           </div>
                           <div>
-                            <span className="block font-medium">Connected Wallet</span>
-                            <span className="text-xs text-muted-foreground">Balance: 1,240 ADA</span>
+                            <span className="block font-medium">Verza Token (Crypto)</span>
+                            <span className="text-xs text-muted-foreground">Pay with VZT wallet balance</span>
                           </div>
                         </Label>
                       </div>
-                      <div className="flex items-center space-x-2 border p-3 rounded-lg hover:bg-secondary/20 transition-colors cursor-pointer">
-                        <RadioGroupItem value="card" id="card" />
-                        <Label htmlFor="card" className="flex-1 cursor-pointer flex items-center gap-3">
-                          <div className="p-2 bg-purple-500/10 rounded">
-                            <CreditCard className="w-4 h-4 text-purple-500" />
+                      <div className={`flex items-center space-x-2 border p-3 rounded-lg transition-all cursor-pointer ${paymentMethod === 'paystack' ? 'border-blue-500 bg-blue-500/5' : 'hover:bg-secondary/20'}`}>
+                        <RadioGroupItem value="paystack" id="paystack" />
+                        <Label htmlFor="paystack" className="flex-1 cursor-pointer flex items-center gap-3">
+                          <div className="p-2 bg-blue-500/10 rounded">
+                            <CreditCard className="w-4 h-4 text-blue-500" />
                           </div>
                           <div>
-                            <span className="block font-medium">Credit Card</span>
-                            <span className="text-xs text-muted-foreground">Visa, Mastercard</span>
+                            <span className="block font-medium">Paystack (Fiat)</span>
+                            <span className="text-xs text-muted-foreground">Card, Bank Transfer, USSD</span>
                           </div>
                         </Label>
                       </div>
@@ -375,15 +432,26 @@ export default function RequestVerificationPage() {
 
                     <div className="text-xs text-muted-foreground bg-secondary/30 p-3 rounded-lg">
                       <ShieldCheck className="w-3 h-3 inline mr-1 mb-0.5" />
-                      Payments are secured by smart contracts. Funds are held in escrow until verification is complete.
+                      Payments are secured. {paymentMethod === 'verza_token' ? 'Funds held in smart contract escrow.' : 'Processed securely via Paystack.'}
                     </div>
                   </CardContent>
                   <CardFooter className="flex-col gap-3">
                     <Button 
                       className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow py-6 text-lg"
                       onClick={handleSubmit}
+                      disabled={isProcessing}
                     >
-                      Confirm & Pay 51.17 ADA
+                      {isProcessing ? (
+                        <>Processing...</>
+                      ) : (
+                        <>
+                          Confirm & Pay {
+                            paymentMethod === 'paystack'
+                            ? `₦${((VERIFIERS.find(v => v.id === selectedVerifier)?.priceFiat! * 1.02) / 100).toLocaleString()}`
+                            : `${(parseFloat(VERIFIERS.find(v => v.id === selectedVerifier)?.price.split(' ')[0]!) + 1.17).toFixed(2)} VZT`
+                          }
+                        </>
+                      )}
                     </Button>
                     <Button variant="ghost" onClick={handleBack} className="w-full">
                       Back
