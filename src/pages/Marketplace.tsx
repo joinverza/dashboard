@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { 
   Search, 
   Star, 
@@ -13,6 +15,24 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 // Mock Data
 const RECOMMENDED_VERIFIERS = [
@@ -109,8 +129,16 @@ const ALL_VERIFIERS = [
 const CATEGORIES = ["All", "KYC/AML", "Education", "Employment", "Legal", "Biometric", "Financial"];
 
 export default function Marketplace() {
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [sortBy, setSortBy] = useState("recommended");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  const handleApplyFilters = () => {
+    setIsFilterOpen(false);
+    toast.success("Filters applied successfully");
+  };
 
   return (
     <div className="space-y-8 p-8 pb-20">
@@ -124,11 +152,43 @@ export default function Marketplace() {
         </div>
         
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2 glass-button">
-            <SlidersHorizontal className="w-4 h-4" />
-            Advanced Filters
-          </Button>
-          <Button className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow">
+          <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="glass-button gap-2">
+                <SlidersHorizontal className="w-4 h-4" />
+                Advanced Filters
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px] bg-card/90 backdrop-blur-md border-white/10">
+              <DialogHeader>
+                <DialogTitle>Filter Verifiers</DialogTitle>
+                <DialogDescription>
+                  Refine your search with specific criteria.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="verified" className="border-white/20 data-[state=checked]:bg-verza-emerald data-[state=checked]:border-verza-emerald" />
+                  <Label htmlFor="verified">Verified Only</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="instant" className="border-white/20 data-[state=checked]:bg-verza-emerald data-[state=checked]:border-verza-emerald" />
+                  <Label htmlFor="instant">Instant Verification (&lt; 1hr)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="automated" className="border-white/20 data-[state=checked]:bg-verza-emerald data-[state=checked]:border-verza-emerald" />
+                  <Label htmlFor="automated">Automated Systems</Label>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit" className="bg-verza-emerald hover:bg-verza-emerald/90 text-white" onClick={handleApplyFilters}>Apply Filters</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Button 
+            className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow"
+            onClick={() => setLocation('/verifier')}
+          >
             Become a Verifier
           </Button>
         </div>
@@ -237,7 +297,10 @@ export default function Marketplace() {
                     </div>
                   </div>
                   
-                  <Button className="w-full mt-2 bg-white/5 hover:bg-verza-emerald hover:text-white text-foreground border border-white/10 hover:border-verza-emerald transition-all group-hover:shadow-glow">
+                  <Button 
+                    className="w-full mt-2 bg-white/5 hover:bg-verza-emerald hover:text-white text-foreground border border-white/10 hover:border-verza-emerald transition-all group-hover:shadow-glow"
+                    onClick={() => setLocation(`/app/verifier-profile/${verifier.id}`)}
+                  >
                     View Profile
                   </Button>
                 </div>
@@ -253,9 +316,21 @@ export default function Marketplace() {
           <h2 className="text-xl font-bold text-foreground">All Verifiers</h2>
           <div className="flex items-center gap-2">
              <span className="text-sm text-muted-foreground">Sort by:</span>
-             <button className="flex items-center gap-1 text-sm font-medium text-foreground bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/10">
-               Recommended <ChevronDown className="w-3.5 h-3.5" />
-             </button>
+             <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                 <button className="flex items-center gap-1 text-sm font-medium text-foreground bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/10 outline-none">
+                   {sortBy === 'recommended' ? 'Recommended' : sortBy === 'price_low' ? 'Price: Low to High' : sortBy === 'rating' ? 'Highest Rated' : 'Fastest'} <ChevronDown className="w-3.5 h-3.5" />
+                 </button>
+               </DropdownMenuTrigger>
+               <DropdownMenuContent align="end" className="bg-card/90 backdrop-blur-md border-white/10">
+                 <DropdownMenuRadioGroup value={sortBy} onValueChange={setSortBy}>
+                   <DropdownMenuRadioItem value="recommended">Recommended</DropdownMenuRadioItem>
+                   <DropdownMenuRadioItem value="price_low">Price: Low to High</DropdownMenuRadioItem>
+                   <DropdownMenuRadioItem value="rating">Highest Rated</DropdownMenuRadioItem>
+                   <DropdownMenuRadioItem value="fastest">Fastest Time</DropdownMenuRadioItem>
+                 </DropdownMenuRadioGroup>
+               </DropdownMenuContent>
+             </DropdownMenu>
           </div>
         </div>
 
@@ -264,6 +339,7 @@ export default function Marketplace() {
              <motion.div
               key={verifier.id}
               whileHover={{ y: -5 }}
+              onClick={() => setLocation(`/app/verifier-profile/${verifier.id}`)}
               className="glass-card p-4 rounded-xl border border-white/5 hover:border-verza-emerald/30 transition-all cursor-pointer"
             >
               <div className="flex items-center gap-3 mb-3">
@@ -291,10 +367,19 @@ export default function Marketplace() {
               </div>
               
               <div className="flex gap-2">
-                <Button size="sm" variant="ghost" className="flex-1 h-8 text-xs bg-white/5 hover:bg-white/10">
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="flex-1 h-8 text-xs bg-white/5 hover:bg-white/10"
+                  onClick={() => setLocation(`/app/verifier-profile/${verifier.id}`)}
+                >
                   Profile
                 </Button>
-                <Button size="sm" className="flex-1 h-8 text-xs bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald hover:text-white border border-verza-emerald/20">
+                <Button 
+                  size="sm" 
+                  className="flex-1 h-8 text-xs bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald hover:text-white border border-verza-emerald/20"
+                  onClick={() => setLocation('/app/request-verification')}
+                >
                   Request
                 </Button>
               </div>
@@ -313,7 +398,11 @@ export default function Marketplace() {
               Become a certified verifier on Verza and earn by verifying credentials for individuals and organizations worldwide.
             </p>
           </div>
-          <Button size="lg" className="bg-white text-black hover:bg-gray-100 shadow-xl whitespace-nowrap">
+          <Button 
+            size="lg" 
+            className="bg-white text-black hover:bg-gray-100 shadow-xl whitespace-nowrap"
+            onClick={() => setLocation('/verifier')}
+          >
             Apply Now <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>

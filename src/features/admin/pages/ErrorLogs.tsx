@@ -3,6 +3,7 @@ import {
   Search, Filter, AlertTriangle, AlertCircle, 
   Info, Download, Eye, CheckCircle, ExternalLink 
 } from 'lucide-react';
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -87,11 +88,11 @@ export default function ErrorLogs() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => toast.info("Redirecting to Sentry dashboard...")}>
             <ExternalLink className="h-4 w-4 mr-2" />
             Open Sentry
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => toast.success("Error logs exported to CSV")}>
             <Download className="h-4 w-4 mr-2" />
             Export Logs
           </Button>
@@ -167,11 +168,11 @@ export default function ErrorLogs() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" title="View Details">
+                        <Button variant="ghost" size="icon" title="View Details" onClick={() => toast.info(`Viewing details for error ${log.id}`)}>
                           <Eye className="h-4 w-4" />
                         </Button>
                         {log.status !== 'resolved' && (
-                          <Button variant="ghost" size="icon" title="Mark Resolved" className="text-green-500 hover:text-green-600">
+                          <Button variant="ghost" size="icon" title="Mark Resolved" className="text-green-500 hover:text-green-600" onClick={() => toast.success(`Error ${log.id} marked as resolved`)}>
                             <CheckCircle className="h-4 w-4" />
                           </Button>
                         )}

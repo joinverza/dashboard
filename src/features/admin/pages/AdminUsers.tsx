@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { 
   UserPlus, MoreVertical, Edit, Trash2, 
   Search, Lock, History
 } from 'lucide-react';
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +19,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function AdminUsers() {
+  const [searchTerm, setSearchTerm] = useState('');
+
   // Mock Data
   const adminUsers = [
     { 
@@ -57,6 +61,13 @@ export default function AdminUsers() {
     },
   ];
 
+  // Filter admins based on search term
+  const filteredAdmins = adminUsers.filter(admin => 
+    admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    admin.role.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const activityLog = [
     { id: 1, admin: 'Sarah Connor', action: 'Suspended User', target: 'Alice Johnson', date: '2 mins ago', details: 'Violation of terms' },
     { id: 2, admin: 'John Smith', action: 'Approved Verifier', target: 'VeriTech Solutions', date: '1 hour ago', details: 'Documents verified' },
@@ -76,7 +87,7 @@ export default function AdminUsers() {
             Manage team access and permissions
           </p>
         </div>
-        <Button className="bg-purple-600 hover:bg-purple-700">
+        <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => toast.success("Invitation sent to new admin")}>
           <UserPlus className="h-4 w-4 mr-2" />
           Invite Admin
         </Button>
@@ -96,7 +107,12 @@ export default function AdminUsers() {
                 <div className="flex gap-2">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search admins..." className="pl-8 w-[250px]" />
+                    <Input 
+                      placeholder="Search admins..." 
+                      className="pl-8 w-[250px]" 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                   </div>
                 </div>
               </div>
@@ -113,7 +129,7 @@ export default function AdminUsers() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {adminUsers.map((admin) => (
+                  {filteredAdmins.map((admin) => (
                     <TableRow key={admin.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -148,14 +164,14 @@ export default function AdminUsers() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => toast.info(`Editing role for ${admin.name}`)}>
                               <Edit className="mr-2 h-4 w-4" /> Edit Role
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => toast.success(`Password reset email sent to ${admin.email}`)}>
                               <Lock className="mr-2 h-4 w-4" /> Reset Password
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-500">
+                            <DropdownMenuItem className="text-red-500" onClick={() => toast.warning(`${admin.name} removed from admin team`)}>
                               <Trash2 className="mr-2 h-4 w-4" /> Remove
                             </DropdownMenuItem>
                           </DropdownMenuContent>

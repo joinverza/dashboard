@@ -10,6 +10,7 @@ import {
   Clock,
   ChevronRight
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -71,6 +72,7 @@ export default function NotificationsPage() {
 
   const handleMarkAllRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
+    toast.success("All notifications marked as read");
   };
 
   const handleMarkRead = (id: number) => {
@@ -82,6 +84,11 @@ export default function NotificationsPage() {
     if (filter === "unread") return !n.read;
     return n.type === filter;
   });
+
+  const handleNotificationClick = (id: number) => {
+    handleMarkRead(id);
+    toast.success("Notification marked as read");
+  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -151,7 +158,7 @@ export default function NotificationsPage() {
                         "flex items-start gap-4 p-4 hover:bg-secondary/20 transition-colors group cursor-pointer",
                         !notification.read && "bg-secondary/10"
                       )}
-                      onClick={() => handleMarkRead(notification.id)}
+                      onClick={() => handleNotificationClick(notification.id)}
                     >
                       <div className={cn(
                         "mt-1 w-10 h-10 rounded-full flex items-center justify-center shrink-0",
@@ -175,7 +182,15 @@ export default function NotificationsPage() {
                         
                         {notification.action && (
                           <div className="pt-2">
-                            <Button size="sm" variant="link" className="p-0 h-auto text-verza-emerald hover:text-verza-emerald/80 gap-1">
+                            <Button 
+                              size="sm" 
+                              variant="link" 
+                              className="p-0 h-auto text-verza-emerald hover:text-verza-emerald/80 gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toast.success(`Action: ${notification.action}`);
+                              }}
+                            >
                               {notification.action} <ChevronRight className="w-3 h-3" />
                             </Button>
                           </div>

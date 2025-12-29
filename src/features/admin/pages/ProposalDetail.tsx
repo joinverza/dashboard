@@ -2,6 +2,8 @@ import {
   ArrowLeft, Calendar, User, CheckCircle, XCircle, 
   MinusCircle, Play
 } from 'lucide-react';
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +14,7 @@ import {
 } from '@/components/ui/table';
 
 export default function ProposalDetail() {
+  const [, setLocation] = useLocation();
   const proposal = {
     id: "PROP-023",
     title: "Add Polygon Network Support",
@@ -48,7 +51,7 @@ export default function ProposalDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" onClick={() => setLocation('/admin/governance')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
@@ -70,7 +73,7 @@ export default function ProposalDetail() {
         </div>
         <div className="ml-auto">
           {proposal.status === 'passed' && (
-            <Button className="bg-indigo-600 hover:bg-indigo-700">
+            <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => toast.success("Proposal execution queued")}>
               <Play className="h-4 w-4 mr-2" />
               Execute Proposal
             </Button>

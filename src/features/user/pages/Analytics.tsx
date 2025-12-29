@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar as CalendarIcon, Download, TrendingUp, Clock, CheckCircle, DollarSign, Activity, FileText } from "lucide-react";
+import { toast } from "sonner";
+import { Calendar as CalendarIcon, Download, Clock, CheckCircle, DollarSign, Activity } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -138,7 +139,11 @@ export default function UserAnalytics() {
               <SelectItem value="1y">Last Year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="bg-card/50 backdrop-blur-sm border-border/50">
+          <Button 
+            variant="outline" 
+            className="bg-card/50 backdrop-blur-sm border-border/50"
+            onClick={() => toast.success("Exporting analytics report...")}
+          >
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>

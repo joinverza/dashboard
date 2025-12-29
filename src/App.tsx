@@ -51,6 +51,8 @@ const EnterpriseSettings = lazy(() => import("@/features/enterprise/pages/Settin
 const AdminDashboard = lazy(() => import("@/features/admin/pages/Dashboard"));
 const AdminUserManagement = lazy(() => import("@/features/admin/pages/UserManagement"));
 const AdminUserDetail = lazy(() => import("@/features/admin/pages/UserDetail"));
+const AdminVerificationRequests = lazy(() => import("@/features/admin/pages/VerificationRequests"));
+const AdminVerificationDetail = lazy(() => import("@/features/admin/pages/VerificationDetail"));
 const AdminVerifierManagement = lazy(() => import("@/features/admin/pages/VerifierManagement"));
 const AdminVerifierDetail = lazy(() => import("@/features/admin/pages/VerifierDetail"));
 const AdminEnterpriseManagement = lazy(() => import("@/features/admin/pages/EnterpriseManagement"));
@@ -70,6 +72,9 @@ const AdminErrorLogs = lazy(() => import("@/features/admin/pages/ErrorLogs"));
 const AdminFraudDetection = lazy(() => import("@/features/admin/pages/FraudDetection"));
 const AdminPlatformSettings = lazy(() => import("@/features/admin/pages/PlatformSettings"));
 const AdminUsers = lazy(() => import("@/features/admin/pages/AdminUsers"));
+const AdminComplianceReports = lazy(() => import("@/features/admin/pages/ComplianceReports"));
+const AdminAuditLogs = lazy(() => import("@/features/admin/pages/AuditLogs"));
+const AdminContentModeration = lazy(() => import("@/features/admin/pages/ContentModeration"));
 
 const MessagePage = lazy(() => import("@/pages/Message"));
 const NotificationsPage = lazy(() => import("@/pages/Notifications"));
@@ -93,6 +98,7 @@ const UploadCredentialPage = lazy(() => import("@/pages/UploadCredential"));
 const CredentialDetailPage = lazy(() => import("@/pages/CredentialDetail"));
 const VerificationStatusPage = lazy(() => import("@/pages/VerificationStatus"));
 const RequestVerificationPage = lazy(() => import("@/pages/RequestVerification"));
+const LandingPage = lazy(() => import("@/pages/Landing"));
 const VerifierProfilePage = lazy(() => import("@/pages/VerifierProfile"));
 const PaymentConfirmationPage = lazy(() => import("@/pages/PaymentConfirmation"));
 const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicy"));
@@ -105,7 +111,7 @@ function Router() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Switch>
-        <Route path="/" component={LoginPage} />
+        <Route path="/" component={LandingPage} />
         <Route path="/login" component={LoginPage} />
         <Route path="/signup" component={SignupPage} />
         <Route path="/forgot-password" component={ForgotPasswordPage} />
@@ -214,6 +220,8 @@ function Router() {
             <Route path="/admin" component={AdminDashboard} />
             <Route path="/admin/users" component={AdminUserManagement} />
             <Route path="/admin/users/:id" component={AdminUserDetail} />
+            <Route path="/admin/verifications" component={AdminVerificationRequests} />
+            <Route path="/admin/verifications/:id" component={AdminVerificationDetail} />
             <Route path="/admin/verifiers" component={AdminVerifierManagement} />
             <Route path="/admin/verifiers/:id" component={AdminVerifierDetail} />
             <Route path="/admin/enterprises" component={AdminEnterpriseManagement} />
@@ -233,6 +241,9 @@ function Router() {
             <Route path="/admin/fraud" component={AdminFraudDetection} />
             <Route path="/admin/settings" component={AdminPlatformSettings} />
             <Route path="/admin/admins" component={AdminUsers} />
+            <Route path="/admin/compliance" component={AdminComplianceReports} />
+            <Route path="/admin/audit" component={AdminAuditLogs} />
+            <Route path="/admin/content" component={AdminContentModeration} />
             <Route path="/admin/*" component={AdminDashboard} />
           </>
         )}

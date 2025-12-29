@@ -9,6 +9,7 @@ import {
   MoreVertical,
   Paperclip,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,26 @@ export default function MessagePage() {
   const { messages } = useMockData();
   const isLoading = false;
   const error = false;
+
+  const [composeTo, setComposeTo] = useState("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+
+  const handleSendMessage = () => {
+    if (!composeTo || !composeSubject || !composeBody) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    toast.success("Message sent successfully");
+    setComposeOpen(false);
+    setComposeTo("");
+    setComposeSubject("");
+    setComposeBody("");
+  };
+
+  const handleReply = () => {
+    toast.success("Reply sent successfully");
+  };
 
   const filteredMessages = (messages || []).filter(
     (m) =>
@@ -80,15 +101,21 @@ export default function MessagePage() {
                     <Input
                       placeholder="To: recipient@email.com"
                       data-testid="input-compose-to"
+                      value={composeTo}
+                      onChange={(e) => setComposeTo(e.target.value)}
                     />
                     <Input
                       placeholder="Subject"
                       data-testid="input-compose-subject"
+                      value={composeSubject}
+                      onChange={(e) => setComposeSubject(e.target.value)}
                     />
                     <Textarea
                       placeholder="Write your message..."
                       className="min-h-[200px]"
                       data-testid="input-compose-body"
+                      value={composeBody}
+                      onChange={(e) => setComposeBody(e.target.value)}
                     />
                     <div className="flex justify-end gap-2">
                       <Button
@@ -100,6 +127,7 @@ export default function MessagePage() {
                       <Button
                         className="bg-verza-emerald hover:bg-verza-kelly"
                         data-testid="button-send-compose"
+                        onClick={handleSendMessage}
                       >
                         <Send className="h-4 w-4 mr-2" />
                         Send
@@ -247,6 +275,7 @@ export default function MessagePage() {
                       variant="ghost"
                       size="icon"
                       data-testid="button-star-message"
+                      onClick={() => toast.success("Message starred")}
                     >
                       <Star
                         className={cn(
@@ -260,6 +289,7 @@ export default function MessagePage() {
                       variant="ghost"
                       size="icon"
                       data-testid="button-more-message"
+                      onClick={() => toast.info("More options coming soon")}
                     >
                       <MoreVertical className="h-5 w-5" />
                     </Button>
@@ -281,6 +311,7 @@ export default function MessagePage() {
                       variant="ghost"
                       size="icon"
                       data-testid="button-attach"
+                      onClick={() => toast.info("Attachment feature coming soon")}
                     >
                       <Paperclip className="h-5 w-5" />
                     </Button>
@@ -292,6 +323,7 @@ export default function MessagePage() {
                     <Button
                       className="bg-verza-emerald hover:bg-verza-kelly"
                       data-testid="button-send-reply"
+                      onClick={handleReply}
                     >
                       <Send className="h-4 w-4" />
                     </Button>

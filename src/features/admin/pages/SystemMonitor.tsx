@@ -4,6 +4,7 @@ import {
   Activity, Server, Database, Cpu, HardDrive, 
   Wifi, AlertTriangle, CheckCircle, RefreshCw, Clock
 } from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,7 +59,10 @@ export default function SystemMonitor() {
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 1000);
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast.success("System metrics updated");
+    }, 1000);
   };
 
   const generateChartData = (label: string, color: string, fill: boolean = true) => ({
@@ -248,7 +252,7 @@ export default function SystemMonitor() {
                   <p className="text-xs text-muted-foreground/70">Service: {log.service}</p>
                 </div>
               ))}
-              <Button variant="ghost" className="w-full text-xs" size="sm">View All Logs</Button>
+              <Button variant="ghost" className="w-full text-xs" size="sm" onClick={() => toast.info("Navigating to full logs...")}>View All Logs</Button>
             </div>
           </CardContent>
         </Card>

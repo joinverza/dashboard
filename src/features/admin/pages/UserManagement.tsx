@@ -5,6 +5,8 @@ import {
   Shield, Building2, Ban, Trash2, Mail,
   Download
 } from 'lucide-react';
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -85,6 +87,7 @@ const MOCK_USERS: UserData[] = [
 ];
 
 export default function UserManagement() {
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -149,14 +152,17 @@ export default function UserManagement() {
         </div>
         <div className="flex gap-2">
            {selectedUsers.length > 0 && (
-             <Button variant="destructive" size="sm">
+             <Button variant="destructive" size="sm" onClick={() => {
+               toast.success(`${selectedUsers.length} users deleted successfully`);
+               setSelectedUsers([]);
+             }}>
                <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedUsers.length})
              </Button>
            )}
-           <Button variant="outline" size="sm">
+           <Button variant="outline" size="sm" onClick={() => toast.success("User list exported to CSV")}>
              <Download className="mr-2 h-4 w-4" /> Export
            </Button>
-           <Button size="sm">
+           <Button size="sm" onClick={() => toast.success("Notification sent to all filtered users")}>
              <Mail className="mr-2 h-4 w-4" /> Send Notification
            </Button>
         </div>
@@ -274,13 +280,17 @@ export default function UserManagement() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit Profile</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setLocation(`/admin/users/${user.id}`)}>
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => toast.info("Edit Profile modal opened")}>
+                              Edit Profile
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-yellow-500">
+                            <DropdownMenuItem className="text-yellow-500" onClick={() => toast.warning("User suspended")}>
                               <Ban className="mr-2 h-4 w-4" /> Suspend User
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-500">
+                            <DropdownMenuItem className="text-red-500" onClick={() => toast.error("User deleted")}>
                               <Trash2 className="mr-2 h-4 w-4" /> Delete User
                             </DropdownMenuItem>
                           </DropdownMenuContent>

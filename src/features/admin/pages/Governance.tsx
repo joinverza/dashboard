@@ -1,11 +1,6 @@
-import { useState } from 'react';
-import { 
-  Search, 
-  Filter, 
-  Plus,
-  ArrowRight,
-  Clock
-} from 'lucide-react';
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { Search, Filter, Clock, Plus, ArrowRight } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,6 +65,7 @@ const PROPOSALS = [
 ];
 
 export default function Governance() {
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState('active');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -187,7 +183,7 @@ export default function Governance() {
                   </TableHeader>
                   <TableBody>
                     {filteredProposals.map((proposal) => (
-                      <TableRow key={proposal.id}>
+                      <TableRow key={proposal.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setLocation(`/admin/governance/${proposal.id}`)}>
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">{proposal.title}</span>

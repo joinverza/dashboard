@@ -4,6 +4,7 @@ import {
   Search, Filter, MoreVertical, Eye, Ban, 
   Shield, UserCheck, Building
 } from 'lucide-react';
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -140,11 +141,14 @@ export default function VerifierManagement() {
         </div>
         <div className="flex gap-2">
           {selectedVerifiers.length > 0 && (
-            <Button variant="destructive">
+            <Button variant="destructive" onClick={() => {
+              toast.success(`${selectedVerifiers.length} verifiers suspended`);
+              setSelectedVerifiers([]);
+            }}>
               Suspend Selected ({selectedVerifiers.length})
             </Button>
           )}
-          <Button className="bg-primary hover:bg-primary/90">
+          <Button className="bg-primary hover:bg-primary/90" onClick={() => toast.success("New verifier approval flow started")}>
             <UserCheck className="mr-2 h-4 w-4" /> Approve New Verifier
           </Button>
         </div>
@@ -274,11 +278,11 @@ export default function VerifierManagement() {
                       <DropdownMenuItem onClick={() => setLocation(`/admin/verifiers/${verifier.id}`)}>
                         <Eye className="mr-2 h-4 w-4" /> View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => toast.success("Audit logs accessed")}>
                         <Shield className="mr-2 h-4 w-4" /> Audit Logs
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                      <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => toast.warning("Verifier suspended")}>
                         <Ban className="mr-2 h-4 w-4" /> Suspend
                       </DropdownMenuItem>
                     </DropdownMenuContent>

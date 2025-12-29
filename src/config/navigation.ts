@@ -59,6 +59,7 @@ export const enterpriseNavItems: NavItem[] = [
 export const adminNavItems: NavItem[] = [
   { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { path: "/admin/users", label: "Users", icon: Users },
+  { path: "/admin/verifications", label: "Requests", icon: FileText },
   { path: "/admin/verifiers", label: "Verifiers", icon: Award },
   { path: "/admin/credentials", label: "Credentials", icon: FileBadge },
   { path: "/admin/disputes", label: "Disputes", icon: Gavel },

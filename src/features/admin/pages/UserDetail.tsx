@@ -2,8 +2,10 @@ import { motion } from 'framer-motion';
 import { 
   Mail, Calendar, Shield, Activity, 
   CreditCard, FileText, Lock, Ban, Edit, 
-  Trash2, Eye
+  Trash2, Eye, ArrowLeft
 } from 'lucide-react';
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,12 +38,18 @@ const ACTIVITY_LOG = [
 ];
 
 export default function UserDetail() {
+  const [, setLocation] = useLocation();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
+      <Button variant="ghost" className="pl-0 gap-2 hover:bg-transparent hover:text-primary" onClick={() => setLocation('/admin/users')}>
+        <ArrowLeft className="w-4 h-4" /> Back to Users
+      </Button>
+
       {/* Header */}
       <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between bg-card/80 backdrop-blur-sm border border-border/50 p-6 rounded-lg">
         <div className="flex items-center gap-4">
@@ -66,19 +74,19 @@ export default function UserDetail() {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => toast.info("Edit Profile modal opened")}>
             <Edit className="mr-2 h-4 w-4" /> Edit
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => toast.success("Password reset email sent")}>
             <Lock className="mr-2 h-4 w-4" /> Reset Password
           </Button>
-          <Button variant="outline" size="sm" className="text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/10 hover:text-yellow-600">
+          <Button variant="outline" size="sm" className="text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/10 hover:text-yellow-600" onClick={() => toast.warning("User suspended")}>
             <Ban className="mr-2 h-4 w-4" /> Suspend
           </Button>
-          <Button variant="destructive" size="sm">
+          <Button variant="destructive" size="sm" onClick={() => toast.error("User deleted")}>
             <Trash2 className="mr-2 h-4 w-4" /> Delete
           </Button>
-          <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
+          <Button size="sm" className="bg-purple-600 hover:bg-purple-700" onClick={() => toast.success("Impersonating user session started")}>
              <Eye className="mr-2 h-4 w-4" /> Impersonate
           </Button>
         </div>
@@ -176,6 +184,78 @@ export default function UserDetail() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="credentials">
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader>
+              <CardTitle>Issued Credentials</CardTitle>
+              <CardDescription>Credentials held by this user.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                 {[
+                   { id: 'VC-001', title: 'University Degree', issuer: 'University of Tech', date: '2023-06-15', status: 'active' },
+                   { id: 'VC-002', title: 'Driver License', issuer: 'State DMV', date: '2023-01-20', status: 'active' },
+                   { id: 'VC-003', title: 'Library Card', issuer: 'Public Library', date: '2022-11-05', status: 'expired' },
+                 ].map((cred, i) => (
+                   <div key={i} className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-secondary/10">
+                     <div className="flex items-center gap-4">
+                       <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                         <FileText className="h-5 w-5 text-primary" />
+                       </div>
+                       <div>
+                         <p className="font-medium">{cred.title}</p>
+                         <p className="text-sm text-muted-foreground">{cred.issuer} • Issued {cred.date}</p>
+                       </div>
+                     </div>
+                     <div className="flex items-center gap-3">
+                       <Badge variant={cred.status === 'active' ? 'default' : 'secondary'} className={cred.status === 'active' ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' : ''}>
+                         {cred.status}
+                       </Badge>
+                       <Button variant="ghost" size="sm" onClick={() => setLocation(`/admin/credentials/${cred.id}`)}>
+                         View
+                       </Button>
+                     </div>
+                   </div>
+                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="transactions">
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader>
+              <CardTitle>Transaction History</CardTitle>
+              <CardDescription>Recent financial activity.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[
+                  { id: 'TX-123', type: 'Payment', desc: 'Credential Issuance Fee', amount: '-$15.00', date: 'Today, 10:23 AM', status: 'completed' },
+                  { id: 'TX-124', type: 'Deposit', desc: 'Wallet Top-up', amount: '+$50.00', date: 'Yesterday, 2:15 PM', status: 'completed' },
+                  { id: 'TX-125', type: 'Payment', desc: 'Verification Service', amount: '-$5.00', date: 'Oct 24, 2023', status: 'completed' },
+                ].map((tx, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-secondary/10">
+                    <div className="flex items-center gap-4">
+                       <div className={`h-10 w-10 rounded-full flex items-center justify-center ${tx.amount.startsWith('+') ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                         <CreditCard className={`h-5 w-5 ${tx.amount.startsWith('+') ? 'text-green-500' : 'text-red-500'}`} />
+                       </div>
+                       <div>
+                         <p className="font-medium">{tx.desc}</p>
+                         <p className="text-sm text-muted-foreground">{tx.type} • {tx.date}</p>
+                       </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-bold ${tx.amount.startsWith('+') ? 'text-green-500' : 'text-foreground'}`}>{tx.amount}</p>
+                      <span className="text-xs text-muted-foreground capitalize">{tx.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="notes">
           <Card className="bg-card/80 backdrop-blur-sm border-border/50">
             <CardHeader>
@@ -189,7 +269,7 @@ export default function UserDetail() {
                 defaultValue="User requested limit increase on Oct 15. Approved by Supervisor."
               />
               <div className="flex justify-end">
-                <Button>Save Notes</Button>
+                <Button onClick={() => toast.success("Notes saved successfully")}>Save Notes</Button>
               </div>
             </CardContent>
           </Card>

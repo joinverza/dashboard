@@ -2,8 +2,11 @@ import { motion } from "framer-motion";
 import { 
   Users, CheckCircle, AlertTriangle, Activity, 
   Database, Server, Shield, DollarSign,
-  TrendingUp, Globe, Clock
+  TrendingUp, Globe, Clock,
+  Eye, Gavel, FileText
 } from "lucide-react";
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +58,7 @@ const RECENT_ALERTS = [
 ];
 
 export default function AdminDashboard() {
+  const [, setLocation] = useLocation();
   const lineChartData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
@@ -99,8 +103,21 @@ export default function AdminDashboard() {
           <p className="text-muted-foreground">System health, metrics, and alerts.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline"><Activity className="mr-2 h-4 w-4" /> System Monitor</Button>
-          <Button><TrendingUp className="mr-2 h-4 w-4" /> Generate Report</Button>
+          <Button variant="outline" onClick={() => setLocation('/admin/content')}>
+            <Eye className="mr-2 h-4 w-4" /> Moderate Content
+          </Button>
+          <Button variant="outline" onClick={() => setLocation('/admin/disputes')}>
+            <Gavel className="mr-2 h-4 w-4" /> Disputes
+          </Button>
+          <Button variant="outline" onClick={() => setLocation('/admin/compliance')}>
+            <FileText className="mr-2 h-4 w-4" /> Reports
+          </Button>
+          <Button variant="outline" onClick={() => setLocation('/admin/system')}>
+            <Activity className="mr-2 h-4 w-4" /> System Monitor
+          </Button>
+          <Button onClick={() => toast.success("Growth Report generated successfully")}>
+            <TrendingUp className="mr-2 h-4 w-4" /> Generate Report
+          </Button>
         </div>
       </div>
 
@@ -197,7 +214,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ))}
-              <Button variant="ghost" className="w-full text-xs" size="sm">View All Alerts</Button>
+              <Button variant="ghost" className="w-full text-xs" size="sm" onClick={() => setLocation('/admin/system')}>View All Alerts</Button>
             </CardContent>
           </Card>
         </div>

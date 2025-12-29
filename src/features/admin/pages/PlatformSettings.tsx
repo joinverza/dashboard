@@ -1,6 +1,7 @@
 import {
   Save,
 } from 'lucide-react';
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,7 +21,7 @@ export default function PlatformSettings() {
             Configure global platform parameters and preferences
           </p>
         </div>
-        <Button className="bg-indigo-600 hover:bg-indigo-700">
+        <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => toast.success("Settings saved successfully")}>
           <Save className="h-4 w-4 mr-2" />
           Save Changes
         </Button>

@@ -16,6 +16,16 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
 
 // Mock Data
 const CREDENTIALS = [
@@ -102,6 +112,11 @@ export default function CredentialsPage() {
     return matchesTab && matchesSearch;
   });
 
+  const handleDelete = (id: number) => {
+    toast.success(`Credential #${id} deleted successfully`);
+    // In a real app, this would delete from the backend and update local state
+  };
+
   return (
     <div className="space-y-8 p-8 pb-20">
       {/* Header */}
@@ -133,10 +148,22 @@ export default function CredentialsPage() {
               <List className="w-4 h-4" />
             </button>
           </div>
-          <Button variant="outline" className="glass-button gap-2">
-            <Filter className="w-4 h-4" />
-            Filter
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="glass-button gap-2">
+                <Filter className="w-4 h-4" />
+                Filter
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-card/90 backdrop-blur-md border-white/10">
+              <DropdownMenuLabel>Filter by Type</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuCheckboxItem checked>All Types</DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem>Education</DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem>Identity</DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem>Employment</DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button 
             className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow gap-2"
             onClick={() => setLocation("/app/upload-credential")}
@@ -254,15 +281,47 @@ export default function CredentialsPage() {
                   </div>
                   
                   <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                    <Button variant="ghost" size="sm" className="flex-1 h-9 text-xs gap-1.5 text-muted-foreground hover:text-foreground">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="flex-1 h-9 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`https://verza.io/credentials/${cred.documentId}`);
+                        toast.success("Credential link copied to clipboard");
+                      }}
+                    >
                       <Share2 className="w-3.5 h-3.5" /> Share
                     </Button>
-                    <Button variant="ghost" size="sm" className="flex-1 h-9 text-xs gap-1.5 text-muted-foreground hover:text-foreground">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="flex-1 h-9 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                      onClick={() => toast.success("PDF downloaded successfully")}
+                    >
                       <Download className="w-3.5 h-3.5" /> PDF
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-card/90 backdrop-blur-md border-white/10">
+                        <DropdownMenuItem onClick={() => setLocation(`/app/credentials/${cred.id}`)}>
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          navigator.clipboard.writeText(`https://verza.io/credentials/${cred.documentId}`);
+                          toast.success("Link copied");
+                        }}>
+                          Copy Link
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-white/10" />
+                        <DropdownMenuItem className="text-red-500" onClick={() => handleDelete(cred.id)}>
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </motion.div>
@@ -326,9 +385,29 @@ export default function CredentialsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-card/90 backdrop-blur-md border-white/10">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setLocation(`/app/credentials/${cred.id}`); }}>
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(`https://verza.io/credentials/${cred.documentId}`);
+                              toast.success("Link copied");
+                            }}>
+                              Copy Link
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="bg-white/10" />
+                            <DropdownMenuItem className="text-red-500" onClick={(e) => { e.stopPropagation(); handleDelete(cred.id); }}>
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </td>
                     </tr>
                   ))}

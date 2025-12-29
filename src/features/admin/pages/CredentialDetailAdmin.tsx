@@ -3,6 +3,8 @@ import {
   Building2, ExternalLink, XCircle, CheckCircle,
   Download, Copy, Clock
 } from 'lucide-react';
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 
 export default function CredentialDetailAdmin() {
+  const [, setLocation] = useLocation();
   // const [activeTab, setActiveTab] = useState('overview');
 
   // Mock Data
@@ -43,7 +46,7 @@ export default function CredentialDetailAdmin() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" onClick={() => setLocation('/admin/credentials')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
@@ -56,11 +59,11 @@ export default function CredentialDetailAdmin() {
           </p>
         </div>
         <div className="ml-auto flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => toast.success("Credential JSON downloaded")}>
             <Download className="h-4 w-4 mr-2" />
             Download JSON
           </Button>
-          <Button variant="destructive">
+          <Button variant="destructive" onClick={() => toast.error("Credential revoked")}>
             <XCircle className="h-4 w-4 mr-2" />
             Revoke
           </Button>
@@ -139,7 +142,10 @@ export default function CredentialDetailAdmin() {
                     <pre className="p-4 rounded-lg bg-muted font-mono text-xs overflow-auto max-h-[400px]">
                       {JSON.stringify(credential, null, 2)}
                     </pre>
-                    <Button variant="ghost" size="icon" className="absolute top-2 right-2">
+                    <Button variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => {
+                      navigator.clipboard.writeText(JSON.stringify(credential, null, 2));
+                      toast.success("JSON copied to clipboard");
+                    }}>
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
@@ -212,7 +218,7 @@ export default function CredentialDetailAdmin() {
                 <p className="text-xs text-muted-foreground mb-1">DID</p>
                 <p className="text-xs font-mono break-all">{credential.issuer.did}</p>
               </div>
-              <Button variant="outline" size="sm" className="w-full">
+              <Button variant="outline" size="sm" className="w-full" onClick={() => toast.info("Navigating to issuer profile")}>
                 View Issuer Profile
               </Button>
             </CardContent>
@@ -236,7 +242,7 @@ export default function CredentialDetailAdmin() {
                 <p className="text-xs text-muted-foreground mb-1">DID</p>
                 <p className="text-xs font-mono break-all">{credential.holder.did}</p>
               </div>
-              <Button variant="outline" size="sm" className="w-full">
+              <Button variant="outline" size="sm" className="w-full" onClick={() => setLocation('/admin/users/1')}>
                 View User Profile
               </Button>
             </CardContent>

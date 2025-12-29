@@ -11,6 +11,8 @@ import {
   Gavel,
   History
 } from 'lucide-react';
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function DisputeDetail() {
+  const [, setLocation] = useLocation();
   const [resolution, setResolution] = useState('full_refund');
   
   // Mock Data
@@ -58,7 +61,7 @@ export default function DisputeDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" onClick={() => setLocation('/admin/disputes')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
@@ -137,7 +140,7 @@ export default function DisputeDetail() {
                           <p className="text-xs text-muted-foreground">{file.size}</p>
                         </div>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toast.success("File downloaded")}>
                         <Download className="h-4 w-4" />
                       </Button>
                     </div>
@@ -239,7 +242,7 @@ export default function DisputeDetail() {
                 />
               </div>
 
-              <Button className="w-full bg-blue-600 hover:bg-blue-700">
+              <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => toast.success("Dispute resolution submitted")}>
                 Submit Resolution
               </Button>
             </CardContent>
@@ -250,15 +253,15 @@ export default function DisputeDetail() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              <Button variant="outline" className="justify-start">
+              <Button variant="outline" className="justify-start" onClick={() => toast.info("Message dialog opened")}>
                 <MessageSquare className="mr-2 h-4 w-4" />
                 Message Parties
               </Button>
-              <Button variant="outline" className="justify-start">
+              <Button variant="outline" className="justify-start" onClick={() => toast.success("Blockchain proof verified")}>
                 <Shield className="mr-2 h-4 w-4" />
                 View Blockchain Proof
               </Button>
-              <Button variant="outline" className="justify-start text-red-500 hover:text-red-600">
+              <Button variant="outline" className="justify-start text-red-500 hover:text-red-600" onClick={() => toast.error("Dispute dismissed")}>
                 <XCircle className="mr-2 h-4 w-4" />
                 Dismiss Dispute
               </Button>

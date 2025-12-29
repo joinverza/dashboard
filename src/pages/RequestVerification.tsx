@@ -16,6 +16,7 @@ import {
   Search,
   Upload
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -67,6 +68,15 @@ export default function RequestVerificationPage() {
   ];
 
   const handleNext = () => {
+    if (currentStep === 1 && !selectedCredential) {
+      toast.error("Please select a credential to verify");
+      return;
+    }
+    if (currentStep === 2 && !selectedVerifier) {
+      toast.error("Please choose a verifier");
+      return;
+    }
+    
     if (currentStep < 3) setCurrentStep(currentStep + 1);
   };
 
@@ -76,9 +86,12 @@ export default function RequestVerificationPage() {
   };
 
   const handleSubmit = () => {
+    toast.success("Verification request submitted successfully!");
     // Navigate to success page or payment modal
     // For now, redirect to tracking page
-    setLocation("/app/verification-status/new-req-123");
+    setTimeout(() => {
+      setLocation("/app/verification-status/new-req-123");
+    }, 1500);
   };
 
   return (

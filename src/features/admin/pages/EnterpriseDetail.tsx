@@ -2,8 +2,10 @@ import { motion } from 'framer-motion';
 import { 
   Building, Mail, Calendar, 
   CreditCard, FileText,
-  Activity, ExternalLink, RefreshCw, Ban, Users, Key
+  Activity, ExternalLink, RefreshCw, Ban, Users, Key, ArrowLeft
 } from 'lucide-react';
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -53,12 +55,17 @@ const BILLING_HISTORY = [
 ];
 
 export default function EnterpriseDetail() {
+  const [, setLocation] = useLocation();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
+      <Button variant="ghost" className="pl-0 gap-2 hover:bg-transparent hover:text-primary" onClick={() => setLocation('/admin/enterprises')}>
+        <ArrowLeft className="w-4 h-4" /> Back to Enterprises
+      </Button>
+
       {/* Header */}
       <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between bg-card/80 backdrop-blur-sm border border-border/50 p-6 rounded-lg">
         <div className="flex items-center gap-4">
@@ -86,13 +93,16 @@ export default function EnterpriseDetail() {
         </div>
         
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => {
+            window.open(MOCK_ENTERPRISE.website, '_blank');
+            toast.success("Website opened in new tab");
+          }}>
             <ExternalLink className="mr-2 h-4 w-4" /> Visit Website
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => toast.info("Change Plan modal opened")}>
             <RefreshCw className="mr-2 h-4 w-4" /> Change Plan
           </Button>
-          <Button variant="destructive" size="sm">
+          <Button variant="destructive" size="sm" onClick={() => toast.warning("Enterprise suspended")}>
             <Ban className="mr-2 h-4 w-4" /> Suspend
           </Button>
         </div>

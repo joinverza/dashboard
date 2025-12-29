@@ -13,6 +13,7 @@ import {
   Shield,
   DollarSign
 } from 'lucide-react';
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { 
   Card, 
@@ -56,11 +57,11 @@ export default function Analytics() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => toast.info("Date range picker opened")}>
             <Calendar className="h-4 w-4 mr-2" />
             Last 30 Days
           </Button>
-          <Button>
+          <Button onClick={() => toast.success("New report builder initialized")}>
             <Plus className="h-4 w-4 mr-2" />
             New Custom Report
           </Button>
@@ -85,7 +86,7 @@ export default function Analytics() {
                 <CardDescription>New signups, active users, and retention rates</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground">
+                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground" onClick={() => toast.success("User Growth Report generated")}>
                   Generate Report
                 </Button>
               </CardContent>
@@ -100,7 +101,7 @@ export default function Analytics() {
                 <CardDescription>Volume, success rates, and turnaround times</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground">
+                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground" onClick={() => toast.success("Verification Trends Report generated")}>
                   Generate Report
                 </Button>
               </CardContent>
@@ -115,7 +116,7 @@ export default function Analytics() {
                 <CardDescription>Revenue, payouts, and platform fees</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground">
+                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground" onClick={() => toast.success("Financial Summary Report generated")}>
                   Generate Report
                 </Button>
               </CardContent>
@@ -130,7 +131,7 @@ export default function Analytics() {
                 <CardDescription>Quality scores, dispute rates, and activity</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground">
+                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground" onClick={() => toast.success("Verifier Performance Report generated")}>
                   Generate Report
                 </Button>
               </CardContent>
@@ -145,7 +146,7 @@ export default function Analytics() {
                 <CardDescription>KYC/AML checks and regulatory reporting</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground">
+                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground" onClick={() => toast.success("Compliance Audit Report generated")}>
                   Generate Report
                 </Button>
               </CardContent>
@@ -234,8 +235,8 @@ export default function Analytics() {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline">Save as Template</Button>
-                <Button>Generate Report</Button>
+                <Button variant="outline" onClick={() => toast.success("Report template saved")}>Save as Template</Button>
+                <Button onClick={() => toast.success("Custom report generated")}>Generate Report</Button>
               </div>
             </CardContent>
           </Card>
@@ -269,13 +270,13 @@ export default function Analytics() {
                       <TableCell>{report.schedule}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" onClick={() => toast.success("Report data refreshed")}>
                             <RefreshCw className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" onClick={() => toast.success("Report downloaded")}>
                             <Download className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600">
+                          <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => toast.success("Report deleted")}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>

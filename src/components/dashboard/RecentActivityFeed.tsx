@@ -1,4 +1,5 @@
 import { FileCheck, Upload, CreditCard, Clock } from "lucide-react";
+import { Link } from "wouter";
 
 export default function RecentActivityFeed() {
   // Mock data - replace with real data from context/API
@@ -39,7 +40,9 @@ export default function RecentActivityFeed() {
     <div className="bg-[#1A1A1A]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6 h-full">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-bold text-white">Recent Activity</h2>
-        <button className="text-xs text-[#00FF87] hover:underline">View All</button>
+        <Link href="/app/notifications">
+          <button className="text-xs text-[#00FF87] hover:underline cursor-pointer">View All</button>
+        </Link>
       </div>
 
       <div className="space-y-6">

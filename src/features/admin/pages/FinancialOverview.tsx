@@ -2,6 +2,7 @@ import {
   DollarSign, TrendingUp, CreditCard, Wallet, 
   ArrowUpRight, ArrowDownRight, Download, Calendar
 } from 'lucide-react';
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -104,7 +105,7 @@ export default function FinancialOverview() {
             <Calendar className="h-4 w-4 mr-2" />
             Last 30 Days
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => toast.success("Financial report exported")}>
             <Download className="h-4 w-4 mr-2" />
             Export Report
           </Button>

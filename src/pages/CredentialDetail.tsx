@@ -15,6 +15,7 @@ import {
   Lock,
   MoreVertical
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -101,16 +102,16 @@ export default function CredentialDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => toast.success("Share link copied to clipboard")}>
             <Share2 className="w-4 h-4" /> Share
           </Button>
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => toast.success("Document downloaded successfully")}>
             <Download className="w-4 h-4" /> Download
           </Button>
-          <Button className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow gap-2">
+          <Button className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow gap-2" onClick={() => toast.success("ZK Proof generated successfully")}>
             <Lock className="w-4 h-4" /> Generate ZK Proof
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={() => toast.info("More options coming soon")}>
             <MoreVertical className="w-4 h-4" />
           </Button>
         </div>
@@ -144,7 +145,7 @@ export default function CredentialDetailPage() {
               </div>
 
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                <Button variant="secondary" className="gap-2">
+                <Button variant="secondary" className="gap-2" onClick={() => toast.success("Document decrypted for viewing")}>
                   <Eye className="w-4 h-4" /> View Decrypted
                 </Button>
               </div>
@@ -228,12 +229,20 @@ export default function CredentialDetailPage() {
                  <div className="p-4 rounded-lg bg-secondary/20 border border-border/50 space-y-3">
                    <div className="flex items-center justify-between">
                      <span className="text-sm font-medium flex items-center gap-2">
-                       <LinkIcon className="w-4 h-4 text-primary" /> DID (Decentralized Identifier)
-                     </span>
-                     <Button variant="ghost" size="sm" className="h-6 text-xs gap-1">
-                       <Copy className="w-3 h-3" /> Copy
-                     </Button>
-                   </div>
+                      <LinkIcon className="w-4 h-4 text-primary" /> DID (Decentralized Identifier)
+                    </span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 text-xs gap-1"
+                      onClick={() => {
+                        navigator.clipboard.writeText(credential.did);
+                        toast.success("DID copied to clipboard");
+                      }}
+                    >
+                      <Copy className="w-3 h-3" /> Copy
+                    </Button>
+                  </div>
                    <code className="block bg-black/30 p-2 rounded text-xs font-mono text-muted-foreground break-all">
                      {credential.did}
                    </code>
@@ -299,7 +308,12 @@ export default function CredentialDetailPage() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Button variant="ghost" size="sm" className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          onClick={() => toast.success("Access revoked successfully")}
+                        >
                           Revoke
                         </Button>
                       </td>

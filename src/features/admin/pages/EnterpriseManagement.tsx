@@ -4,6 +4,7 @@ import {
   Search, Filter, MoreVertical, Eye, Ban, 
   Building, Users, CreditCard
 } from 'lucide-react';
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -149,11 +150,14 @@ export default function EnterpriseManagement() {
         </div>
         <div className="flex gap-2">
           {selectedEnterprises.length > 0 && (
-            <Button variant="destructive">
+            <Button variant="destructive" onClick={() => {
+              toast.success(`${selectedEnterprises.length} enterprises suspended`);
+              setSelectedEnterprises([]);
+            }}>
               Suspend Selected ({selectedEnterprises.length})
             </Button>
           )}
-          <Button className="bg-primary hover:bg-primary/90">
+          <Button className="bg-primary hover:bg-primary/90" onClick={() => toast.success("Enterprise onboarding started")}>
             <Building className="mr-2 h-4 w-4" /> Onboard Enterprise
           </Button>
         </div>
@@ -278,11 +282,11 @@ export default function EnterpriseManagement() {
                       <DropdownMenuItem onClick={() => setLocation(`/admin/enterprises/${ent.id}`)}>
                         <Eye className="mr-2 h-4 w-4" /> View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => toast.info("Billing information accessed")}>
                         <CreditCard className="mr-2 h-4 w-4" /> Billing Info
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                      <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => toast.warning("Enterprise suspended")}>
                         <Ban className="mr-2 h-4 w-4" /> Suspend
                       </DropdownMenuItem>
                     </DropdownMenuContent>

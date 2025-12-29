@@ -11,6 +11,8 @@ import {
   UserCheck,
   Clock
 } from 'lucide-react';
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,6 +80,7 @@ const MOCK_DISPUTES = [
 ];
 
 export default function Disputes() {
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('open');
 
@@ -129,7 +132,7 @@ export default function Disputes() {
             <Filter className="h-4 w-4 mr-2" />
             Filter
           </Button>
-          <Button variant="default" className="bg-blue-600 hover:bg-blue-700">
+          <Button variant="default" className="bg-blue-600 hover:bg-blue-700" onClick={() => toast.success("Auto-assign process started")}>
             <CheckCircle className="h-4 w-4 mr-2" />
             Auto-Assign
           </Button>
@@ -221,24 +224,24 @@ export default function Disputes() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setLocation(`/admin/disputes/${dispute.id}`)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => toast.success("Dispute assigned to you")}>
                                 <UserCheck className="mr-2 h-4 w-4" />
                                 Assign to Me
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => toast.info("Message dialog opened")}>
                                 <MessageSquare className="mr-2 h-4 w-4" />
                                 Contact Parties
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-green-500">
+                              <DropdownMenuItem className="text-green-500" onClick={() => toast.success("Dispute resolved")}>
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Resolve Dispute
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-500">
+                              <DropdownMenuItem className="text-red-500" onClick={() => toast.error("Dispute closed without action")}>
                                 <XCircle className="mr-2 h-4 w-4" />
                                 Close Without Action
                               </DropdownMenuItem>

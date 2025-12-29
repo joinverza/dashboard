@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { 
   Star, 
   ShieldCheck, 
@@ -48,8 +50,33 @@ const VERIFIER = {
 
 const TABS = ["Overview", "Reviews", "Certifications", "Portfolio"];
 
-export default function VerifierProfilePage() {
+export default function VerifierProfile({ params }: { params?: { id: string } }) {
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("Overview");
+  const [isFavorite, setIsFavorite] = useState(false);
+  
+  // Use params.id if available
+  const verifierId = params?.id || "1";
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success("Profile link copied to clipboard!");
+  };
+
+  const handleFavorite = () => {
+    setIsFavorite(!isFavorite);
+    toast.success(isFavorite ? "Removed from favorites" : "Added to favorites");
+  };
+
+  const handleMessage = () => {
+    // In a real app, we would pass the verifier ID
+    setLocation(`/app/message?verifier=${verifierId}`);
+  };
+
+  const handleRequestVerification = () => {
+    // In a real app, we would pass the verifier ID
+    setLocation(`/app/request-verification?verifier=${verifierId}`);
+  };
 
   return (
     <div className="space-y-8 p-8 pb-20 max-w-7xl mx-auto">
@@ -86,16 +113,16 @@ export default function VerifierProfilePage() {
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  <Button variant="outline" size="icon" className="glass-button rounded-full">
+                  <Button variant="outline" size="icon" className="glass-button rounded-full" onClick={handleShare}>
                     <Share2 className="w-4 h-4" />
                   </Button>
-                  <Button variant="outline" size="icon" className="glass-button rounded-full">
-                    <Heart className="w-4 h-4" />
+                  <Button variant="outline" size="icon" className="glass-button rounded-full" onClick={handleFavorite}>
+                    <Heart className={cn("w-4 h-4", isFavorite && "fill-current text-red-500")} />
                   </Button>
-                  <Button variant="outline" className="glass-button gap-2">
+                  <Button variant="outline" className="glass-button gap-2" onClick={handleMessage}>
                     <MessageSquare className="w-4 h-4" /> Message
                   </Button>
-                  <Button className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow">
+                  <Button className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow" onClick={handleRequestVerification}>
                     Request Verification
                   </Button>
                 </div>
@@ -236,10 +263,17 @@ export default function VerifierProfilePage() {
             </div>
             
             <div className="mt-6 pt-6 border-t border-white/5 space-y-3">
-              <Button className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow">
+              <Button 
+                className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow"
+                onClick={handleRequestVerification}
+              >
                 Request Verification
               </Button>
-              <Button variant="outline" className="w-full glass-button">
+              <Button 
+                variant="outline" 
+                className="w-full glass-button"
+                onClick={handleMessage}
+              >
                 Contact Verifier
               </Button>
             </div>

@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { 
   Wallet, 
   ArrowUpRight, 
@@ -11,10 +13,28 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
-  Plus
+  Plus,
+  ShieldCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Mock Data
 const WALLET_ASSETS = [
@@ -102,10 +122,29 @@ const TRANSACTIONS = [
   }
 ];
 
-import { ShieldCheck } from "lucide-react";
 
 export default function WalletPage() {
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("all");
+  const [isSwapOpen, setIsSwapOpen] = useState(false);
+  const [isBuyOpen, setIsBuyOpen] = useState(false);
+  const [swapFrom, setSwapFrom] = useState("ETH");
+  const [swapTo, setSwapTo] = useState("USDC");
+  const [buyAmount, setBuyAmount] = useState("");
+
+  const handleSwap = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Simulate swap
+    setIsSwapOpen(false);
+    // Show success message (could be a toast)
+  };
+
+  const handleBuy = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Simulate buy
+    setIsBuyOpen(false);
+  };
+
 
   return (
     <div className="space-y-8 p-8 pb-20">
@@ -181,13 +220,14 @@ export default function WalletPage() {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { icon: ArrowDownLeft, label: "Deposit", desc: "Add funds to wallet" },
-          { icon: ArrowUpRight, label: "Withdraw", desc: "Transfer to bank/wallet" },
-          { icon: RefreshCw, label: "Swap", desc: "Exchange assets" },
-          { icon: CreditCard, label: "Buy Crypto", desc: "Use credit/debit card" }
+          { icon: ArrowDownLeft, label: "Deposit", desc: "Add funds to wallet", action: () => setLocation("/app/wallet/deposit") },
+          { icon: ArrowUpRight, label: "Withdraw", desc: "Transfer to bank/wallet", action: () => setLocation("/app/wallet/withdraw") },
+          { icon: RefreshCw, label: "Swap", desc: "Exchange assets", action: () => setIsSwapOpen(true) },
+          { icon: CreditCard, label: "Buy Crypto", desc: "Use credit/debit card", action: () => setIsBuyOpen(true) }
         ].map((action) => (
           <motion.button
             key={action.label}
+            onClick={action.action}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="glass-card p-4 rounded-xl text-left border border-white/5 hover:border-verza-emerald/30 hover:bg-white/5 transition-all group"
@@ -270,10 +310,25 @@ export default function WalletPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => {
+                          navigator.clipboard.writeText(tx.hash);
+                          toast.success("Transaction hash copied");
+                        }}
+                      >
                         <Copy className="w-3.5 h-3.5" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => {
+                          window.open(`https://explorer.cardano.org/en/transaction?id=${tx.hash}`, '_blank');
+                        }}
+                      >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -285,11 +340,129 @@ export default function WalletPage() {
         </div>
         
         <div className="p-4 border-t border-white/5 flex justify-center">
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-muted-foreground hover:text-foreground"
+            onClick={() => setLocation("/app/wallet/transactions")}
+          >
             View All Transactions
           </Button>
         </div>
       </div>
+
+      {/* Swap Modal */}
+      <Dialog open={isSwapOpen} onOpenChange={setIsSwapOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-card/90 backdrop-blur-md border-white/10">
+          <DialogHeader>
+            <DialogTitle>Swap Assets</DialogTitle>
+            <DialogDescription>
+              Exchange your crypto assets instantly with low fees.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSwap} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="from-amount">Pay with</Label>
+              <div className="flex gap-2">
+                <Input id="from-amount" placeholder="0.00" type="number" className="flex-1 bg-muted/50 border-white/10" required />
+                <Select value={swapFrom} onValueChange={setSwapFrom}>
+                  <SelectTrigger className="w-[100px] bg-muted/50 border-white/10">
+                    <SelectValue placeholder="Asset" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ETH">ETH</SelectItem>
+                    <SelectItem value="BTC">BTC</SelectItem>
+                    <SelectItem value="USDC">USDC</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-center">
+              <div className="bg-muted/50 p-2 rounded-full border border-white/10">
+                <RefreshCw className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="to-amount">Receive (Estimated)</Label>
+              <div className="flex gap-2">
+                <Input id="to-amount" placeholder="0.00" type="number" className="flex-1 bg-muted/50 border-white/10" readOnly />
+                <Select value={swapTo} onValueChange={setSwapTo}>
+                  <SelectTrigger className="w-[100px] bg-muted/50 border-white/10">
+                    <SelectValue placeholder="Asset" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ETH">ETH</SelectItem>
+                    <SelectItem value="BTC">BTC</SelectItem>
+                    <SelectItem value="USDC">USDC</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white">Swap Now</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Buy Crypto Modal */}
+      <Dialog open={isBuyOpen} onOpenChange={setIsBuyOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-card/90 backdrop-blur-md border-white/10">
+          <DialogHeader>
+            <DialogTitle>Buy Crypto</DialogTitle>
+            <DialogDescription>
+              Purchase crypto using your credit card or bank transfer.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleBuy} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="buy-amount">Amount (USD)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+                <Input 
+                  id="buy-amount" 
+                  placeholder="0.00" 
+                  type="number" 
+                  className="pl-7 bg-muted/50 border-white/10" 
+                  value={buyAmount}
+                  onChange={(e) => setBuyAmount(e.target.value)}
+                  required 
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="asset-select">Select Asset</Label>
+              <Select defaultValue="ETH">
+                <SelectTrigger id="asset-select" className="bg-muted/50 border-white/10">
+                  <SelectValue placeholder="Select asset" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ETH">Ethereum (ETH)</SelectItem>
+                  <SelectItem value="BTC">Bitcoin (BTC)</SelectItem>
+                  <SelectItem value="USDC">USD Coin (USDC)</SelectItem>
+                  <SelectItem value="SOL">Solana (SOL)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="payment-method">Payment Method</Label>
+              <Select defaultValue="card">
+                <SelectTrigger id="payment-method" className="bg-muted/50 border-white/10">
+                  <SelectValue placeholder="Select method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="card">Credit/Debit Card</SelectItem>
+                  <SelectItem value="bank">Bank Transfer</SelectItem>
+                  <SelectItem value="apple">Apple Pay</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white">Continue to Payment</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

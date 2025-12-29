@@ -3,6 +3,8 @@ import {
   CheckCircle, XCircle, AlertTriangle, FileText,
   Search, Filter
 } from 'lucide-react';
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,6 +40,7 @@ ChartJS.register(
 );
 
 export default function FraudDetection() {
+  const [, setLocation] = useLocation();
   // Mock Data
   const fraudAlerts = [
     { 
@@ -117,7 +120,7 @@ export default function FraudDetection() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50">
+          <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => toast.error("Critical alerts summary opened")}>
             <ShieldAlert className="h-4 w-4 mr-2" />
             3 Critical Alerts
           </Button>
@@ -232,13 +235,13 @@ export default function FraudDetection() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" title="View Details">
+                          <Button variant="ghost" size="icon" title="View Details" onClick={() => setLocation(`/admin/fraud/${alert.id}`)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" title="Reject" className="text-red-500 hover:text-red-600">
+                          <Button variant="ghost" size="icon" title="Reject" className="text-red-500 hover:text-red-600" onClick={() => toast.success(`Alert ${alert.id} rejected`)}>
                             <XCircle className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" title="Approve (False Positive)" className="text-green-500 hover:text-green-600">
+                          <Button variant="ghost" size="icon" title="Approve (False Positive)" className="text-green-500 hover:text-green-600" onClick={() => toast.success(`Alert ${alert.id} marked as false positive`)}>
                             <CheckCircle className="h-4 w-4" />
                           </Button>
                         </div>

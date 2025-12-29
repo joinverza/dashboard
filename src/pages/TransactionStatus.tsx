@@ -7,6 +7,7 @@ import {
   Share2,
   RotateCw
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -107,10 +108,10 @@ export default function TransactionStatusPage() {
                 Return to Dashboard
               </Button>
               <div className="grid grid-cols-2 gap-3 w-full">
-                <Button variant="outline" className="w-full gap-2">
+                <Button variant="outline" className="w-full gap-2" onClick={() => toast.success("Receipt downloaded")}>
                   <Download className="w-4 h-4" /> Receipt
                 </Button>
-                <Button variant="outline" className="w-full gap-2">
+                <Button variant="outline" className="w-full gap-2" onClick={() => toast.success("Receipt shared")}>
                   <Share2 className="w-4 h-4" /> Share
                 </Button>
               </div>
@@ -120,7 +121,7 @@ export default function TransactionStatusPage() {
               <Button className="w-full" variant="destructive" onClick={() => window.history.back()}>
                 <RotateCw className="w-4 h-4 mr-2" /> Try Again
               </Button>
-              <Button variant="ghost" className="w-full" onClick={() => setLocation("/app/support")}>
+              <Button variant="ghost" className="w-full" onClick={() => setLocation("/app/help")}>
                 Contact Support
               </Button>
             </>

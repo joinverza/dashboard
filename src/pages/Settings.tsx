@@ -15,8 +15,10 @@ import {
   MessageSquare,
   CreditCard,
   FileText,
-  Download
+  Download,
+  Lock
 } from 'lucide-react';
+import { toast } from "sonner";
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,6 +41,23 @@ export default function SettingsPage() {
     marketing: false,
     security: true,
   });
+
+  const [firstName, setFirstName] = useState("Anne");
+  const [lastName, setLastName] = useState("Cooper");
+  const [email, setEmail] = useState(currentUser.email);
+
+  const handleSaveProfile = () => {
+    if (!firstName || !lastName || !email) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    toast.success("Profile updated successfully");
+  };
+
+  const handleNotificationChange = (key: string, checked: boolean) => {
+    setNotifications((prev) => ({ ...prev, [key]: checked }));
+    toast.success(`${key.charAt(0).toUpperCase() + key.slice(1)} notifications ${checked ? 'enabled' : 'disabled'}`);
+  };
 
   const apiKeys = [
     { id: 1, name: "Production Key", prefix: "pk_live_", created: "Oct 24, 2023", lastUsed: "2 mins ago", status: "Active" },
@@ -67,6 +86,14 @@ export default function SettingsPage() {
           <TabsTrigger value="notifications" className="data-[state=active]:bg-verza-emerald/20 data-[state=active]:text-verza-emerald">
             <Bell className="h-4 w-4 mr-2" />
             Notifications
+          </TabsTrigger>
+          <TabsTrigger value="privacy" className="data-[state=active]:bg-verza-emerald/20 data-[state=active]:text-verza-emerald">
+            <Lock className="h-4 w-4 mr-2" />
+            Privacy
+          </TabsTrigger>
+          <TabsTrigger value="billing" className="data-[state=active]:bg-verza-emerald/20 data-[state=active]:text-verza-emerald">
+            <CreditCard className="h-4 w-4 mr-2" />
+            Billing
           </TabsTrigger>
           <TabsTrigger value="appearance" className="data-[state=active]:bg-verza-emerald/20 data-[state=active]:text-verza-emerald">
             <Palette className="h-4 w-4 mr-2" />
@@ -105,7 +132,23 @@ export default function SettingsPage() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <Button variant="outline" size="sm" data-testid="button-change-avatar">
+                    <input
+                      type="file"
+                      id="avatar-upload"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          toast.success("Avatar updated successfully");
+                        }
+                      }}
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      data-testid="button-change-avatar" 
+                      onClick={() => document.getElementById('avatar-upload')?.click()}
+                    >
                       Change Avatar
                     </Button>
                     <p className="text-xs text-muted-foreground mt-1">JPG, PNG or GIF. Max 2MB</p>
@@ -117,15 +160,15 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" defaultValue="Anne" data-testid="input-first-name" />
+                    <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} data-testid="input-first-name" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" defaultValue="Cooper" data-testid="input-last-name" />
+                    <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} data-testid="input-last-name" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" defaultValue={currentUser.email} data-testid="input-email" />
+                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} data-testid="input-email" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
@@ -134,7 +177,11 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button className="bg-verza-emerald hover:bg-verza-kelly" data-testid="button-save-profile">
+                  <Button 
+                    className="bg-verza-emerald hover:bg-verza-kelly" 
+                    data-testid="button-save-profile"
+                    onClick={handleSaveProfile}
+                  >
                     <Save className="h-4 w-4 mr-2" />
                     Save Changes
                   </Button>
@@ -169,9 +216,7 @@ export default function SettingsPage() {
                     </div>
                     <Switch
                       checked={notifications[item.key as keyof typeof notifications]}
-                      onCheckedChange={(checked) =>
-                        setNotifications((prev) => ({ ...prev, [item.key]: checked }))
-                      }
+                      onCheckedChange={(checked) => handleNotificationChange(item.key, checked)}
                       data-testid={`switch-${item.key}`}
                     />
                   </div>
@@ -261,7 +306,11 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button className="bg-verza-emerald hover:bg-verza-kelly" data-testid="button-update-password">
+                  <Button 
+                    className="bg-verza-emerald hover:bg-verza-kelly" 
+                    data-testid="button-update-password"
+                    onClick={() => toast.success("Password updated successfully")}
+                  >
                     Update Password
                   </Button>
                 </div>
@@ -314,12 +363,21 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between p-4 border border-red-500/20 rounded-lg bg-red-500/5">
-                  <div>
-                    <p className="font-medium text-red-500">Delete Account</p>
-                    <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
+                    <div>
+                      <p className="font-medium text-red-500">Delete Account</p>
+                      <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
+                    </div>
+                    <Button 
+                      variant="destructive"
+                      onClick={() => {
+                        if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+                          toast.error("Account deletion request submitted");
+                        }
+                      }}
+                    >
+                      Delete Account
+                    </Button>
                   </div>
-                  <Button variant="destructive">Delete Account</Button>
-                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -356,7 +414,12 @@ export default function SettingsPage() {
                       <div className="h-full bg-verza-emerald w-[90%]" />
                     </div>
                   </div>
-                  <Button className="bg-verza-emerald hover:bg-verza-kelly text-white">Upgrade Plan</Button>
+                  <Button 
+                    className="bg-verza-emerald hover:bg-verza-kelly text-white"
+                    onClick={() => toast.success("Redirecting to upgrade page...")}
+                  >
+                    Upgrade Plan
+                  </Button>
                 </CardContent>
               </Card>
 
@@ -372,7 +435,13 @@ export default function SettingsPage() {
                       <p className="text-xs text-muted-foreground">Expires 12/25</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full">Update Method</Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => toast.success("Payment method update modal would open here")}
+                  >
+                    Update Method
+                  </Button>
                 </CardContent>
               </Card>
             </div>
@@ -403,7 +472,11 @@ export default function SettingsPage() {
                         <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
                           {item.status}
                         </Badge>
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => toast.success(`Invoice ${item.invoice} downloaded`)}
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                       </div>
@@ -427,7 +500,10 @@ export default function SettingsPage() {
                   <CardTitle>API Keys</CardTitle>
                   <CardDescription>Manage your API keys for external access</CardDescription>
                 </div>
-                <Button className="bg-verza-emerald hover:bg-verza-kelly text-white">
+                <Button 
+                  className="bg-verza-emerald hover:bg-verza-kelly text-white"
+                  onClick={() => toast.success("New API key generated")}
+                >
                   <Plus className="h-4 w-4 mr-2" /> Create New Key
                 </Button>
               </CardHeader>
@@ -443,13 +519,28 @@ export default function SettingsPage() {
                       </div>
                       <div className="flex items-center gap-2 font-mono text-sm text-muted-foreground">
                         <span>{key.prefix}************************</span>
-                        <Copy className="h-3 w-3 cursor-pointer hover:text-white" />
+                        <Copy 
+                          className="h-3 w-3 cursor-pointer hover:text-white" 
+                          onClick={() => {
+                            navigator.clipboard.writeText(`${key.prefix}sk_live_...`);
+                            toast.success("API key copied to clipboard");
+                          }}
+                        />
                       </div>
                       <div className="text-xs text-muted-foreground">
                         Created: {key.created} • Last used: {key.lastUsed}
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-400 hover:bg-red-500/10">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                      onClick={() => {
+                        if (confirm(`Are you sure you want to revoke the ${key.name}?`)) {
+                          toast.error("API key revoked");
+                        }
+                      }}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -509,7 +600,10 @@ export default function SettingsPage() {
                       </div>
                     </div>
                   </div>
-                  <Button className="w-full bg-verza-emerald hover:bg-verza-kelly">
+                  <Button 
+                    className="w-full bg-verza-emerald hover:bg-verza-kelly"
+                    onClick={() => toast.success("Support ticket submitted successfully")}
+                  >
                     Submit Ticket
                   </Button>
                 </CardContent>
@@ -545,7 +639,11 @@ export default function SettingsPage() {
                       <h3 className="font-bold text-lg">Live Chat</h3>
                       <p className="text-sm text-muted-foreground">Chat with our support team in real-time</p>
                     </div>
-                    <Button variant="outline" className="border-verza-emerald/50 text-verza-emerald hover:bg-verza-emerald hover:text-white">
+                    <Button 
+                      variant="outline" 
+                      className="border-verza-emerald/50 text-verza-emerald hover:bg-verza-emerald hover:text-white"
+                      onClick={() => toast.info("Connecting to live chat agent...")}
+                    >
                       Start Chat
                     </Button>
                   </CardContent>

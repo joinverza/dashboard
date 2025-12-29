@@ -10,6 +10,7 @@ import {
   Share2, 
   AlertCircle
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -143,14 +144,27 @@ export default function TransactionDetailPage() {
 
           {/* Actions */}
           <div className="flex flex-col gap-3 pt-4">
-            <Button className="w-full bg-secondary hover:bg-secondary/80 text-foreground gap-2">
+            <Button 
+              className="w-full bg-secondary hover:bg-secondary/80 text-foreground gap-2"
+              onClick={() => {
+                window.open(`https://cardanoscan.io/transaction/${TRANSACTION.id}`, '_blank');
+                toast.info("Opening blockchain explorer");
+              }}
+            >
               <ExternalLink className="w-4 h-4" /> View on Explorer
             </Button>
             <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="gap-2" onClick={() => toast.success("Transaction link shared")}>
                 <Share2 className="w-4 h-4" /> Share
               </Button>
-              <Button variant="outline" className="gap-2">
+              <Button 
+                variant="outline" 
+                className="gap-2" 
+                onClick={() => {
+                  navigator.clipboard.writeText(TRANSACTION.id);
+                  toast.success("Transaction ID copied");
+                }}
+              >
                 <Copy className="w-4 h-4" /> Copy ID
               </Button>
             </div>

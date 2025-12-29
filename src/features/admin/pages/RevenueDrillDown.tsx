@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   Download, Filter, Calendar, ArrowUpRight, ArrowDownRight, Search
 } from 'lucide-react';
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,7 +49,7 @@ export default function RevenueDrillDown() {
               <SelectItem value="ytd">Year to Date</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => toast.success("Revenue data exported")}>
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>

@@ -3,6 +3,8 @@ import {
   Search, Filter, MoreHorizontal, FileText, 
   Shield, Eye, Download, Calendar, XCircle
 } from 'lucide-react';
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -76,6 +78,7 @@ const MOCK_CREDENTIALS: CredentialData[] = [
 ];
 
 export default function CredentialManagement() {
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -118,7 +121,7 @@ export default function CredentialManagement() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => toast.success("Credentials list exported")}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -197,16 +200,16 @@ export default function CredentialManagement() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setLocation(`/admin/credentials/${cred.id}`)}>
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toast.success("Verification check started")}>
                             <Shield className="mr-2 h-4 w-4" />
                             Verify On-Chain
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-500">
+                          <DropdownMenuItem className="text-red-500" onClick={() => toast.error("Credential revoked")}>
                             <XCircle className="mr-2 h-4 w-4" />
                             Revoke Credential
                           </DropdownMenuItem>

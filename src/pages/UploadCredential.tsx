@@ -18,6 +18,7 @@ import {
   Briefcase,
   Clock
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -79,6 +80,34 @@ export default function UploadCredentialPage() {
   const [scanProgress, setScanProgress] = useState(0);
   const [, setLocation] = useLocation();
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+      toast.success(`File "${file.name}" uploaded successfully`);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentStep === 1 && !selectedType) {
+      toast.error("Please select a credential type");
+      return;
+    }
+    if (currentStep === 2 && !uploadedFile) {
+      toast.error("Please upload a document");
+      return;
+    }
+    
+    setCurrentStep(prev => prev + 1);
+  };
+
+  const handleSubmit = () => {
+    toast.success("Credential submitted for verification!");
+    setTimeout(() => {
+      setLocation("/app/verification-status/1");
+    }, 1500);
+  };
+
   // Step 3 Simulation: AI Scanning
   useEffect(() => {
     if (currentStep === 3) {
@@ -99,10 +128,6 @@ export default function UploadCredentialPage() {
     }
   }, [currentStep]);
 
-  const handleNext = () => {
-    if (currentStep < 4) setCurrentStep(currentStep + 1);
-  };
-
   const handleBack = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
@@ -110,17 +135,12 @@ export default function UploadCredentialPage() {
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
-    if (file) setUploadedFile(file);
+    if (file) {
+      setUploadedFile(file);
+      toast.success(`File "${file.name}" uploaded successfully`);
+    }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) setUploadedFile(e.target.files[0]);
-  };
-
-  const handleSubmit = () => {
-    // Mock submission
-    setLocation("/app/credentials");
-  };
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6 space-y-8 animate-in fade-in duration-500">
@@ -295,7 +315,7 @@ export default function UploadCredentialPage() {
                         type="file" 
                         className="hidden" 
                         accept=".jpg,.jpeg,.png,.pdf" 
-                        onChange={handleFileSelect}
+                        onChange={handleFileUpload}
                       />
                     </div>
                   )}
@@ -486,8 +506,12 @@ export default function UploadCredentialPage() {
                 <Button variant="ghost" onClick={() => setCurrentStep(2)}>
                   Edit Upload
                 </Button>
-                <Button size="lg" className="px-8" onClick={handleSubmit}>
-                  Submit for Verification
+                <Button 
+                  size="lg" 
+                  onClick={handleSubmit}
+                  className="bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-900/20"
+                >
+                  Confirm & Submit <CheckCircle2 className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             </motion.div>

@@ -16,6 +16,7 @@ import {
   MoreVertical,
   Download
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,6 +80,18 @@ export default function VerificationStatusPage() {
     };
     setMessages([...messages, newMessage]);
     setMessageInput("");
+    
+    // Simulate verifier typing/reply
+    setTimeout(() => {
+      const replyMessage = {
+        id: messages.length + 2,
+        sender: "verifier",
+        text: "Thanks for your message. I'll check that for you shortly.",
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages(prev => [...prev, replyMessage]);
+      toast.info("New message from Verifier");
+    }, 3000);
   };
 
   return (
@@ -118,7 +131,7 @@ export default function VerificationStatusPage() {
                <Button variant="outline" onClick={() => setIsChatOpen(true)} className="gap-2">
                  <MessageSquare className="w-4 h-4" /> Chat with Verifier
                </Button>
-               <Button variant="destructive" className="gap-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20 border">
+               <Button variant="destructive" className="gap-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20 border" onClick={() => toast.error("Cannot cancel request at this stage")}>
                  Cancel Request
                </Button>
             </div>
@@ -303,7 +316,7 @@ export default function VerificationStatusPage() {
                     <span>Oct 24, 2023</span>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" className="w-full text-xs">
+                <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => toast.success("Receipt downloaded")}>
                   <Download className="w-3 h-3 mr-2" /> Download Receipt
                 </Button>
               </CardContent>
@@ -336,10 +349,18 @@ export default function VerificationStatusPage() {
                 <CardTitle className="text-base">Need Help?</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => toast.info("Opening Help Center...")}
+                >
                   <HelpCircle className="w-4 h-4" /> Visit Help Center
                 </Button>
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => toast.info("Report issue feature coming soon")}
+                >
                   <AlertCircle className="w-4 h-4" /> Report an Issue
                 </Button>
               </CardContent>
@@ -385,7 +406,12 @@ export default function VerificationStatusPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={() => toast.info("Chat options coming soon")}
+                  >
                     <MoreVertical className="w-4 h-4" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsChatOpen(false)}>
