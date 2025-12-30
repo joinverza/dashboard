@@ -73,7 +73,7 @@ export default function AdminUsers() {
     { id: 2, admin: 'John Smith', action: 'Approved Verifier', target: 'VeriTech Solutions', date: '1 hour ago', details: 'Documents verified' },
     { id: 3, admin: 'Sarah Connor', action: 'Updated Settings', target: 'Platform Fee', date: '5 hours ago', details: 'Changed from 2% to 1.5%' },
     { id: 4, admin: 'Emily Chen', action: 'Deleted Post', target: 'Spam Content', date: '1 day ago', details: 'Reported by users' },
-    { id: 5, admin: 'Michael Brown', action: 'Resolved Dispute', target: 'DSP-2024-001', date: '2 days ago', details: 'Refund issued' },
+    { id: 5, admin: 'Michael Brown', action: 'Resolved Dispute', target: 'DSP-2025-001', date: '2 days ago', details: 'Refund issued' },
   ];
 
   return (

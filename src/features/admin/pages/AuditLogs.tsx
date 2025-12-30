@@ -27,7 +27,7 @@ export default function AuditLogs() {
       target: 'User: u_9921 (John Doe)', 
       ip: '192.168.1.42',
       location: 'New York, US',
-      timestamp: '2024-04-10 14:32:01',
+      timestamp: '2025-04-10 14:32:01',
       status: 'success'
     },
     { 
@@ -38,7 +38,7 @@ export default function AuditLogs() {
       target: 'Database: Primary', 
       ip: '10.0.0.1',
       location: 'Data Center 1',
-      timestamp: '2024-04-10 14:00:00',
+      timestamp: '2025-04-10 14:00:00',
       status: 'success'
     },
     { 
@@ -49,7 +49,7 @@ export default function AuditLogs() {
       target: 'Ticket: #8821', 
       ip: '192.168.1.105',
       location: 'London, UK',
-      timestamp: '2024-04-10 13:45:12',
+      timestamp: '2025-04-10 13:45:12',
       status: 'success'
     },
     { 
@@ -60,7 +60,7 @@ export default function AuditLogs() {
       target: 'Admin Portal', 
       ip: '45.22.11.99',
       location: 'Moscow, RU',
-      timestamp: '2024-04-10 13:30:05',
+      timestamp: '2025-04-10 13:30:05',
       status: 'failed'
     },
     { 
@@ -71,7 +71,7 @@ export default function AuditLogs() {
       target: 'Feature Flag: Beta_UI', 
       ip: '192.168.1.42',
       location: 'New York, US',
-      timestamp: '2024-04-10 11:20:18',
+      timestamp: '2025-04-10 11:20:18',
       status: 'success'
     },
   ];

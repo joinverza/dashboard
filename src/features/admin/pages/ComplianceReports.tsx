@@ -21,38 +21,38 @@ export default function ComplianceReports() {
   // Mock Data
   const reports = [
     { 
-      id: 'RPT-2024-001', 
-      name: 'Q1 2024 AML Audit', 
+      id: 'RPT-2025-001', 
+      name: 'Q1 2025 AML Audit', 
       type: 'AML Compliance', 
       generatedBy: 'System', 
-      date: 'Apr 01, 2024', 
+      date: 'Apr 01, 2025', 
       status: 'completed',
       size: '2.4 MB'
     },
     { 
-      id: 'RPT-2024-002', 
+      id: 'RPT-2025-002', 
       name: 'Monthly KYC Summary - March', 
       type: 'KYC Statistics', 
       generatedBy: 'Sarah Connor', 
-      date: 'Apr 02, 2024', 
+      date: 'Apr 02, 2025', 
       status: 'completed',
       size: '1.1 MB'
     },
     { 
-      id: 'RPT-2024-003', 
+      id: 'RPT-2025-003', 
       name: 'GDPR Data Access Request Log', 
       type: 'Privacy', 
       generatedBy: 'John Smith', 
-      date: 'Apr 05, 2024', 
+      date: 'Apr 05, 2025', 
       status: 'processing',
       size: '-'
     },
     { 
-      id: 'RPT-2024-004', 
+      id: 'RPT-2025-004', 
       name: 'Suspicious Activity Report (SAR)', 
       type: 'Fraud', 
       generatedBy: 'System', 
-      date: 'Apr 06, 2024', 
+      date: 'Apr 06, 2025', 
       status: 'failed',
       size: '-'
     },

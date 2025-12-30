@@ -31,7 +31,7 @@ interface CredentialData {
 
 const MOCK_CREDENTIALS: CredentialData[] = [
   {
-    id: 'VC-2024-001',
+    id: 'VC-2025-001',
     type: 'University Degree',
     holder: 'Alice Johnson',
     issuer: 'University of Tech',
@@ -40,25 +40,25 @@ const MOCK_CREDENTIALS: CredentialData[] = [
     expiryDate: 'Never',
   },
   {
-    id: 'VC-2024-002',
+    id: 'VC-2025-002',
     type: 'Employment Record',
     holder: 'Bob Smith',
     issuer: 'Acme Corp',
     status: 'valid',
     issuedDate: '2023-08-01',
-    expiryDate: '2024-08-01',
+    expiryDate: '2025-08-01',
   },
   {
-    id: 'VC-2024-003',
+    id: 'VC-2025-003',
     type: 'Professional License',
     holder: 'Charlie Brown',
     issuer: 'Medical Board',
     status: 'revoked',
     issuedDate: '2023-01-10',
-    expiryDate: '2024-01-10',
+    expiryDate: '2025-01-10',
   },
   {
-    id: 'VC-2024-004',
+    id: 'VC-2025-004',
     type: 'Identity Verification',
     holder: 'David Lee',
     issuer: 'Global Verify Ltd',
@@ -67,12 +67,12 @@ const MOCK_CREDENTIALS: CredentialData[] = [
     expiryDate: '2023-05-20',
   },
   {
-    id: 'VC-2024-005',
+    id: 'VC-2025-005',
     type: 'Skill Certificate',
     holder: 'Eve Wilson',
     issuer: 'Code Academy',
     status: 'pending',
-    issuedDate: '2024-03-20',
+    issuedDate: '2025-03-20',
     expiryDate: 'Never',
   },
 ];

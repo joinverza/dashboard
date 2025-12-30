@@ -90,7 +90,7 @@ export default function EnterpriseSignupPage() {
         {/* Footer */}
         <div className="relative z-10 flex items-center justify-between text-xs text-zinc-500 uppercase tracking-widest font-medium">
           <span>Secure Enclave</span>
-          <span>© 2024 Verza Inc.</span>
+          <span>© 2025 Verza Inc.</span>
         </div>
       </div>
 

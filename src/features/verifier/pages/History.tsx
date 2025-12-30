@@ -17,13 +17,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 // Mock Data
 const HISTORY_DATA = [
-    { id: "101", date: "2024-05-20", type: "Identity Verification", requester: "John D.", earnings: 15.00, rating: 5, status: "Completed" },
-    { id: "102", date: "2024-05-19", type: "Education Check", requester: "Alice M.", earnings: 25.00, rating: 5, status: "Completed" },
-    { id: "103", date: "2024-05-18", type: "Employment Check", requester: "Tech Corp", earnings: 45.00, rating: 4, status: "Completed" },
-    { id: "104", date: "2024-05-18", type: "Criminal Record", requester: "Legal Firm", earnings: 60.00, rating: 5, status: "Completed" },
-    { id: "105", date: "2024-05-17", type: "Credit History", requester: "Finance Inc", earnings: 30.00, rating: null, status: "Completed" },
-    { id: "106", date: "2024-05-16", type: "Identity Verification", requester: "Sarah L.", earnings: 15.00, rating: 5, status: "Completed" },
-    { id: "107", date: "2024-05-15", type: "Identity Verification", requester: "Mike R.", earnings: 15.00, rating: 3, status: "Completed" },
+    { id: "101", date: "2025-05-20", type: "Identity Verification", requester: "John D.", earnings: 15.00, rating: 5, status: "Completed" },
+    { id: "102", date: "2025-05-19", type: "Education Check", requester: "Alice M.", earnings: 25.00, rating: 5, status: "Completed" },
+    { id: "103", date: "2025-05-18", type: "Employment Check", requester: "Tech Corp", earnings: 45.00, rating: 4, status: "Completed" },
+    { id: "104", date: "2025-05-18", type: "Criminal Record", requester: "Legal Firm", earnings: 60.00, rating: 5, status: "Completed" },
+    { id: "105", date: "2025-05-17", type: "Credit History", requester: "Finance Inc", earnings: 30.00, rating: null, status: "Completed" },
+    { id: "106", date: "2025-05-16", type: "Identity Verification", requester: "Sarah L.", earnings: 15.00, rating: 5, status: "Completed" },
+    { id: "107", date: "2025-05-15", type: "Identity Verification", requester: "Mike R.", earnings: 15.00, rating: 3, status: "Completed" },
 ];
 
 export default function History() {

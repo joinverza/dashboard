@@ -49,7 +49,7 @@ export const overviewData: OverviewData = {
     { label: '2021', value: 350000 },
     { label: '2022', value: 521470 },
     { label: '2023', value: 480000 },
-    { label: '2024', value: 620000 },
+    { label: '2025', value: 620000 },
   ],
 };
 

@@ -18,8 +18,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 // Mock data
 const apiKeys = [
   { id: "key_prod_1", name: "Production Key 1", prefix: "vz_live_...", created: "2023-11-15", lastUsed: "2 mins ago", status: "active" },
-  { id: "key_prod_2", name: "Backend Service", prefix: "vz_live_...", created: "2024-01-20", lastUsed: "1 hour ago", status: "active" },
-  { id: "key_dev_1", name: "Development Key", prefix: "vz_test_...", created: "2024-02-10", lastUsed: "2 days ago", status: "active" },
+  { id: "key_prod_2", name: "Backend Service", prefix: "vz_live_...", created: "2025-01-20", lastUsed: "1 hour ago", status: "active" },
+  { id: "key_dev_1", name: "Development Key", prefix: "vz_test_...", created: "2025-02-10", lastUsed: "2 days ago", status: "active" },
 ];
 
 export default function ApiManagement() {

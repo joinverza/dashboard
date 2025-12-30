@@ -80,7 +80,7 @@ export default function EnterpriseLoginPage() {
         {/* Footer */}
         <div className="relative z-10 flex items-center justify-between text-xs text-zinc-500 uppercase tracking-widest font-medium">
           <span>Restricted Access</span>
-          <span>© 2024 Verza Inc.</span>
+          <span>© 2025 Verza Inc.</span>
         </div>
       </div>
 

@@ -38,41 +38,41 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // Mock Data
 const MOCK_DISPUTES = [
   {
-    id: "DSP-2024-001",
+    id: "DSP-2025-001",
     type: "Verification Quality",
     filer: "John Doe",
     against: "SecureVerify Inc.",
-    date: "2024-03-15",
+    date: "2025-03-15",
     status: "open",
     assignedTo: null,
     priority: "high"
   },
   {
-    id: "DSP-2024-002",
+    id: "DSP-2025-002",
     type: "Payment Issue",
     filer: "Alice Smith",
     against: "FastCheck Ltd.",
-    date: "2024-03-14",
+    date: "2025-03-14",
     status: "in_review",
     assignedTo: "Admin User",
     priority: "medium"
   },
   {
-    id: "DSP-2024-003",
+    id: "DSP-2025-003",
     type: "Data Privacy",
     filer: "Robert Johnson",
     against: "Global ID Verifiers",
-    date: "2024-03-10",
+    date: "2025-03-10",
     status: "resolved",
     assignedTo: "Admin User",
     priority: "high"
   },
   {
-    id: "DSP-2024-004",
+    id: "DSP-2025-004",
     type: "Service Not Delivered",
     filer: "Sarah Williams",
     against: "Quick Verify",
-    date: "2024-03-12",
+    date: "2025-03-12",
     status: "open",
     assignedTo: null,
     priority: "low"

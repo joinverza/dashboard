@@ -17,7 +17,7 @@ export default function CredentialDetailAdmin() {
 
   // Mock Data
   const credential = {
-    id: 'VC-2024-001',
+    id: 'VC-2025-001',
     type: 'University Degree',
     schema: 'https://schema.verza.io/credentials/degree/v1',
     holder: {

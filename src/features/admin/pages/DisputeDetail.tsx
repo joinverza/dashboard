@@ -30,7 +30,7 @@ export default function DisputeDetail() {
   
   // Mock Data
   const dispute = {
-    id: "DSP-2024-001",
+    id: "DSP-2025-001",
     status: "open",
     filedBy: {
       name: "John Doe",
@@ -44,7 +44,7 @@ export default function DisputeDetail() {
       role: "Verifier",
       avatar: ""
     },
-    filedDate: "2024-03-15",
+    filedDate: "2025-03-15",
     type: "Verification Quality",
     description: "The verification was completed but the extracted data contains multiple errors. The name was misspelled and the date of birth is incorrect. I requested a correction but the verifier refused.",
     evidence: [
@@ -52,9 +52,9 @@ export default function DisputeDetail() {
       { name: "email_thread.pdf", size: "1.1 MB", type: "application/pdf" }
     ],
     timeline: [
-      { id: 1, type: "created", user: "John Doe", date: "2024-03-15 10:30 AM", message: "Dispute filed" },
-      { id: 2, type: "comment", user: "System", date: "2024-03-15 10:30 AM", message: "Case assigned to Admin Team" },
-      { id: 3, type: "response", user: "SecureVerify Inc.", date: "2024-03-15 02:15 PM", message: "We processed the document exactly as provided. The image quality was poor." }
+      { id: 1, type: "created", user: "John Doe", date: "2025-03-15 10:30 AM", message: "Dispute filed" },
+      { id: 2, type: "comment", user: "System", date: "2025-03-15 10:30 AM", message: "Case assigned to Admin Team" },
+      { id: 3, type: "response", user: "SecureVerify Inc.", date: "2025-03-15 02:15 PM", message: "We processed the document exactly as provided. The image quality was poor." }
     ]
   };
 

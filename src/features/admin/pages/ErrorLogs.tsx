@@ -23,7 +23,7 @@ export default function ErrorLogs() {
   const errorLogs = [
     { 
       id: 'ERR-5092', 
-      timestamp: '2024-03-15 14:23:45', 
+      timestamp: '2025-03-15 14:23:45', 
       service: 'API Gateway', 
       severity: 'critical', 
       message: 'Rate limit exceeded for IP 192.168.1.1',
@@ -31,7 +31,7 @@ export default function ErrorLogs() {
     },
     { 
       id: 'ERR-5091', 
-      timestamp: '2024-03-15 14:15:22', 
+      timestamp: '2025-03-15 14:15:22', 
       service: 'Database', 
       severity: 'error', 
       message: 'Connection timeout: Pool size limit reached',
@@ -39,7 +39,7 @@ export default function ErrorLogs() {
     },
     { 
       id: 'ERR-5090', 
-      timestamp: '2024-03-15 13:45:10', 
+      timestamp: '2025-03-15 13:45:10', 
       service: 'Auth Service', 
       severity: 'warning', 
       message: 'Invalid signature detected in JWT token',
@@ -47,7 +47,7 @@ export default function ErrorLogs() {
     },
     { 
       id: 'ERR-5089', 
-      timestamp: '2024-03-15 13:30:05', 
+      timestamp: '2025-03-15 13:30:05', 
       service: 'Blockchain Node', 
       severity: 'error', 
       message: 'Block sync stalled at height 1234567',
@@ -55,7 +55,7 @@ export default function ErrorLogs() {
     },
     { 
       id: 'ERR-5088', 
-      timestamp: '2024-03-15 12:10:55', 
+      timestamp: '2025-03-15 12:10:55', 
       service: 'Message Queue', 
       severity: 'warning', 
       message: 'High consumer latency detected on verify_queue',

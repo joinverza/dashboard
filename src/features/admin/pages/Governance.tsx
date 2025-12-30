@@ -26,7 +26,7 @@ const PROPOSALS = [
     status: "active",
     votesFor: 65,
     votesAgainst: 35,
-    endDate: "2024-04-01",
+    endDate: "2025-04-01",
     description: "Raise the minimum stake from 5000 VERZA to 10000 VERZA to ensure higher commitment."
   },
   {
@@ -37,7 +37,7 @@ const PROPOSALS = [
     status: "passed",
     votesFor: 88,
     votesAgainst: 12,
-    endDate: "2024-03-10",
+    endDate: "2025-03-10",
     description: "Integrate Polygon POS chain for lower cost credential anchoring."
   },
   {
@@ -48,7 +48,7 @@ const PROPOSALS = [
     status: "rejected",
     votesFor: 42,
     votesAgainst: 58,
-    endDate: "2024-02-28",
+    endDate: "2025-02-28",
     description: "Lower the platform fee from 2.5% to 1% to attract more enterprise volume."
   },
   {
@@ -59,7 +59,7 @@ const PROPOSALS = [
     status: "executed",
     votesFor: 100,
     votesAgainst: 0,
-    endDate: "2024-02-15",
+    endDate: "2025-02-15",
     description: "Deploy critical security fix for the verification escrow contract."
   }
 ];

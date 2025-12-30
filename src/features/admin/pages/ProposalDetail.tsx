@@ -24,14 +24,14 @@ export default function ProposalDetail() {
     votesFor: 880000,
     votesAgainst: 120000,
     votesAbstain: 50000,
-    startDate: "2024-03-01",
-    endDate: "2024-03-10",
+    startDate: "2025-03-01",
+    endDate: "2025-03-10",
     description: "Integrate Polygon POS chain for lower cost credential anchoring. This will allow users to choose between Midnight (privacy-focused) and Polygon (cost-effective) for their credentials.",
     timeline: [
-      { date: "2024-03-01", event: "Proposal Created" },
-      { date: "2024-03-01", event: "Voting Started" },
-      { date: "2024-03-10", event: "Voting Ended" },
-      { date: "2024-03-10", event: "Passed" }
+      { date: "2025-03-01", event: "Proposal Created" },
+      { date: "2025-03-01", event: "Voting Started" },
+      { date: "2025-03-10", event: "Voting Ended" },
+      { date: "2025-03-10", event: "Passed" }
     ]
   };
 

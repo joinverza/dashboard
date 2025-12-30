@@ -57,7 +57,7 @@ const CREDENTIALS = [
     type: "Employment",
     issuer: "Tech Solutions Inc.",
     issueDate: "Aug 01, 2023",
-    expiryDate: "Aug 01, 2024",
+    expiryDate: "Aug 01, 2025",
     status: "Pending",
     documentId: "EMP-TS-4421",
     image: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&w=300&q=80"

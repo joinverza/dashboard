@@ -146,9 +146,9 @@ export default function ContentModeration() {
                 </TableHeader>
                 <TableBody>
                   {[
-                    { date: '2024-04-10', mod: 'System', action: 'Auto-Flag', target: 'Comment #9921', reason: 'Keywords' },
-                    { date: '2024-04-09', mod: 'Sarah C.', action: 'Remove', target: 'User @spammer', reason: 'Spam Bot' },
-                    { date: '2024-04-08', mod: 'John D.', action: 'Warning', target: 'User @rude_guy', reason: 'Harassment' },
+                    { date: '2025-04-10', mod: 'System', action: 'Auto-Flag', target: 'Comment #9921', reason: 'Keywords' },
+                    { date: '2025-04-09', mod: 'Sarah C.', action: 'Remove', target: 'User @spammer', reason: 'Spam Bot' },
+                    { date: '2025-04-08', mod: 'John D.', action: 'Warning', target: 'User @rude_guy', reason: 'Harassment' },
                   ].map((item, i) => (
                     <TableRow key={i}>
                       <TableCell className="font-mono text-xs">{item.date}</TableCell>

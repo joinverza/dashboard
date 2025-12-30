@@ -11,15 +11,15 @@ import { Separator } from '@/components/ui/separator';
 
 export default function VerificationDetail() {
   const [, params] = useRoute('/enterprise/requests/:id');
-  const id = params?.id || 'REQ-2024-1058';
+  const id = params?.id || 'REQ-2025-1058';
 
   // Mock data
   const requestData = {
     id: id,
     type: "University Degree Verification",
     status: "completed",
-    submittedDate: "2024-03-15 10:30 AM",
-    completedDate: "2024-03-15 02:45 PM",
+    submittedDate: "2025-03-15 10:30 AM",
+    completedDate: "2025-03-15 02:45 PM",
     requester: "Sarah Connor",
     verifier: "Verza Verify",
     subject: {
@@ -37,7 +37,7 @@ export default function VerificationDetail() {
       midnightHash: "0x7f...3a2b",
       cardanoHash: "0x8c...9d1e",
       block: "10582394",
-      timestamp: "2024-03-15 14:45:22 UTC"
+      timestamp: "2025-03-15 14:45:22 UTC"
     },
     cost: {
       verificationFee: 10.00,

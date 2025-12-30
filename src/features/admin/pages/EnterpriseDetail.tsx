@@ -173,7 +173,7 @@ export default function EnterpriseDetail() {
                 <Separator />
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Plan Renewal</div>
-                  <div className="mt-1 text-sm">Nov 15, 2024 (Auto-renew)</div>
+                  <div className="mt-1 text-sm">Nov 15, 2025 (Auto-renew)</div>
                 </div>
               </CardContent>
             </Card>

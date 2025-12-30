@@ -17,9 +17,9 @@ import {
   } from "@/components/ui/table";
 
 const STAKE_HISTORY = [
-    { id: 1, date: "2024-05-15", action: "Stake", amount: "+5,000 VERZA", status: "Completed" },
-    { id: 2, date: "2024-04-01", action: "Stake", amount: "+10,000 VERZA", status: "Completed" },
-    { id: 3, date: "2024-03-10", action: "Reward", amount: "+250 VERZA", status: "Completed" },
+    { id: 1, date: "2025-05-15", action: "Stake", amount: "+5,000 VERZA", status: "Completed" },
+    { id: 2, date: "2025-04-01", action: "Stake", amount: "+10,000 VERZA", status: "Completed" },
+    { id: 3, date: "2025-03-10", action: "Reward", amount: "+250 VERZA", status: "Completed" },
 ];
 
 export default function Staking() {

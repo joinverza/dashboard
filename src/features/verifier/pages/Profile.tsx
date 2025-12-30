@@ -180,7 +180,7 @@ export default function VerifierProfile() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-sm truncate">Identity Management Professional</h4>
-                      <p className="text-xs text-muted-foreground">Issued: Mar 2024</p>
+                      <p className="text-xs text-muted-foreground">Issued: Mar 2025</p>
                     </div>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500">
                       <X className="h-4 w-4" />

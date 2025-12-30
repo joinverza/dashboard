@@ -131,7 +131,7 @@ export default function ComplianceReports() {
           <CardContent>
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-verza-purple" />
-              <div className="text-2xl font-bold">Jan 15, 2024</div>
+              <div className="text-2xl font-bold">Jan 15, 2025</div>
             </div>
             <p className="text-xs text-muted-foreground mt-1">Quarterly compliance review</p>
           </CardContent>
