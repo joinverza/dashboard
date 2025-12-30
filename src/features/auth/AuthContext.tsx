@@ -15,8 +15,8 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, role?: UserRole) => void;
-  signup: (name: string, email: string) => void;
+  login: (email: string, role?: UserRole, authKey?: string) => void;
+  signup: (name: string, email: string, role?: UserRole) => void;
   logout: () => void;
   isLoading: boolean;
 }
@@ -28,8 +28,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
 
-  const login = (email: string, role: UserRole = "user") => {
+  const login = (email: string, role: UserRole = "user", authKey?: string) => {
     setIsLoading(true);
+    if (authKey) {
+      console.log("Verifying enterprise auth key:", authKey);
+    }
     // Simulate API call
     setTimeout(() => {
       // Create a simulated name from email if not "alex@verza.com"
@@ -52,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 1000);
   };
 
-  const signup = (name: string, email: string) => {
+  const signup = (name: string, email: string, role: UserRole = "user") => {
     setIsLoading(true);
     // Simulate API call
     setTimeout(() => {
@@ -60,11 +63,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: "1",
         name: name,
         email: email,
-        role: "user",
+        role: role,
         avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
       });
       setIsLoading(false);
-      setLocation("/app");
+      
+      // Redirect based on role
+      if (role === "admin") setLocation("/admin");
+      else if (role === "verifier") setLocation("/verifier");
+      else if (role === "enterprise") setLocation("/enterprise");
+      else setLocation("/app");
     }, 1000);
   };
 
