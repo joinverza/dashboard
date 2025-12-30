@@ -4,7 +4,9 @@ import { motion } from "framer-motion";
 import { 
   Github,
   Command,
-  CheckCircle2
+  ShieldCheck,
+  Zap,
+  Globe
 } from "lucide-react";
 import versalogo from "@/assets/versalogoSVG.svg";
 import { Button } from "@/components/ui/button";
@@ -24,19 +26,19 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen w-full flex bg-[#09090b] text-white selection:bg-verza-emerald/20 selection:text-verza-emerald">
-      {/* Left Panel - Brand & Vision */}
-      <div className="hidden lg:flex w-1/2 relative bg-[#000000] overflow-hidden flex-col justify-between p-12 border-r border-white/5">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,_#002411_0%,_transparent_50%)]" />
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-verza-emerald/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
+      {/* Right Panel - Brand & Vision (Moved to Right to match Signup) */}
+      <div className="hidden lg:flex w-1/2 relative bg-[#000000] overflow-hidden flex-col justify-between p-12 border-l border-white/5 order-2">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,_#002411_0%,_transparent_50%)]" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-verza-emerald/5 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
         
         {/* Logo */}
-        <div className="relative z-10 flex items-center gap-3">
-          <img src={versalogo} alt="Verza" className="h-8 w-8" />
+        <div className="relative z-10 flex items-center justify-end gap-3">
           <span className="text-xl font-bold tracking-tight text-white">Verza</span>
+          <img src={versalogo} alt="Verza" className="h-8 w-8" />
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 max-w-lg">
+        <div className="relative z-10 max-w-lg ml-auto text-right">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -50,17 +52,17 @@ export default function LoginPage() {
               Verza provides the infrastructure for verifiable credentials and decentralized identity. Secure, scalable, and built for the future of enterprise.
             </p>
             
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 items-end">
               {[
-                "Enterprise-grade security",
-                "Instant global verification",
-                "Blockchain-backed immutable records"
+                { icon: ShieldCheck, text: "Enterprise-grade security" },
+                { icon: Zap, text: "Instant global verification" },
+                { icon: Globe, text: "Blockchain-backed immutable records" }
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3 text-zinc-300">
-                  <div className="h-6 w-6 rounded-full bg-verza-emerald/10 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-verza-emerald" />
+                  <span className="text-sm font-medium">{item.text}</span>
+                  <div className="h-8 w-8 rounded-full bg-zinc-900/50 border border-zinc-800 flex items-center justify-center shrink-0">
+                    <item.icon className="h-4 w-4 text-verza-emerald" />
                   </div>
-                  <span className="text-sm font-medium">{item}</span>
                 </div>
               ))}
             </div>
@@ -69,13 +71,13 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="relative z-10 flex items-center justify-between text-xs text-zinc-500 uppercase tracking-widest font-medium">
+          <span>Secure Enclave</span>
           <span>© 2024 Verza Inc.</span>
-          <span>System Operational</span>
         </div>
       </div>
 
-      {/* Right Panel - Login Form */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-24 relative bg-[#09090b]">
+      {/* Left Panel - Login Form */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-24 relative bg-[#09090b] order-1">
         <div className="w-full max-w-[400px] space-y-8">
           
           {/* Mobile Logo */}
