@@ -1,9 +1,6 @@
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { 
-  Eye, 
-  EyeOff, 
   Wallet, 
   CheckCircle2, 
   ShieldCheck,
@@ -11,37 +8,19 @@ import {
 } from "lucide-react";
 import versalogo from "@/assets/versalogoSVG.svg";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/features/auth/AuthContext";
 
 export default function LoginPage() {
-  const [, setLocation] = useLocation();
-  const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { login, isLoading } = useAuth();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      login("user");
-      setIsLoading(false);
-      setLocation("/app");
-    }, 1500);
+  const handleLogin = () => {
+    login();
   };
 
   const handleWalletConnect = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      login("user");
-      setIsLoading(false);
-      setLocation("/app");
-    }, 1500);
+    // Wallet connect logic if separate
+    login();
   };
 
   return (
@@ -89,65 +68,18 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Login Form */}
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Email</label>
-                <Input 
-                  type="email" 
-                  placeholder="name@example.com" 
-                  className="bg-black/20 border-white/10 focus:border-[#00FF87]/50 text-white"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium text-gray-300">Password</label>
-                  <Link href="/forgot-password">
-                    <span className="text-xs text-[#00FF87] hover:underline cursor-pointer">Forgot password?</span>
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Input 
-                    type={showPassword ? "text" : "password"} 
-                    placeholder="Enter your password" 
-                    className="bg-black/20 border-white/10 focus:border-[#00FF87]/50 text-white pr-10"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox id="remember" className="border-white/20 data-[state=checked]:bg-[#00FF87] data-[state=checked]:text-black" />
-                <label
-                  htmlFor="remember"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-400"
-                >
-                  Remember me
-                </label>
-              </div>
-
+            {/* Login Button */}
+            <div className="space-y-4">
               <Button 
-                type="submit" 
+                type="button" 
                 className="w-full h-11 bg-[#00B050] hover:bg-[#00FF87] text-black font-semibold shadow-[0_0_20px_-5px_rgba(0,255,135,0.4)] transition-all"
                 disabled={isLoading}
+                onClick={handleLogin}
               >
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading ? "Redirecting..." : "Sign In with Auth0"}
                 {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
-            </form>
+            </div>
 
             <div className="mt-6 text-center text-sm">
               <span className="text-gray-400">Don't have an account? </span>

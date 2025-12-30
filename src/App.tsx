@@ -105,7 +105,11 @@ const TermsOfServicePage = lazy(() => import("@/pages/TermsOfService"));
 const OnboardingPage = lazy(() => import("@/pages/Onboarding"));
 
 function Router() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <PageLoader />;
+  }
   
   return (
     <Suspense fallback={<PageLoader />}>

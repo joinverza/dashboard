@@ -1,9 +1,6 @@
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { 
-  Eye, 
-  EyeOff, 
   Wallet, 
   ArrowRight,
   Shield,
@@ -12,49 +9,19 @@ import {
 } from "lucide-react";
 import versalogo from "@/assets/versalogoSVG.svg";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/features/auth/AuthContext";
-import { cn } from "@/lib/utils";
 
 export default function SignupPage() {
-  const [, setLocation] = useLocation();
-  const { login } = useAuth(); // Simulate auto-login after signup
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [agreed, setAgreed] = useState(false);
+  const { signup, isLoading } = useAuth();
 
-  // Simple password strength check
-  const strength = password.length > 8 ? "Strong" : password.length > 5 ? "Medium" : "Weak";
-  const strengthColor = strength === "Strong" ? "bg-green-500" : strength === "Medium" ? "bg-yellow-500" : "bg-red-500";
-  const strengthWidth = strength === "Strong" ? "100%" : strength === "Medium" ? "66%" : "33%";
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password !== confirmPassword || !agreed) return;
-    
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      login("user");
-      setIsLoading(false);
-      setLocation("/onboarding");
-    }, 1500);
+  const handleSignup = () => {
+    signup();
   };
 
   const handleWalletConnect = () => {
-    setIsLoading(true);
-    login("verifier");
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      setLocation("/verifier");
-    }, 1500);
+    // Wallet signup logic
+    signup();
   };
 
   return (
@@ -139,90 +106,17 @@ export default function SignupPage() {
             </div>
           </div>
 
-          <form onSubmit={handleSignup} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">Email</label>
-              <Input 
-                type="email" 
-                placeholder="name@example.com" 
-                className="bg-black/20 border-white/10 focus:border-[#00FF87]/50 text-white"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">Password</label>
-              <div className="relative">
-                <Input 
-                  type={showPassword ? "text" : "password"} 
-                  placeholder="Create a password" 
-                  className="bg-black/20 border-white/10 focus:border-[#00FF87]/50 text-white pr-10"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {password && (
-                <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                  <div 
-                    className={cn("h-full transition-all duration-300", strengthColor)} 
-                    style={{ width: strengthWidth }} 
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">Confirm Password</label>
-              <Input 
-                type="password" 
-                placeholder="Confirm your password" 
-                className={cn(
-                  "bg-black/20 border-white/10 focus:border-[#00FF87]/50 text-white",
-                  confirmPassword && password !== confirmPassword && "border-red-500/50"
-                )}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-              {confirmPassword && password !== confirmPassword && (
-                <p className="text-xs text-red-500">Passwords do not match</p>
-              )}
-            </div>
-
-            <div className="flex items-start space-x-2 pt-2">
-              <Checkbox 
-                id="terms" 
-                checked={agreed}
-                onCheckedChange={(c: boolean) => setAgreed(c === true)}
-                className="border-white/20 data-[state=checked]:bg-[#00FF87] data-[state=checked]:text-black mt-1" 
-              />
-              <label
-                htmlFor="terms"
-                className="text-xs leading-none text-gray-400"
-              >
-                I agree to the <a href="#" className="text-[#00FF87] hover:underline">Terms of Service</a> and <a href="#" className="text-[#00FF87] hover:underline">Privacy Policy</a>.
-              </label>
-            </div>
-
+          <div className="space-y-4">
             <Button 
-              type="submit" 
+              type="button" 
               className="w-full h-11 bg-[#00B050] hover:bg-[#00FF87] text-black font-semibold shadow-[0_0_20px_-5px_rgba(0,255,135,0.4)] transition-all mt-4"
-              disabled={isLoading || !agreed || password !== confirmPassword}
+              disabled={isLoading}
+              onClick={handleSignup}
             >
-              {isLoading ? "Creating account..." : "Create Account"}
+              {isLoading ? "Redirecting..." : "Sign Up with Auth0"}
               {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
-          </form>
+          </div>
 
           <div className="mt-6 text-center text-sm">
             <span className="text-gray-400">Already have an account? </span>
