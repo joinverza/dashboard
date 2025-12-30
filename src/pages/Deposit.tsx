@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
-import { usePaystackPayment } from "react-paystack";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -18,6 +17,50 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+type PaystackReference = Record<string, unknown>;
+
+type PaystackInlineSetupOptions = {
+  key: string;
+  email: string;
+  amount: number;
+  currency?: string;
+  ref?: string;
+  callback?: (reference: PaystackReference) => void;
+  onClose?: () => void;
+};
+
+declare global {
+  interface Window {
+    PaystackPop?: {
+      setup: (options: PaystackInlineSetupOptions) => { openIframe: () => void };
+    };
+  }
+}
+
+async function ensurePaystackInlineLoaded(): Promise<void> {
+  if (typeof window !== "undefined" && window.PaystackPop) return;
+
+  const existing = document.querySelector<HTMLScriptElement>('script[data-paystack-inline="true"]');
+  if (existing) {
+    await new Promise<void>((resolve, reject) => {
+      if (window.PaystackPop) return resolve();
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Failed to load Paystack script")), { once: true });
+    });
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v1/inline.js";
+    script.async = true;
+    script.dataset.paystackInline = "true";
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Paystack script"));
+    document.head.appendChild(script);
+  });
+}
 
 const ASSETS = [
   { id: "verza", name: "Verza Token", ticker: "VZT", icon: "https://verza.io/favicon.ico" },
@@ -54,22 +97,12 @@ export default function DepositPage() {
     };
   }, []);
 
-  const paystackConfig = {
-    reference: (new Date()).getTime().toString(),
-    email: "user@example.com",
-    amount: amount ? parseInt(amount) * 100 : 0,
-    publicKey: paystackPublicKey,
-    currency: 'NGN',
-  };
-
-  const initializePayment = usePaystackPayment(paystackConfig);
-
   const handleCopyAddress = () => {
     navigator.clipboard.writeText("addr1q9...8291");
     toast.success("Wallet address copied to clipboard");
   };
 
-  const onPaystackSuccess = (_reference: any) => {
+  const onPaystackSuccess = () => {
     setDepositStatus("success");
     toast.success("Deposit successful!");
   };
@@ -79,7 +112,7 @@ export default function DepositPage() {
     toast.info("Transaction cancelled");
   };
 
-  const handleFiatDeposit = () => {
+  const handleFiatDeposit = async () => {
     if (!amount || parseInt(amount) <= 0) {
       toast.error("Please enter a valid amount");
       return;
@@ -89,10 +122,27 @@ export default function DepositPage() {
       return;
     }
     setDepositStatus("pending");
-    initializePayment({
-      onSuccess: onPaystackSuccess,
-      onClose: onPaystackClose,
-    });
+    try {
+      await ensurePaystackInlineLoaded();
+      const handler = window.PaystackPop?.setup({
+        key: paystackPublicKey,
+        email: "user@example.com",
+        amount: parseInt(amount) * 100,
+        currency: "NGN",
+        ref: (new Date()).getTime().toString(),
+        callback: onPaystackSuccess,
+        onClose: onPaystackClose,
+      });
+      if (!handler) {
+        setDepositStatus("idle");
+        toast.error("Payment is unavailable. Please try again.");
+        return;
+      }
+      handler.openIframe();
+    } catch {
+      setDepositStatus("idle");
+      toast.error("Failed to start payment. Please try again.");
+    }
   };
 
   return (

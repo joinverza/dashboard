@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -35,32 +35,32 @@ interface ChatModalProps {
 }
 
 export function ChatModal({ isOpen, onClose, recipient, initialMessages = [] }: ChatModalProps) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (isOpen && initialMessages.length === 0) {
-      // Add a welcome message if no messages exist
-      setMessages([
-        {
-          id: 'system-1',
-          text: `This is the beginning of your conversation with ${recipient.name}.`,
-          sender: 'system',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        },
-        {
-          id: 'welcome',
-          text: `Hello! How can I help you today?`,
-          sender: 'other',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-      ]);
-    } else if (isOpen) {
-      setMessages(initialMessages);
-    }
-  }, [isOpen, recipient.name, initialMessages]);
+  const baseMessages = useMemo<Message[]>(() => {
+    if (!isOpen) return [];
+    if (initialMessages.length > 0) return initialMessages;
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return [
+      {
+        id: 'system-1',
+        text: `This is the beginning of your conversation with ${recipient.name}.`,
+        sender: 'system',
+        time
+      },
+      {
+        id: 'welcome',
+        text: `Hello! How can I help you today?`,
+        sender: 'other',
+        time
+      }
+    ];
+  }, [initialMessages, isOpen, recipient.name]);
+
+  const messages = useMemo(() => [...baseMessages, ...localMessages], [baseMessages, localMessages]);
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -68,6 +68,13 @@ export function ChatModal({ isOpen, onClose, recipient, initialMessages = [] }: 
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isOpen, isMinimized]);
+
+  const handleClose = () => {
+    setLocalMessages([]);
+    setInputValue('');
+    setIsMinimized(false);
+    onClose();
+  };
 
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
@@ -79,7 +86,7 @@ export function ChatModal({ isOpen, onClose, recipient, initialMessages = [] }: 
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    setLocalMessages(prev => [...prev, newMessage]);
     setInputValue('');
 
     // Simulate response
@@ -99,7 +106,7 @@ export function ChatModal({ isOpen, onClose, recipient, initialMessages = [] }: 
         sender: 'other',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
-      setMessages(prev => [...prev, responseMessage]);
+      setLocalMessages(prev => [...prev, responseMessage]);
     }, 1500 + Math.random() * 2000);
   };
 
@@ -119,7 +126,7 @@ export function ChatModal({ isOpen, onClose, recipient, initialMessages = [] }: 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
           />
           
@@ -199,7 +206,7 @@ export function ChatModal({ isOpen, onClose, recipient, initialMessages = [] }: 
                   className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onClose();
+                    handleClose();
                   }}
                 >
                   <X className="w-4 h-4" />

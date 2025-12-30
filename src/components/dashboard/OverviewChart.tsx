@@ -58,7 +58,7 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
           try {
              gradient.addColorStop(0, getColor("--chart-1", 0.5));
              gradient.addColorStop(1, getColor("--chart-1", 0));
-          } catch (e) {
+          } catch {
              // Fallback for initial render or SSR
              gradient.addColorStop(0, "rgba(141, 198, 63, 0.5)");
              gradient.addColorStop(1, "rgba(141, 198, 63, 0)");
@@ -151,7 +151,7 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
             size: 11,
           },
           padding: 10,
-          callback: (value: any) => `$${value / 1000}k`,
+          callback: (value: string | number) => `$${Number(value) / 1000}k`,
         },
         border: {
           display: false,

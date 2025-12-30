@@ -98,7 +98,6 @@ const UploadCredentialPage = lazy(() => import("@/pages/UploadCredential"));
 const CredentialDetailPage = lazy(() => import("@/pages/CredentialDetail"));
 const VerificationStatusPage = lazy(() => import("@/pages/VerificationStatus"));
 const RequestVerificationPage = lazy(() => import("@/pages/RequestVerification"));
-const LandingPage = lazy(() => import("@/pages/Landing"));
 const VerifierProfilePage = lazy(() => import("@/pages/VerifierProfile"));
 const PaymentConfirmationPage = lazy(() => import("@/pages/PaymentConfirmation"));
 const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicy"));
@@ -111,7 +110,9 @@ function Router() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Switch>
-        <Route path="/" component={LandingPage} />
+        <Route path="/">
+          <Redirect to="/login" />
+        </Route>
         <Route path="/login" component={LoginPage} />
         <Route path="/signup" component={SignupPage} />
         <Route path="/forgot-password" component={ForgotPasswordPage} />

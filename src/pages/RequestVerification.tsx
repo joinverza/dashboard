@@ -17,7 +17,6 @@ import {
   Coins
 } from "lucide-react";
 import { toast } from "sonner";
-import { usePaystackPayment } from "react-paystack";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -27,6 +26,50 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+
+type PaystackReference = Record<string, unknown>;
+
+type PaystackInlineSetupOptions = {
+  key: string;
+  email: string;
+  amount: number;
+  currency?: string;
+  ref?: string;
+  callback?: (reference: PaystackReference) => void;
+  onClose?: () => void;
+};
+
+declare global {
+  interface Window {
+    PaystackPop?: {
+      setup: (options: PaystackInlineSetupOptions) => { openIframe: () => void };
+    };
+  }
+}
+
+async function ensurePaystackInlineLoaded(): Promise<void> {
+  if (typeof window !== "undefined" && window.PaystackPop) return;
+
+  const existing = document.querySelector<HTMLScriptElement>('script[data-paystack-inline="true"]');
+  if (existing) {
+    await new Promise<void>((resolve, reject) => {
+      if (window.PaystackPop) return resolve();
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Failed to load Paystack script")), { once: true });
+    });
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v1/inline.js";
+    script.async = true;
+    script.dataset.paystackInline = "true";
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Paystack script"));
+    document.head.appendChild(script);
+  });
+}
 
 // Mock Data
 const CREDENTIALS = [
@@ -65,17 +108,9 @@ export default function RequestVerificationPage() {
   const [paymentMethod, setPaymentMethod] = useState("verza_token");
   const [isProcessing, setIsProcessing] = useState(false);
   const [paystackPublicKey, setPaystackPublicKey] = useState("");
-
-  const selectedVerifierData = VERIFIERS.find(v => v.id === selectedVerifier);
-  const paystackConfig = {
-    reference: (new Date()).getTime().toString(),
-    email: "user@example.com",
-    amount: selectedVerifierData ? selectedVerifierData.priceFiat : 0,
-    publicKey: paystackPublicKey,
-    currency: 'NGN',
-  };
-
-  const initializePayment = usePaystackPayment(paystackConfig);
+  const selectedVerifierData = VERIFIERS.find((v) => v.id === selectedVerifier) ?? null;
+  const selectedPriceFiat = selectedVerifierData?.priceFiat ?? 0;
+  const selectedPriceToken = parseFloat((selectedVerifierData?.price ?? "0").split(" ")[0] ?? "0");
 
   const steps = [
     { id: 1, title: "Select Credential" },
@@ -101,7 +136,7 @@ export default function RequestVerificationPage() {
     else setLocation("/app/credentials");
   };
 
-  const onPaystackSuccess = (_reference: any) => {
+  const onPaystackSuccess = () => {
     setIsProcessing(false);
     toast.success("Payment successful! Verification request submitted.");
     setTimeout(() => {
@@ -114,7 +149,7 @@ export default function RequestVerificationPage() {
     toast.info("Payment cancelled");
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsProcessing(true);
     
     if (paymentMethod === 'paystack') {
@@ -123,10 +158,32 @@ export default function RequestVerificationPage() {
         toast.error("Payment configuration is unavailable. Please try again.");
         return;
       }
-      initializePayment({
-        onSuccess: onPaystackSuccess,
-        onClose: onPaystackClose,
-      });
+      if (!selectedVerifierData) {
+        setIsProcessing(false);
+        toast.error("Please choose a verifier");
+        return;
+      }
+      try {
+        await ensurePaystackInlineLoaded();
+        const handler = window.PaystackPop?.setup({
+          key: paystackPublicKey,
+          email: "user@example.com",
+          amount: selectedVerifierData.priceFiat,
+          currency: "NGN",
+          ref: (new Date()).getTime().toString(),
+          callback: onPaystackSuccess,
+          onClose: onPaystackClose,
+        });
+        if (!handler) {
+          setIsProcessing(false);
+          toast.error("Payment is unavailable. Please try again.");
+          return;
+        }
+        handler.openIframe();
+      } catch {
+        setIsProcessing(false);
+        toast.error("Failed to start payment. Please try again.");
+      }
     } else {
       toast.loading("Processing transaction on Verza Chain...");
       setTimeout(() => {
@@ -386,8 +443,8 @@ export default function RequestVerificationPage() {
                         <span className="text-muted-foreground">Verification Fee</span>
                         <span>
                           {paymentMethod === 'paystack' 
-                            ? `₦${(VERIFIERS.find(v => v.id === selectedVerifier)?.priceFiat! / 100).toLocaleString()}.00` 
-                            : VERIFIERS.find(v => v.id === selectedVerifier)?.price
+                            ? `₦${(selectedPriceFiat / 100).toLocaleString()}.00` 
+                            : selectedVerifierData?.price
                           }
                         </span>
                       </div>
@@ -395,7 +452,7 @@ export default function RequestVerificationPage() {
                         <span className="text-muted-foreground">Platform Fee (2%)</span>
                         <span>
                           {paymentMethod === 'paystack' 
-                            ? `₦${((VERIFIERS.find(v => v.id === selectedVerifier)?.priceFiat! * 0.02) / 100).toLocaleString()}.00` 
+                            ? `₦${((selectedPriceFiat * 0.02) / 100).toLocaleString()}.00` 
                             : '1.00 VZT'
                           }
                         </span>
@@ -411,8 +468,8 @@ export default function RequestVerificationPage() {
                         <span>Total</span>
                         <span>
                           {paymentMethod === 'paystack' 
-                            ? `₦${((VERIFIERS.find(v => v.id === selectedVerifier)?.priceFiat! * 1.02) / 100).toLocaleString()}` 
-                            : `${(parseFloat(VERIFIERS.find(v => v.id === selectedVerifier)?.price.split(' ')[0]!) + 1.17).toFixed(2)} VZT`
+                            ? `₦${((selectedPriceFiat * 1.02) / 100).toLocaleString()}` 
+                            : `${(selectedPriceToken + 1.17).toFixed(2)} VZT`
                           }
                         </span>
                       </div>
@@ -471,8 +528,8 @@ export default function RequestVerificationPage() {
                         <>
                           Confirm & Pay {
                             paymentMethod === 'paystack'
-                            ? `₦${((VERIFIERS.find(v => v.id === selectedVerifier)?.priceFiat! * 1.02) / 100).toLocaleString()}`
-                            : `${(parseFloat(VERIFIERS.find(v => v.id === selectedVerifier)?.price.split(' ')[0]!) + 1.17).toFixed(2)} VZT`
+                            ? `₦${((selectedPriceFiat * 1.02) / 100).toLocaleString()}`
+                            : `${(selectedPriceToken + 1.17).toFixed(2)} VZT`
                           }
                         </>
                       )}

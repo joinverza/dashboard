@@ -98,7 +98,11 @@ export default function UploadCredentialPage() {
       return;
     }
     
-    setCurrentStep(prev => prev + 1);
+    setCurrentStep((prev) => {
+      const next = prev + 1;
+      if (next === 3) setScanProgress(0);
+      return next;
+    });
   };
 
   const handleSubmit = () => {
@@ -111,8 +115,6 @@ export default function UploadCredentialPage() {
   // Step 3 Simulation: AI Scanning
   useEffect(() => {
     if (currentStep === 3) {
-      setScanProgress(0);
-      
       const interval = setInterval(() => {
         setScanProgress(prev => {
           if (prev >= 100) {
@@ -129,6 +131,7 @@ export default function UploadCredentialPage() {
   }, [currentStep]);
 
   const handleBack = () => {
+    if (currentStep === 4) setScanProgress(0);
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
