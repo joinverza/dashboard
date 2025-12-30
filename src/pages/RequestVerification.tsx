@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -64,14 +64,14 @@ export default function RequestVerificationPage() {
   const [selectedVerifier, setSelectedVerifier] = useState<number | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("verza_token");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paystackPublicKey, setPaystackPublicKey] = useState("");
 
-  // Paystack Config
   const selectedVerifierData = VERIFIERS.find(v => v.id === selectedVerifier);
   const paystackConfig = {
     reference: (new Date()).getTime().toString(),
     email: "user@example.com",
-    amount: selectedVerifierData ? selectedVerifierData.priceFiat : 0, // Amount in kobo
-    publicKey: 'pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // Replace with actual public key
+    amount: selectedVerifierData ? selectedVerifierData.priceFiat : 0,
+    publicKey: paystackPublicKey,
     currency: 'NGN',
   };
 
@@ -118,12 +118,16 @@ export default function RequestVerificationPage() {
     setIsProcessing(true);
     
     if (paymentMethod === 'paystack') {
+      if (!paystackPublicKey) {
+        setIsProcessing(false);
+        toast.error("Payment configuration is unavailable. Please try again.");
+        return;
+      }
       initializePayment({
         onSuccess: onPaystackSuccess,
         onClose: onPaystackClose,
       });
     } else {
-      // Token Payment Simulation
       toast.loading("Processing transaction on Verza Chain...");
       setTimeout(() => {
         setIsProcessing(false);
@@ -133,6 +137,26 @@ export default function RequestVerificationPage() {
       }, 2000);
     }
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch("/.netlify/functions/payment-config");
+        if (!res.ok) return;
+        const data = (await res.json()) as { paystackPublicKey?: unknown };
+        const key = typeof data?.paystackPublicKey === "string" ? data.paystackPublicKey : "";
+        if (!cancelled) setPaystackPublicKey(key);
+      } catch {
+        if (!cancelled) setPaystackPublicKey("");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6 pb-20 animate-in fade-in duration-500">

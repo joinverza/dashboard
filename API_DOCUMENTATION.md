@@ -611,10 +611,19 @@ Matches `/app/wallet`, `/app/wallet/deposit`, `/app/wallet/withdraw`, transactio
 - `GET /user/wallet`
 - `GET /user/wallet/transactions?page=`
 - `GET /user/wallet/transactions/:id`
-- `POST /user/wallet/deposit` (creates payment intent)
+- `GET /user/wallet/config` (returns public configs for payment providers)
+- `POST /user/wallet/deposit` (creates payment intent/initializes provider transaction)
+  ```json
+  { "amount": 5000, "currency": "NGN", "provider": "paystack", "email": "user@example.com" }
+  ```
+  Returns (Paystack example):
+  ```json
+  { "authorization_url": "https://checkout.paystack.com/...", "access_code": "...", "reference": "..." }
+  ```
+- `GET /user/wallet/verify/:reference` (verifies provider transaction; idempotent)
 - `POST /user/wallet/withdraw` (initiates withdrawal; strong fraud controls)
 - `GET /user/wallet/withdrawals/:id`
-- `POST /payments/webhook` (Stripe/other provider callback; verify signature)
+- `POST /payments/webhook` (Paystack/Stripe/other provider callback; verify signature)
 - `GET /user/payment/confirm?payment_intent=` (optional, if using redirect-based confirmation)
 
 ## Notifications (All Roles)
@@ -894,4 +903,3 @@ This section provides an AWS deployment reference with security/compliance contr
   - IP allowlists (optional)
   - session binding / device fingerprinting (optional)
 - Use strict input validation (server-side) and consistent error shapes.
-

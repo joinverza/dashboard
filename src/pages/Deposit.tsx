@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -30,15 +30,35 @@ export default function DepositPage() {
   const [selectedAsset, setSelectedAsset] = useState("verza");
   const [depositStatus, setDepositStatus] = useState<"idle" | "pending" | "success">("idle");
   const [amount, setAmount] = useState<string>("");
+  const [paystackPublicKey, setPaystackPublicKey] = useState("");
   
   const currentAsset = ASSETS.find(a => a.id === selectedAsset) || ASSETS[0];
 
-  // Paystack Config
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch("/.netlify/functions/payment-config");
+        if (!res.ok) return;
+        const data = (await res.json()) as { paystackPublicKey?: unknown };
+        const key = typeof data?.paystackPublicKey === "string" ? data.paystackPublicKey : "";
+        if (!cancelled) setPaystackPublicKey(key);
+      } catch {
+        if (!cancelled) setPaystackPublicKey("");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const paystackConfig = {
     reference: (new Date()).getTime().toString(),
     email: "user@example.com",
-    amount: amount ? parseInt(amount) * 100 : 0, // Amount in kobo
-    publicKey: 'pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    amount: amount ? parseInt(amount) * 100 : 0,
+    publicKey: paystackPublicKey,
     currency: 'NGN',
   };
 
@@ -64,8 +84,11 @@ export default function DepositPage() {
       toast.error("Please enter a valid amount");
       return;
     }
+    if (!paystackPublicKey) {
+      toast.error("Payment configuration is unavailable. Please try again.");
+      return;
+    }
     setDepositStatus("pending");
-    // Simulate short delay before Paystack opens or just open it
     initializePayment({
       onSuccess: onPaystackSuccess,
       onClose: onPaystackClose,
