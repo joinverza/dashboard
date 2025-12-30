@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, type ReactNode } from "react";
-import { useAuth0 } from "@auth0/auth0-react";
+import { createContext, useContext, useState, type ReactNode } from "react";
+import { useLocation } from "wouter";
 
 export type UserRole = "user" | "verifier" | "enterprise" | "admin";
 
@@ -24,62 +24,52 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { 
-    user: auth0User, 
-    isAuthenticated, 
-    loginWithRedirect, 
-    logout: auth0Logout,
-    isLoading 
-  } = useAuth0();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [, setLocation] = useLocation();
 
-  // Map Auth0 user to our User interface
-  // In a real app, you might fetch additional user details (like role) from your API
-  // based on the Auth0 user ID.
-  const user: User | null = isAuthenticated && auth0User ? {
-    id: auth0User.sub!,
-    name: auth0User.name || auth0User.email || "User",
-    email: auth0User.email!,
-    // Default to 'user' role. In production, this should come from Auth0 app_metadata or your backend
-    role: (auth0User['https://verza.com/roles']?.[0] as UserRole) || 'user', 
-    avatar: auth0User.picture,
-  } : null;
-
-  const login = (role?: UserRole) => {
-    // For now, we redirect to Auth0 login page.
-    // If you need to support specific roles, you might handle that via Auth0 actions
-    // or by passing parameters if supported.
-    console.log("Logging in, requested role:", role);
-    loginWithRedirect({
-      appState: {
-        returnTo: window.location.pathname
-      }
-    });
+  const login = (role: UserRole = "user") => {
+    setIsLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      setUser({
+        id: "1",
+        name: "Alex Morgan",
+        email: "alex@verza.com",
+        role: role,
+        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+      });
+      setIsLoading(false);
+      setLocation("/dashboard");
+    }, 1000);
   };
 
   const signup = () => {
-    loginWithRedirect({
-      authorizationParams: {
-        screen_hint: 'signup'
-      },
-      appState: {
-        returnTo: window.location.pathname
-      }
-    });
+    setIsLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      setUser({
+        id: "1",
+        name: "New User",
+        email: "user@verza.com",
+        role: "user",
+        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+      });
+      setIsLoading(false);
+      setLocation("/onboarding");
+    }, 1000);
   };
 
   const logout = () => {
-    auth0Logout({ 
-      logoutParams: { 
-        returnTo: window.location.origin 
-      } 
-    });
+    setUser(null);
+    setLocation("/");
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated,
+        isAuthenticated: !!user,
         login,
         signup,
         logout,
