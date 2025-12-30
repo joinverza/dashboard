@@ -30,11 +30,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useTheme } from '@/contexts/ThemeContext';
-import { currentUser } from '@/data/mockData';
+import { useAuth } from '@/features/auth/AuthContext';
 import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
@@ -42,9 +43,9 @@ export default function SettingsPage() {
     security: true,
   });
 
-  const [firstName, setFirstName] = useState("Anne");
-  const [lastName, setLastName] = useState("Cooper");
-  const [email, setEmail] = useState(currentUser.email);
+  const [firstName, setFirstName] = useState(user?.name.split(' ')[0] || "");
+  const [lastName, setLastName] = useState(user?.name.split(' ').slice(1).join(' ') || "");
+  const [email, setEmail] = useState(user?.email || "");
 
   const handleSaveProfile = () => {
     if (!firstName || !lastName || !email) {
@@ -128,7 +129,7 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-6">
                   <Avatar className="h-20 w-20">
                     <AvatarFallback className="bg-gradient-to-br from-verza-emerald to-verza-kelly text-white text-xl font-medium">
-                      {currentUser.name.split(' ').map((n) => n[0]).join('')}
+                      {user?.name?.split(' ').map((n) => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
                   <div>
@@ -172,7 +173,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
-                    <Input id="role" defaultValue={currentUser.role} disabled data-testid="input-role" />
+                    <Input id="role" defaultValue={user?.role} disabled data-testid="input-role" />
                   </div>
                 </div>
 

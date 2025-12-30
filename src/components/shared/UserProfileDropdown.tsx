@@ -1,4 +1,4 @@
-import { LogOut, Settings, User, HelpCircle, CreditCard } from 'lucide-react';
+import { LogOut, Settings, User, HelpCircle, CreditCard, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,14 +10,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { currentUser } from '@/data/mockData';
-import { ChevronDown } from 'lucide-react';
+import { useAuth } from "@/features/auth/AuthContext";
 import { Link } from 'wouter';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function UserProfileDropdown() {
   const { theme } = useTheme();
+  const { user, logout } = useAuth();
+
+  if (!user) return null;
 
   return (
     <DropdownMenu>
@@ -29,11 +31,11 @@ export default function UserProfileDropdown() {
         >
           <Avatar className="h-8 w-8">
             <AvatarFallback className="bg-gradient-to-br from-verza-emerald to-verza-kelly text-white text-sm font-medium">
-              {currentUser.name.split(' ').map(n => n[0]).join('')}
+              {user.name.split(' ').map(n => n[0]).join('')}
             </AvatarFallback>
           </Avatar>
           <span className="hidden md:inline-block text-sm font-medium">
-            {currentUser.name}
+            {user.name}
           </span>
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </Button>
@@ -41,8 +43,8 @@ export default function UserProfileDropdown() {
       <DropdownMenuContent align="end" className={cn("w-56", theme === "dark" ? "bg-black" : "bg-white")}>
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium">{currentUser.name}</p>
-            <p className="text-xs text-muted-foreground">{currentUser.email}</p>
+            <p className="text-sm font-medium">{user.name}</p>
+            <p className="text-xs text-muted-foreground">{user.email}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -55,7 +57,7 @@ export default function UserProfileDropdown() {
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
           </DropdownMenuItem>
-          <Link href="/settings">
+          <Link href="/app/settings">
             <DropdownMenuItem className="cursor-pointer" data-testid="menu-item-settings">
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
@@ -71,7 +73,11 @@ export default function UserProfileDropdown() {
           </DropdownMenuItem>
         </motion.div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer text-red-500 focus:text-red-500" data-testid="menu-item-logout">
+        <DropdownMenuItem 
+          className="cursor-pointer text-red-500 focus:text-red-500" 
+          data-testid="menu-item-logout"
+          onClick={logout}
+        >
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

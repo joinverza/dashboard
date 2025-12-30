@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { motion, useMotionValue, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
-  Lock,
-  Mail,
-  User,
-  CheckCircle2,
-  Fingerprint,
-  Scan
+  Github,
+  Command,
+  ShieldCheck,
+  Zap,
+  Globe
 } from "lucide-react";
 import versalogo from "@/assets/versalogoSVG.svg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/AuthContext";
+import { Separator } from "@/components/ui/separator";
 
 export default function SignupPage() {
   const { signup, isLoading } = useAuth();
@@ -20,197 +20,154 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Mouse move effect for background
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const { clientX, clientY } = e;
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
-    x.set(clientX - centerX);
-    y.set(clientY - centerY);
-  };
-
-  const bgX = useTransform(x, [-500, 500], [-30, 30]);
-  const bgY = useTransform(y, [-500, 500], [-30, 30]);
-
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
-    signup();
+    signup(name, email);
   };
 
   return (
-    <div 
-      className="min-h-screen bg-black text-white flex items-center justify-center relative overflow-hidden font-sans selection:bg-[#00FF87] selection:text-black"
-      onMouseMove={handleMouseMove}
-    >
-      {/* Dynamic Background */}
-      <motion.div 
-        style={{ x: bgX, y: bgY }}
-        className="absolute inset-0 z-0"
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(0,176,80,0.1),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(0,100,255,0.1),transparent_50%)]" />
-        <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(45deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] opacity-50" />
+    <div className="min-h-screen w-full flex bg-[#09090b] text-white selection:bg-verza-emerald/20 selection:text-verza-emerald">
+      {/* Right Panel - Brand & Vision (Moved to Right for Signup to alternate) */}
+      <div className="hidden lg:flex w-1/2 relative bg-[#000000] overflow-hidden flex-col justify-between p-12 border-l border-white/5 order-2">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,_#002411_0%,_transparent_50%)]" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
         
-        {/* Animated Shapes */}
-        <motion.div 
-          animate={{ 
-            rotate: 360,
-            scale: [1, 1.2, 1]
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] border border-white/5 rounded-full"
-        />
-        <motion.div 
-          animate={{ 
-            rotate: -360,
-            scale: [1, 1.1, 1]
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] border border-white/5 rounded-full"
-        />
-      </motion.div>
+        {/* Logo */}
+        <div className="relative z-10 flex items-center justify-end gap-3">
+          <span className="text-xl font-bold tracking-tight text-white">Verza</span>
+          <img src={versalogo} alt="Verza" className="h-8 w-8" />
+        </div>
 
-      {/* Main Content */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto p-6 grid lg:grid-cols-2 gap-16 items-center">
-        
-        {/* Left Side: Signup Form */}
-        <motion.div 
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md mx-auto lg:mx-0 order-2 lg:order-1"
-        >
-          <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-[#00FF87] rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
-            
-            <div className="relative bg-[#0A0A0A] border border-white/10 rounded-2xl p-8 shadow-2xl">
-              <div className="mb-8">
-                <Link href="/">
-                   <div className="flex items-center gap-2 mb-6 cursor-pointer group/logo">
-                    <img src={versalogo} alt="Verza" className="h-8 w-8 group-hover/logo:rotate-180 transition-transform duration-700" />
-                    <span className="text-xl font-bold tracking-tight">VERZA</span>
-                  </div>
-                </Link>
-                <h2 className="text-2xl font-bold mb-2">Create Identity</h2>
-                <p className="text-gray-400">Initialize your secure profile on the network</p>
-              </div>
-
-              <form onSubmit={handleSignup} className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-300 ml-1">Full Name</label>
-                  <div className="relative group/input">
-                    <User className="absolute left-3 top-3 h-5 w-5 text-gray-500 group-focus-within/input:text-[#00FF87] transition-colors" />
-                    <Input 
-                      type="text" 
-                      placeholder="John Doe"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="pl-10 h-12 bg-white/5 border-white/10 text-white focus:border-[#00FF87] focus:ring-[#00FF87]/20 transition-all rounded-xl"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-300 ml-1">Email Interface</label>
-                  <div className="relative group/input">
-                    <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-500 group-focus-within/input:text-[#00FF87] transition-colors" />
-                    <Input 
-                      type="email" 
-                      placeholder="user@verza.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 h-12 bg-white/5 border-white/10 text-white focus:border-[#00FF87] focus:ring-[#00FF87]/20 transition-all rounded-xl"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-300 ml-1">Passcode</label>
-                  <div className="relative group/input">
-                    <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-500 group-focus-within/input:text-[#00FF87] transition-colors" />
-                    <Input 
-                      type="password" 
-                      placeholder="Create a strong password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 h-12 bg-white/5 border-white/10 text-white focus:border-[#00FF87] focus:ring-[#00FF87]/20 transition-all rounded-xl"
-                    />
-                  </div>
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-[#00B050] hover:from-[#00B050] hover:to-blue-600 text-white font-bold text-lg rounded-xl shadow-[0_0_20px_-5px_rgba(0,176,80,0.5)] transition-all duration-300 mt-2"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Establishing Connection..." : "Generate Identity"}
-                </Button>
-              </form>
-
-              <div className="mt-8 pt-6 border-t border-white/10 text-center">
-                <p className="text-gray-400">
-                  Already have an identity?{" "}
-                  <Link href="/login">
-                    <span className="text-[#00FF87] font-semibold hover:underline cursor-pointer">
-                      Access Terminal
-                    </span>
-                  </Link>
-                </p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Right Side: Features/Art */}
-        <div className="hidden lg:flex flex-col justify-center order-1 lg:order-2">
+        {/* Hero Content */}
+        <div className="relative z-10 max-w-lg ml-auto text-right">
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <h1 className="text-5xl font-bold leading-tight mb-8">
-              Join the <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00FF87] to-blue-500">Evolution</span> of Verification
+            <h1 className="text-5xl font-semibold tracking-tight leading-[1.1] mb-6 text-white">
+              Join the future of <br />
+              <span className="text-verza-emerald">decentralized ID</span>
             </h1>
+            <p className="text-lg text-zinc-400 leading-relaxed mb-8">
+              Create your verifiable profile today. Connect with thousands of enterprises and validators in a secure, trustless ecosystem.
+            </p>
             
-            <div className="space-y-8">
+            <div className="flex flex-col gap-4 items-end">
               {[
-                { 
-                  icon: Fingerprint, 
-                  title: "Biometric Integration", 
-                  desc: "Advanced identity proofing using neural matching algorithms."
-                },
-                { 
-                  icon: Scan, 
-                  title: "Instant KYC/KYB", 
-                  desc: "Automated verification pipelines processing data in milliseconds."
-                },
-                { 
-                  icon: CheckCircle2, 
-                  title: "Smart Contracts", 
-                  desc: "Self-executing agreements backed by blockchain technology."
-                }
+                { icon: ShieldCheck, text: "Bank-grade identity protection" },
+                { icon: Zap, text: "Instant verification processing" },
+                { icon: Globe, text: "Universally recognized credentials" }
               ].map((item, i) => (
-                <motion.div 
-                  key={i}
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + (i * 0.15) }}
-                  className="flex gap-4 group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-[#00FF87]/50 group-hover:bg-[#00FF87]/10 transition-all duration-300">
-                    <item.icon className="w-6 h-6 text-gray-400 group-hover:text-[#00FF87] transition-colors" />
+                <div key={i} className="flex items-center gap-3 text-zinc-300">
+                  <span className="text-sm font-medium">{item.text}</span>
+                  <div className="h-8 w-8 rounded-full bg-zinc-900/50 border border-zinc-800 flex items-center justify-center shrink-0">
+                    <item.icon className="h-4 w-4 text-verza-emerald" />
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold mb-1 group-hover:text-[#00FF87] transition-colors">{item.title}</h3>
-                    <p className="text-gray-400 max-w-sm">{item.desc}</p>
-                  </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           </motion.div>
+        </div>
+
+        {/* Footer */}
+        <div className="relative z-10 flex items-center justify-between text-xs text-zinc-500 uppercase tracking-widest font-medium">
+          <span>Secure Enclave</span>
+          <span>© 2024 Verza Inc.</span>
+        </div>
+      </div>
+
+      {/* Left Panel - Signup Form */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-24 relative bg-[#09090b] order-1">
+        <div className="w-full max-w-[400px] space-y-8">
+          
+          {/* Mobile Logo */}
+          <div className="lg:hidden flex items-center gap-2 mb-8">
+            <img src={versalogo} alt="Verza" className="h-8 w-8" />
+            <span className="text-xl font-bold text-white">Verza</span>
+          </div>
+
+          <div className="space-y-2 text-center lg:text-left">
+            <h2 className="text-3xl font-semibold tracking-tight text-white">Create an account</h2>
+            <p className="text-zinc-400">Enter your details below to create your account</p>
+          </div>
+
+          <form onSubmit={handleSignup} className="space-y-4">
+             <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">Full Name</label>
+              <Input 
+                type="text" 
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">Email</label>
+              <Input 
+                type="email" 
+                placeholder="name@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">Password</label>
+              <Input 
+                type="password" 
+                placeholder="Create a password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+              />
+              <p className="text-xs text-zinc-500">Must be at least 8 characters.</p>
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full h-11 bg-white text-black hover:bg-zinc-200 font-medium transition-all mt-2"
+              disabled={isLoading}
+            >
+              {isLoading ? "Creating account..." : "Create account"}
+            </Button>
+          </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full bg-zinc-800" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-[#09090b] px-2 text-zinc-500">Or continue with</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Button variant="outline" className="h-11 border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors">
+              <Github className="mr-2 h-4 w-4" />
+              Github
+            </Button>
+            <Button variant="outline" className="h-11 border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors">
+              <Command className="mr-2 h-4 w-4" />
+              SSO
+            </Button>
+          </div>
+
+          <p className="text-center text-sm text-zinc-400">
+            Already have an account?{" "}
+            <Link href="/login">
+              <span className="text-verza-emerald hover:text-verza-kelly font-medium cursor-pointer transition-colors">
+                Sign in
+              </span>
+            </Link>
+          </p>
+          
+          <p className="text-center text-xs text-zinc-600 max-w-xs mx-auto">
+            By clicking continue, you agree to our <span className="underline cursor-pointer hover:text-zinc-400">Terms of Service</span> and <span className="underline cursor-pointer hover:text-zinc-400">Privacy Policy</span>.
+          </p>
         </div>
       </div>
     </div>
