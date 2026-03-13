@@ -18,6 +18,7 @@ import {
   Gavel,
   Vote,
   Server,
+  Shield,
 } from "lucide-react";
 
 export interface NavItem {
@@ -51,6 +52,7 @@ export const enterpriseNavItems: NavItem[] = [
   { path: "/enterprise/bulk", label: "Bulk Verification", icon: Upload },
   { path: "/enterprise/requests", label: "Requests", icon: FileText },
   { path: "/enterprise/team", label: "Team", icon: Users },
+  { path: "/enterprise/tools", label: "Tools", icon: Shield },
   { path: "/enterprise/api", label: "API", icon: Key },
   { path: "/enterprise/billing", label: "Billing", icon: DollarSign },
   { path: "/enterprise/settings", label: "Settings", icon: Settings },

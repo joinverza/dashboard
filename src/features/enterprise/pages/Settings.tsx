@@ -1,7 +1,8 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Building2, Globe, Mail, Phone, MapPin, 
-  Save, Shield, Bell 
+  Save, Shield, Bell, Loader2 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -11,8 +12,54 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { bankingService } from '@/services/bankingService';
+import type { CompanySettings } from '@/types/banking';
 
 export default function EnterpriseSettings() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [settings, setSettings] = useState<CompanySettings | null>(null);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      setIsLoading(true);
+      const data = await bankingService.getCompanySettings();
+      setSettings(data);
+    } catch (error) {
+      console.error("Failed to fetch company settings", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!settings) return;
+    
+    try {
+      setIsSaving(true);
+      const updated = await bankingService.updateCompanySettings(settings);
+      setSettings(updated);
+      // In a real app, we would show a toast here
+    } catch (error) {
+      console.error("Failed to update settings", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -41,8 +88,8 @@ export default function EnterpriseSettings() {
               {/* Logo Section */}
               <div className="flex items-center gap-6">
                 <Avatar className="h-24 w-24">
-                  <AvatarImage src="https://github.com/shadcn.png" />
-                  <AvatarFallback>AC</AvatarFallback>
+                  <AvatarImage src={settings?.logoUrl || "https://github.com/shadcn.png"} />
+                  <AvatarFallback>{settings?.companyName?.substring(0, 2).toUpperCase() || 'CP'}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
                   <h3 className="font-medium">Company Logo</h3>
@@ -59,13 +106,20 @@ export default function EnterpriseSettings() {
                   <Label>Company Name</Label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input className="pl-9" defaultValue="Acme Corp" />
+                    <Input 
+                      className="pl-9" 
+                      value={settings?.companyName || ''} 
+                      onChange={(e) => setSettings({...settings!, companyName: e.target.value})}
+                    />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Industry</Label>
-                  <Select defaultValue="tech">
+                  <Select 
+                    value={settings?.industry || 'tech'} 
+                    onValueChange={(v) => setSettings({...settings!, industry: v})}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select industry" />
                     </SelectTrigger>
@@ -83,20 +137,31 @@ export default function EnterpriseSettings() {
                   <Label>Website</Label>
                   <div className="relative">
                     <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input className="pl-9" defaultValue="https://acme.com" />
+                    <Input 
+                      className="pl-9" 
+                      value={settings?.website || ''} 
+                      onChange={(e) => setSettings({...settings!, website: e.target.value})}
+                    />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Tax ID / EIN</Label>
-                  <Input defaultValue="12-3456789" />
+                  <Input 
+                    value={settings?.taxId || ''} 
+                    onChange={(e) => setSettings({...settings!, taxId: e.target.value})}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Email Address</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input className="pl-9" defaultValue="contact@acme.com" />
+                    <Input 
+                      className="pl-9" 
+                      value={settings?.email || ''} 
+                      onChange={(e) => setSettings({...settings!, email: e.target.value})}
+                    />
                   </div>
                 </div>
 
@@ -104,7 +169,11 @@ export default function EnterpriseSettings() {
                   <Label>Phone Number</Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input className="pl-9" defaultValue="+1 (555) 123-4567" />
+                    <Input 
+                      className="pl-9" 
+                      value={settings?.phone || ''} 
+                      onChange={(e) => setSettings({...settings!, phone: e.target.value})}
+                    />
                   </div>
                 </div>
 
@@ -112,14 +181,19 @@ export default function EnterpriseSettings() {
                   <Label>Address</Label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Textarea className="pl-9 min-h-[80px]" defaultValue="123 Innovation Drive, Suite 100&#10;San Francisco, CA 94105" />
+                    <Textarea 
+                      className="pl-9 min-h-[80px]" 
+                      value={settings?.address || ''} 
+                      onChange={(e) => setSettings({...settings!, address: e.target.value})}
+                    />
                   </div>
                 </div>
               </div>
             </CardContent>
             <CardFooter className="flex justify-end border-t border-border/50 pt-6">
-              <Button>
-                <Save className="mr-2 h-4 w-4" /> Save Changes
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} 
+                Save Changes
               </Button>
             </CardFooter>
           </Card>
@@ -142,9 +216,48 @@ export default function EnterpriseSettings() {
                      <div className="text-sm text-muted-foreground">Receive daily summaries and critical alerts.</div>
                    </div>
                  </div>
-                 <Button variant="outline">Configure</Button>
+                 <Switch 
+                    checked={settings?.notifications?.email || false}
+                    onCheckedChange={(c) => setSettings({...settings!, notifications: {...settings!.notifications, email: c}})}
+                 />
+               </div>
+               <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-4">
+                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                     <Phone className="h-5 w-5" />
+                   </div>
+                   <div>
+                     <div className="font-medium">SMS Notifications</div>
+                     <div className="text-sm text-muted-foreground">Receive urgent alerts via SMS.</div>
+                   </div>
+                 </div>
+                 <Switch 
+                    checked={settings?.notifications?.sms || false}
+                    onCheckedChange={(c) => setSettings({...settings!, notifications: {...settings!.notifications, sms: c}})}
+                 />
+               </div>
+               <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-4">
+                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                     <Globe className="h-5 w-5" />
+                   </div>
+                   <div>
+                     <div className="font-medium">Webhook Notifications</div>
+                     <div className="text-sm text-muted-foreground">Receive real-time events via webhooks.</div>
+                   </div>
+                 </div>
+                 <Switch 
+                    checked={settings?.notifications?.webhook || false}
+                    onCheckedChange={(c) => setSettings({...settings!, notifications: {...settings!.notifications, webhook: c}})}
+                 />
                </div>
             </CardContent>
+            <CardFooter className="flex justify-end border-t border-border/50 pt-6">
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} 
+                Save Preferences
+              </Button>
+            </CardFooter>
           </Card>
         </TabsContent>
 
@@ -165,9 +278,18 @@ export default function EnterpriseSettings() {
                      <div className="text-sm text-muted-foreground">Add an extra layer of security to your account.</div>
                    </div>
                  </div>
-                 <Button variant="outline">Enable</Button>
+                 <Switch 
+                    checked={settings?.security?.mfaEnabled || false}
+                    onCheckedChange={(c) => setSettings({...settings!, security: {...settings!.security, mfaEnabled: c}})}
+                 />
                </div>
             </CardContent>
+            <CardFooter className="flex justify-end border-t border-border/50 pt-6">
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} 
+                Save Security Settings
+              </Button>
+            </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>

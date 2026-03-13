@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Search, Filter, Download, MoreHorizontal, Eye, RefreshCw, FileText, 
-  CheckCircle, XCircle, Clock, AlertTriangle, ArrowUpRight 
+  CheckCircle, XCircle, Clock, AlertTriangle, ArrowUpRight, Loader2, Activity
 } from 'lucide-react';
+import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,28 +13,125 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
-
-// Mock data for verification requests
-const requestsData = [
-  { id: "REQ-2025-1058", type: "University Degree", date: "2025-03-15", status: "completed", assignee: "Sarah Connor", verifier: "Verza Verify", cost: "$12.50" },
-  { id: "REQ-2025-1057", type: "Employment History", date: "2025-03-15", status: "pending", assignee: "John Smith", verifier: "WorkCheck Inc", cost: "$15.00" },
-  { id: "REQ-2025-1056", type: "Criminal Record", date: "2025-03-14", status: "failed", assignee: "Mike Johnson", verifier: "Background Pro", cost: "$25.00" },
-  { id: "REQ-2025-1055", type: "Identity Check", date: "2025-03-14", status: "completed", assignee: "Sarah Connor", verifier: "Verza Verify", cost: "$5.00" },
-  { id: "REQ-2025-1054", type: "Professional Cert", date: "2025-03-13", status: "completed", assignee: "Jane Doe", verifier: "TechCert Verify", cost: "$18.00" },
-  { id: "REQ-2025-1053", type: "Credit History", date: "2025-03-12", status: "pending", assignee: "John Smith", verifier: "CreditScore", cost: "$10.00" },
-  { id: "REQ-2025-1052", type: "University Degree", date: "2025-03-12", status: "completed", assignee: "Mike Johnson", verifier: "Verza Verify", cost: "$12.50" },
-  { id: "REQ-2025-1051", type: "Employment History", date: "2025-03-11", status: "warning", assignee: "Sarah Connor", verifier: "WorkCheck Inc", cost: "$15.00" },
-];
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { bankingService } from '@/services/bankingService';
+import type { VerificationStatsResponse, IndividualKYCRequest, VerificationRequestResponse } from '@/types/banking';
 
 export default function VerificationRequests() {
   const [activeTab, setActiveTab] = useState("all");
   const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
+  const [stats, setStats] = useState<VerificationStatsResponse | null>(null);
+  const [requests, setRequests] = useState<VerificationRequestResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Form states for new request
+  const [requestType, setRequestType] = useState('kyc_individual');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [idNumber, setIdNumber] = useState('');
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const [statsData, requestsData] = await Promise.all([
+        bankingService.getVerificationStats(),
+        bankingService.getVerificationRequests()
+      ]);
+      setStats(statsData);
+      setRequests(requestsData);
+    } catch (error) {
+      console.error("Failed to fetch data", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleCreateRequest = async () => {
+    setIsSubmitting(true);
+    try {
+        if (requestType === 'kyc_individual') {
+            const kycData: IndividualKYCRequest = {
+                firstName,
+                lastName,
+                email,
+                dob: '1990-01-01', // Default for demo
+                phone: '555-0123', // Default for demo
+                address: {
+                    street: '123 Main St',
+                    city: 'New York',
+                    state: 'NY',
+                    zipCode: '10001',
+                    country: 'US'
+                },
+                idDocumentType: 'national_id',
+                idDocumentNumber: idNumber
+            };
+            await bankingService.verifyIndividual(kycData);
+        } else if (requestType === 'sanctions') {
+            await bankingService.checkSanctions({
+                name: `${firstName} ${lastName}`,
+                country: 'US'
+            });
+        } else if (requestType === 'pep') {
+            await bankingService.checkPEP({
+                name: `${firstName} ${lastName}`,
+                country: 'US'
+            });
+        } else if (requestType === 'document') {
+             // For demo purposes, we'll send a dummy base64 or URL
+             await bankingService.verifyDocument({
+                 documentImage: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+                 documentType: 'national_id',
+                 country: 'US'
+             });
+        } else if (requestType === 'aml') {
+            const kycData: IndividualKYCRequest = {
+                firstName,
+                lastName,
+                email,
+                dob: '1990-01-01',
+                phone: '555-0123',
+                address: {
+                    street: '123 Main St',
+                    city: 'New York',
+                    state: 'NY',
+                    zipCode: '10001',
+                    country: 'US'
+                },
+                idDocumentType: 'national_id',
+                idDocumentNumber: idNumber
+            };
+            await bankingService.calculateRiskScore({ customerData: kycData });
+        }
+        setIsNewRequestOpen(false);
+        // Reset form
+        setFirstName('');
+        setLastName('');
+        setEmail('');
+        setIdNumber('');
+        // Refresh list
+        fetchData();
+    } catch (error) {
+        console.error("Failed to create request", error);
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
 
   const toggleSelectAll = () => {
-    if (selectedRequests.length === requestsData.length) {
+    if (selectedRequests.length === requests.length) {
       setSelectedRequests([]);
     } else {
-      setSelectedRequests(requestsData.map(r => r.id));
+      setSelectedRequests(requests.map(r => r.verificationId));
     }
   };
 
@@ -45,13 +143,30 @@ export default function VerificationRequests() {
     }
   };
 
-  const filteredRequests = requestsData.filter(req => {
+  const checkStatus = async (id: string) => {
+    try {
+      const status = await bankingService.getVerificationStatus(id);
+      setRequests(prev => prev.map(req => 
+        req.verificationId === id 
+          ? { ...req, status: status.status, updatedAt: status.updatedAt } 
+          : req
+      ));
+    } catch (error) {
+      console.error("Failed to check status", error);
+    }
+  };
+
+  const filteredRequests = requests.filter(req => {
     if (activeTab === "all") return true;
     if (activeTab === "pending") return req.status === "pending";
-    if (activeTab === "completed") return req.status === "completed";
-    if (activeTab === "failed") return req.status === "failed" || req.status === "warning";
+    if (activeTab === "completed") return req.status === "verified";
+    if (activeTab === "failed") return req.status === "rejected" || req.status === "requires_action";
     return true;
   });
+
+  const successRate = stats && stats.totalVerifications > 0 
+    ? ((stats.approved / stats.totalVerifications) * 100).toFixed(1) 
+    : "0.0";
 
   return (
     <div className="space-y-6 pb-10">
@@ -69,10 +184,69 @@ export default function VerificationRequests() {
             <Download className="h-4 w-4" />
             Export Data
           </Button>
-          <Button className="gap-2 bg-verza-primary hover:bg-verza-primary/90">
-            <ArrowUpRight className="h-4 w-4" />
-            New Request
-          </Button>
+          
+          <Dialog open={isNewRequestOpen} onOpenChange={setIsNewRequestOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 bg-verza-primary hover:bg-verza-primary/90">
+                <ArrowUpRight className="h-4 w-4" />
+                New Request
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>New Verification Request</DialogTitle>
+                <DialogDescription>
+                  Initiate a new verification process.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="type">Request Type</Label>
+                  <Select value={requestType} onValueChange={setRequestType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="kyc_individual">Individual KYC</SelectItem>
+                      <SelectItem value="sanctions">Sanctions Check</SelectItem>
+                      <SelectItem value="pep">PEP Check</SelectItem>
+                      <SelectItem value="document">Document Verification</SelectItem>
+                      <SelectItem value="aml">AML Risk Score</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                  </div>
+                </div>
+                {requestType === 'kyc_individual' && (
+                  <>
+                    <div className="grid gap-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="idNumber">ID Number</Label>
+                      <Input id="idNumber" value={idNumber} onChange={(e) => setIdNumber(e.target.value)} />
+                    </div>
+                  </>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsNewRequestOpen(false)}>Cancel</Button>
+                <Button onClick={handleCreateRequest} disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Create Request
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -84,7 +258,7 @@ export default function VerificationRequests() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,248</div>
+            <div className="text-2xl font-bold">{stats?.totalVerifications.toLocaleString() || "..."}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
               <span className="text-green-500 flex items-center mr-1">
                 <ArrowUpRight className="h-3 w-3 mr-1" /> +12%
@@ -99,7 +273,7 @@ export default function VerificationRequests() {
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">94.2%</div>
+            <div className="text-2xl font-bold">{successRate}%</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
               <span className="text-green-500 flex items-center mr-1">
                 <ArrowUpRight className="h-3 w-3 mr-1" /> +2.1%
@@ -110,26 +284,23 @@ export default function VerificationRequests() {
         </Card>
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Cost</CardTitle>
-            <div className="font-bold text-muted-foreground">$</div>
+            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <Clock className="h-4 w-4 text-verza-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$14.50</div>
+            <div className="text-2xl font-bold">{stats?.pending.toLocaleString() || "..."}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <span className="text-green-500 flex items-center mr-1">
-                <ArrowUpRight className="h-3 w-3 mr-1" /> -18%
-              </span>
-              vs industry avg
+              Awaiting verification
             </p>
           </CardContent>
         </Card>
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg Turnaround</CardTitle>
-            <Clock className="h-4 w-4 text-verza-primary" />
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4.2 hrs</div>
+            <div className="text-2xl font-bold">{stats ? (stats.averageTime / 60).toFixed(0) : "..."} min</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
               <span className="text-green-500 flex items-center mr-1">
                 <ArrowUpRight className="h-3 w-3 mr-1" /> -30 min
@@ -174,7 +345,7 @@ export default function VerificationRequests() {
                 <TableRow>
                   <TableHead className="w-[50px]">
                     <Checkbox 
-                      checked={selectedRequests.length === requestsData.length && requestsData.length > 0}
+                      checked={selectedRequests.length === requests.length && requests.length > 0}
                       onCheckedChange={toggleSelectAll}
                     />
                   </TableHead>
@@ -182,76 +353,92 @@ export default function VerificationRequests() {
                   <TableHead>Type</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Assigned To</TableHead>
-                  <TableHead>Verifier</TableHead>
-                  <TableHead>Cost</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRequests.map((req) => (
-                  <motion.tr 
-                    key={req.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="group hover:bg-muted/50 transition-colors"
-                  >
-                    <TableCell>
-                      <Checkbox 
-                        checked={selectedRequests.includes(req.id)}
-                        onCheckedChange={() => toggleSelect(req.id)}
-                      />
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <div className="flex justify-center items-center">
+                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                        Loading requests...
+                      </div>
                     </TableCell>
-                    <TableCell className="font-mono text-xs font-medium">{req.id}</TableCell>
-                    <TableCell>{req.type}</TableCell>
-                    <TableCell>{req.date}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={
-                        req.status === 'completed' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                        req.status === 'pending' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                        req.status === 'failed' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                        'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                      }>
-                        {req.status === 'completed' && <CheckCircle className="h-3 w-3 mr-1" />}
-                        {req.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
-                        {req.status === 'failed' && <XCircle className="h-3 w-3 mr-1" />}
-                        {req.status === 'warning' && <AlertTriangle className="h-3 w-3 mr-1" />}
-                        {req.status.toUpperCase()}
-                      </Badge>
+                  </TableRow>
+                ) : filteredRequests.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      No requests found.
                     </TableCell>
-                    <TableCell>{req.assignee}</TableCell>
-                    <TableCell className="text-muted-foreground">{req.verifier}</TableCell>
-                    <TableCell>{req.cost}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="mr-2 h-4 w-4" /> View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Download className="mr-2 h-4 w-4" /> Download Proof
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <RefreshCw className="mr-2 h-4 w-4" /> Re-verify
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </motion.tr>
-                ))}
+                  </TableRow>
+                ) : (
+                  filteredRequests.map((req) => (
+                    <motion.tr 
+                      key={req.verificationId}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="group hover:bg-muted/50 transition-colors"
+                    >
+                      <TableCell>
+                        <Checkbox 
+                          checked={selectedRequests.includes(req.verificationId)}
+                          onCheckedChange={() => toggleSelect(req.verificationId)}
+                        />
+                      </TableCell>
+                      <TableCell className="font-mono text-xs font-medium">{req.verificationId}</TableCell>
+                      <TableCell className="capitalize">{req.type.replace('_', ' ')}</TableCell>
+                      <TableCell>{new Date(req.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={
+                          req.status === 'verified' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                          req.status === 'pending' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                          req.status === 'rejected' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                          'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                        }>
+                          {req.status === 'verified' && <CheckCircle className="h-3 w-3 mr-1" />}
+                          {req.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
+                          {req.status === 'rejected' && <XCircle className="h-3 w-3 mr-1" />}
+                          {req.status === 'requires_action' && <AlertTriangle className="h-3 w-3 mr-1" />}
+                          {req.status.toUpperCase()}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <Link href={`/enterprise/requests/${req.verificationId}`}>
+                              <DropdownMenuItem>
+                                <Eye className="mr-2 h-4 w-4" /> View Details
+                              </DropdownMenuItem>
+                            </Link>
+                            <DropdownMenuItem onClick={() => checkStatus(req.verificationId)}>
+                              <Activity className="mr-2 h-4 w-4" /> Check Status
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Download className="mr-2 h-4 w-4" /> Download Proof
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <RefreshCw className="mr-2 h-4 w-4" /> Re-verify
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </motion.tr>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
           <div className="flex items-center justify-end space-x-2 py-4">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" disabled={isLoading}>
               Previous
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" disabled={isLoading}>
               Next
             </Button>
           </div>

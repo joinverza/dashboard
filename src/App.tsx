@@ -33,6 +33,7 @@ const VerifierHelp = lazy(() => import("@/features/verifier/pages/Help"));
 const EnterpriseDashboard = lazy(() => import("@/features/enterprise/pages/Dashboard"));
 const EnterpriseBulkVerification = lazy(() => import("@/features/enterprise/pages/BulkVerification"));
 const EnterpriseVerificationRequests = lazy(() => import("@/features/enterprise/pages/VerificationRequests"));
+const EnterpriseVerificationTools = lazy(() => import("@/features/enterprise/pages/VerificationTools"));
 const EnterpriseVerificationDetail = lazy(() => import("@/features/enterprise/pages/VerificationDetail"));
 const EnterpriseApiManagement = lazy(() => import("@/features/enterprise/pages/ApiManagement"));
 const EnterpriseApiDocumentation = lazy(() => import("@/features/enterprise/pages/ApiDocumentation"));
@@ -208,6 +209,7 @@ function Router() {
             <Route path="/enterprise" component={EnterpriseDashboard} />
             <Route path="/enterprise/bulk" component={EnterpriseBulkVerification} />
             <Route path="/enterprise/requests" component={EnterpriseVerificationRequests} />
+            <Route path="/enterprise/tools" component={EnterpriseVerificationTools} />
             <Route path="/enterprise/requests/:id" component={EnterpriseVerificationDetail} />
             <Route path="/enterprise/api" component={EnterpriseApiManagement} />
             <Route path="/enterprise/api/docs" component={EnterpriseApiDocumentation} />

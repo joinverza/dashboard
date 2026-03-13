@@ -1,16 +1,48 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   BarChart3, TrendingUp, Users, CheckCircle, 
-  Download, ArrowUpRight, ArrowDownRight
+  Download, ArrowUpRight, ArrowDownRight, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { bankingService } from '@/services/bankingService';
+import type { VerificationStatsResponse } from '@/types/banking';
 
 export default function EnterpriseAnalytics() {
   const [timeRange, setTimeRange] = useState('30d');
+  const [stats, setStats] = useState<VerificationStatsResponse | null>(null);
+  // const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setIsLoading(true);
+      try {
+        const [statsData] = await Promise.all([
+          bankingService.getVerificationStats(),
+          // bankingService.getAnalytics(timeRange)
+        ]);
+        setStats(statsData);
+        // setAnalytics(analyticsData);
+      } catch (error) {
+        console.error("Failed to fetch verification stats", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStats();
+  }, [timeRange]);
+
+  const successRate = stats && stats.totalVerifications > 0 
+    ? ((stats.approved / stats.totalVerifications) * 100).toFixed(1) 
+    : "0.0";
+
+  const avgTurnaroundDays = stats 
+    ? (stats.averageTime / 86400).toFixed(1) // Convert seconds to days
+    : "0.0";
 
   return (
     <motion.div
@@ -41,52 +73,58 @@ export default function EnterpriseAnalytics() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-4">
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Verifications</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12,543</div>
-            <div className="flex items-center text-xs text-emerald-500 mt-1">
-              <ArrowUpRight className="h-3 w-3 mr-1" /> +12.5% from last month
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Success Rate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">98.2%</div>
-            <div className="flex items-center text-xs text-emerald-500 mt-1">
-              <ArrowUpRight className="h-3 w-3 mr-1" /> +0.4% from last month
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Avg. Turnaround</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1.2 days</div>
-            <div className="flex items-center text-xs text-emerald-500 mt-1">
-              <ArrowDownRight className="h-3 w-3 mr-1" /> -0.3 days from last month
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Users</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">573</div>
-            <div className="flex items-center text-xs text-emerald-500 mt-1">
-              <ArrowUpRight className="h-3 w-3 mr-1" /> +8.1% from last month
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-4">
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Verifications</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats?.totalVerifications.toLocaleString() || 0}</div>
+              <div className="flex items-center text-xs text-emerald-500 mt-1">
+                <ArrowUpRight className="h-3 w-3 mr-1" /> +12.5% from last month
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Success Rate</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{successRate}%</div>
+              <div className="flex items-center text-xs text-emerald-500 mt-1">
+                <ArrowUpRight className="h-3 w-3 mr-1" /> +0.4% from last month
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Avg. Turnaround</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{avgTurnaroundDays} days</div>
+              <div className="flex items-center text-xs text-emerald-500 mt-1">
+                <ArrowDownRight className="h-3 w-3 mr-1" /> -0.3 days from last month
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Pending Requests</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats?.pending.toLocaleString() || 0}</div>
+              <div className="flex items-center text-xs text-yellow-500 mt-1">
+                Awaiting action
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>

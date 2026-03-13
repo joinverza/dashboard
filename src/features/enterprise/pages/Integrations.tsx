@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Plug, Plus, 
-  ExternalLink, Settings, Trash2, RefreshCw 
+  ExternalLink, Settings, Trash2, RefreshCw, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -12,6 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Link } from 'wouter';
+import { bankingService } from '@/services/bankingService';
+import type { WebhookResponse } from '@/types/banking';
 
 // Mock data for integrations
 const INTEGRATIONS = [
@@ -65,13 +67,41 @@ const INTEGRATIONS = [
   }
 ];
 
-const WEBHOOKS = [
-  { id: 1, url: 'https://api.acme.com/webhooks/verification-complete', events: ['verification.completed'], status: 'active' },
-  { id: 2, url: 'https://api.acme.com/webhooks/payment-failed', events: ['payment.failed'], status: 'inactive' }
-];
-
 export default function EnterpriseIntegrations() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [webhooks, setWebhooks] = useState<WebhookResponse[]>([]);
+  const [isLoadingWebhooks, setIsLoadingWebhooks] = useState(false);
+  const [isAddingWebhook, setIsAddingWebhook] = useState(false);
+  const [newWebhookUrl, setNewWebhookUrl] = useState('');
+
+  useEffect(() => {
+    const fetchWebhooks = async () => {
+        setIsLoadingWebhooks(true);
+        try {
+            const data = await bankingService.listWebhooks();
+            setWebhooks(data);
+        } catch (error) {
+            console.error("Failed to fetch webhooks", error);
+        } finally {
+            setIsLoadingWebhooks(false);
+        }
+    };
+    fetchWebhooks();
+  }, []);
+
+  const handleAddWebhook = async () => {
+    if (!newWebhookUrl) return;
+    setIsAddingWebhook(true);
+    try {
+        const newHook = await bankingService.registerWebhook({ url: newWebhookUrl, events: ["all"] });
+        setWebhooks([...webhooks, newHook]);
+        setNewWebhookUrl('');
+    } catch (error) {
+        console.error("Failed to add webhook", error);
+    } finally {
+        setIsAddingWebhook(false);
+    }
+  };
 
   const filteredIntegrations = INTEGRATIONS.filter(integration => 
     integration.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -178,7 +208,11 @@ export default function EnterpriseIntegrations() {
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label>Payload URL</Label>
-                  <Input placeholder="https://api.yoursite.com/webhooks" />
+                  <Input 
+                    placeholder="https://api.yoursite.com/webhooks" 
+                    value={newWebhookUrl}
+                    onChange={(e) => setNewWebhookUrl(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Secret Key</Label>
@@ -188,18 +222,17 @@ export default function EnterpriseIntegrations() {
                   <Label>Events</Label>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
-                      <Switch id="evt-verification" />
+                      <Switch id="evt-verification" defaultChecked />
                       <Label htmlFor="evt-verification">verification.completed</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="evt-payment" />
-                      <Label htmlFor="evt-payment">payment.received</Label>
                     </div>
                   </div>
                 </div>
               </div>
               <DialogFooter>
-                <Button>Add Webhook</Button>
+                <Button onClick={handleAddWebhook} disabled={isAddingWebhook || !newWebhookUrl}>
+                    {isAddingWebhook && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Add Webhook
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -207,8 +240,15 @@ export default function EnterpriseIntegrations() {
 
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardContent className="p-0">
-            {WEBHOOKS.map((webhook, index) => (
-              <div key={webhook.id} className={`flex items-center justify-between p-4 ${index !== WEBHOOKS.length - 1 ? 'border-b border-border/50' : ''}`}>
+            {isLoadingWebhooks ? (
+                <div className="p-8 flex justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : webhooks.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">No webhooks registered.</div>
+            ) : (
+                webhooks.map((webhook, index) => (
+              <div key={webhook.id} className={`flex items-center justify-between p-4 ${index !== webhooks.length - 1 ? 'border-b border-border/50' : ''}`}>
                 <div className="flex items-center gap-4">
                   <div className="bg-muted p-2 rounded-md">
                     <Plug className="h-5 w-5 text-muted-foreground" />
@@ -224,15 +264,15 @@ export default function EnterpriseIntegrations() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <span className={`h-2 w-2 rounded-full ${webhook.status === 'active' ? 'bg-emerald-500' : 'bg-yellow-500'}`} />
-                    <span className="text-sm text-muted-foreground capitalize">{webhook.status}</span>
+                    <span className={`h-2 w-2 rounded-full ${webhook.isActive ? 'bg-emerald-500' : 'bg-yellow-500'}`} />
+                    <span className="text-sm text-muted-foreground capitalize">{webhook.isActive ? 'Active' : 'Inactive'}</span>
                   </div>
                   <Button variant="ghost" size="icon">
                     <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                   </Button>
                 </div>
               </div>
-            ))}
+            )))}
           </CardContent>
         </Card>
       </div>

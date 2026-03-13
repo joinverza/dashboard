@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,8 @@ import {
   Code, 
   FileText,
   UserPlus,
-  ArrowUpRight
+  ArrowUpRight,
+  Loader2
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -27,6 +29,8 @@ import {
   Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { bankingService } from '@/services/bankingService';
+import type { VerificationStatsResponse, VerificationRequestResponse } from '@/types/banking';
 
 ChartJS.register(
   CategoryScale,
@@ -68,27 +72,52 @@ const chartOptions = {
   }
 };
 
-const chartData = {
-  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  datasets: [
-    {
-      label: 'Verifications',
-      data: [120, 190, 300, 500, 200, 300, 450],
-      fill: true,
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      borderColor: '#3b82f6',
-      tension: 0.4,
-    },
-  ],
-};
-
 export default function EnterpriseDashboard() {
-  const recentVerifications = [
-    { id: "REQ-1001", type: "Identity Verification", user: "John Doe", status: "Completed", date: "2 mins ago" },
-    { id: "REQ-1002", type: "Employment Check", user: "Alice Smith", status: "Processing", date: "15 mins ago" },
-    { id: "REQ-1003", type: "Criminal Record", user: "Bob Jones", status: "Failed", date: "1 hour ago" },
-    { id: "REQ-1004", type: "Education Verification", user: "Sarah Connor", status: "Completed", date: "2 hours ago" },
-  ];
+  const [stats, setStats] = useState<VerificationStatsResponse | null>(null);
+  const [recentVerifications, setRecentVerifications] = useState<VerificationRequestResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [statsData, requestsData] = await Promise.all([
+          bankingService.getVerificationStats(),
+          bankingService.getVerificationRequests({ limit: 5 })
+        ]);
+        setStats(statsData);
+        setRecentVerifications(requestsData);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Transform stats for chart
+  const chartData = {
+    labels: stats?.dailyBreakdown?.map((d: { date: string }) => d.date) || [],
+    datasets: [
+      {
+        label: 'Verifications',
+        data: stats?.dailyBreakdown?.map((d: { count: number }) => d.count) || [],
+        fill: true,
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderColor: '#3b82f6',
+        tension: 0.4,
+      },
+    ],
+  };
 
   return (
     <motion.div
@@ -118,48 +147,48 @@ export default function EnterpriseDashboard() {
             <FileCheck className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12,543</div>
+            <div className="text-2xl font-bold">{stats?.totalVerifications.toLocaleString() || 0}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <span className="text-verza-emerald flex items-center mr-1"><ArrowUpRight className="h-3 w-3" /> +24%</span> from last month
+              <span className="text-verza-emerald flex items-center mr-1"><ArrowUpRight className="h-3 w-3" /> +12%</span> from last month
             </p>
           </CardContent>
         </Card>
         
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cost Savings</CardTitle>
+            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
             <DollarSign className="h-4 w-4 text-verza-emerald" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,200</div>
+            <div className="text-2xl font-bold">{stats ? ((stats.successful / stats.totalVerifications) * 100).toFixed(1) : 0}%</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              vs traditional methods
+              vs 85% industry avg
             </p>
           </CardContent>
         </Card>
         
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">API Calls</CardTitle>
+            <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
             <Code className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">843,221</div>
+            <div className="text-2xl font-bold">{stats?.pending || 0}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              99.99% uptime
+              Requires attention
             </p>
           </CardContent>
         </Card>
         
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Team</CardTitle>
+            <CardTitle className="text-sm font-medium">Failed/Rejected</CardTitle>
             <Users className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24</div>
+            <div className="text-2xl font-bold">{stats?.failed || 0}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              3 new this week
+              {(stats && stats.totalVerifications > 0) ? ((stats.failed / stats.totalVerifications) * 100).toFixed(1) : 0}% failure rate
             </p>
           </CardContent>
         </Card>
@@ -170,7 +199,7 @@ export default function EnterpriseDashboard() {
         <Card className="lg:col-span-2 bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader>
             <CardTitle>Verification Volume</CardTitle>
-            <CardDescription>Daily verification requests over the last 7 days.</CardDescription>
+            <CardDescription>Daily verification requests over the last 30 days.</CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
             <div className="h-[300px] w-full">
@@ -221,7 +250,7 @@ export default function EnterpriseDashboard() {
                     <div className="h-2 w-2 rounded-full bg-verza-emerald animate-pulse"></div>
                     <span className="text-sm text-muted-foreground">All systems operational</span>
                  </div>
-                 <p className="text-xs text-muted-foreground mt-2">Last checked: 1 min ago</p>
+                 <p className="text-xs text-muted-foreground mt-2">Last checked: Just now</p>
                </div>
             </CardContent>
           </Card>
@@ -238,31 +267,33 @@ export default function EnterpriseDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentVerifications.map((req) => (
-              <div key={req.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-border/50 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors">
+            {recentVerifications.length > 0 ? recentVerifications.map((req) => (
+              <div key={req.verificationId} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-border/50 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="p-2 rounded-full bg-blue-500/10 text-blue-500 mt-1">
                     <Activity className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-medium">{req.type}</h3>
+                    <h3 className="font-medium capitalize">{req.type.replace('_', ' ')}</h3>
                     <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                      <span className="font-mono text-xs">{req.id}</span>
+                      <span className="font-mono text-xs">{req.verificationId}</span>
                       <span>•</span>
-                      <span>{req.user}</span>
-                      <span>•</span>
-                      <span className="flex items-center"><Activity className="mr-1 h-3 w-3" /> {req.date}</span>
+                      <span>{new Date(req.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 justify-between md:justify-end w-full md:w-auto">
-                  <Badge variant={req.status === 'Completed' ? 'default' : req.status === 'Failed' ? 'destructive' : 'secondary'}>
+                  <Badge variant={req.status === 'verified' ? 'default' : req.status === 'rejected' ? 'destructive' : 'secondary'}>
                     {req.status}
                   </Badge>
-                  <Button variant="outline" size="sm">Details</Button>
+                  <Link href={`/enterprise/requests/${req.verificationId}`}>
+                    <Button variant="outline" size="sm">Details</Button>
+                  </Link>
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="text-center text-muted-foreground py-4">No recent verifications found.</p>
+            )}
           </div>
         </CardContent>
       </Card>
