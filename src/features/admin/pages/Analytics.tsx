@@ -1,18 +1,4 @@
-import { 
-  BarChart, 
-  LineChart, 
-  PieChart, 
-  Download, 
-  Calendar, 
-  Plus,
-  FileText,
-  Trash2,
-  RefreshCw,
-  TrendingUp,
-  Users,
-  Shield,
-  DollarSign
-} from 'lucide-react';
+import { Activity, BarChart, LineChart, PieChart, Download, Calendar, Plus, FileText, Trash2, RefreshCw, TrendingUp, Users, Shield, DollarSign, Loader2, CheckCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { 
@@ -35,9 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useEffect, useState } from 'react';
+import { bankingService } from '@/services/bankingService';
+import type { VerificationStatsResponse } from "@/types/banking";
 
-// Mock Data
-const SAVED_REPORTS = [
+// Mock Data for Saved Reports (since we don't have an endpoint for saved report configurations, only generated reports)
+const SAVED_REPORTS_MOCK = [
   { id: 1, name: "Monthly User Growth", type: "User", lastRun: "2025-03-15", schedule: "Monthly" },
   { id: 2, name: "Weekly Revenue", type: "Financial", lastRun: "2025-03-14", schedule: "Weekly" },
   { id: 3, name: "Verifier Performance Q1", type: "Performance", lastRun: "2025-03-01", schedule: "Quarterly" },
@@ -45,6 +34,60 @@ const SAVED_REPORTS = [
 ];
 
 export default function Analytics() {
+  const [stats, setStats] = useState<VerificationStatsResponse | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await bankingService.getVerificationStats();
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to fetch verification stats", error);
+        // Fallback to some default stats if API fails
+        setStats({
+          totalVerifications: 0,
+          approved: 0,
+          rejected: 0,
+          pending: 0,
+          averageTime: 0,
+          successful: 0,
+          failed: 0,
+          dailyBreakdown: []
+        });
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const handleGenerateReport = async (type: 'compliance' | 'audit' | 'activity', name: string) => {
+    try {
+      setIsGenerating(true);
+      const today = new Date();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      
+      await bankingService.createReport({
+        type,
+        dateRange: {
+          start: thirtyDaysAgo.toISOString(),
+          end: today.toISOString()
+        }
+      });
+      
+      toast.success(`${name} generated successfully`);
+    } catch (error) {
+      console.error(`Failed to generate ${name}`, error);
+      toast.error(`Failed to generate ${name}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -68,6 +111,58 @@ export default function Analytics() {
         </div>
       </div>
 
+      {/* Quick Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between space-y-0 pb-2">
+              <p className="text-sm font-medium text-muted-foreground">Total Verifications</p>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="text-2xl font-bold">
+              {isLoadingStats ? <Loader2 className="h-4 w-4 animate-spin" /> : stats?.totalVerifications.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between space-y-0 pb-2">
+              <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            </div>
+            <div className="text-2xl font-bold">
+              {isLoadingStats ? <Loader2 className="h-4 w-4 animate-spin" /> : 
+                stats && stats.totalVerifications > 0 
+                  ? `${Math.round((stats.successful / stats.totalVerifications) * 100)}%` 
+                  : '0%'}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between space-y-0 pb-2">
+              <p className="text-sm font-medium text-muted-foreground">Avg. Turnaround</p>
+              <Clock className="h-4 w-4 text-blue-500" />
+            </div>
+            <div className="text-2xl font-bold">
+              {isLoadingStats ? <Loader2 className="h-4 w-4 animate-spin" /> : 
+                stats ? `${Math.round(stats.averageTime / 60)}m` : '0m'}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between space-y-0 pb-2">
+              <p className="text-sm font-medium text-muted-foreground">Pending Review</p>
+              <Activity className="h-4 w-4 text-yellow-500" />
+            </div>
+            <div className="text-2xl font-bold">
+              {isLoadingStats ? <Loader2 className="h-4 w-4 animate-spin" /> : stats?.pending.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Tabs defaultValue="prebuilt" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="prebuilt">Pre-Built Reports</TabsTrigger>
@@ -86,7 +181,13 @@ export default function Analytics() {
                 <CardDescription>New signups, active users, and retention rates</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground" onClick={() => toast.success("User Growth Report generated")}>
+                <Button 
+                  variant="outline" 
+                  className="w-full group-hover:bg-primary group-hover:text-primary-foreground" 
+                  onClick={() => handleGenerateReport('activity', 'User Growth Report')}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Generate Report
                 </Button>
               </CardContent>
@@ -101,7 +202,13 @@ export default function Analytics() {
                 <CardDescription>Volume, success rates, and turnaround times</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground" onClick={() => toast.success("Verification Trends Report generated")}>
+                <Button 
+                  variant="outline" 
+                  className="w-full group-hover:bg-primary group-hover:text-primary-foreground" 
+                  onClick={() => handleGenerateReport('activity', 'Verification Trends Report')}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Generate Report
                 </Button>
               </CardContent>
@@ -116,7 +223,13 @@ export default function Analytics() {
                 <CardDescription>Revenue, payouts, and platform fees</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground" onClick={() => toast.success("Financial Summary Report generated")}>
+                <Button 
+                  variant="outline" 
+                  className="w-full group-hover:bg-primary group-hover:text-primary-foreground" 
+                  onClick={() => handleGenerateReport('activity', 'Financial Summary Report')}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Generate Report
                 </Button>
               </CardContent>
@@ -131,7 +244,13 @@ export default function Analytics() {
                 <CardDescription>Quality scores, dispute rates, and activity</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground" onClick={() => toast.success("Verifier Performance Report generated")}>
+                <Button 
+                  variant="outline" 
+                  className="w-full group-hover:bg-primary group-hover:text-primary-foreground" 
+                  onClick={() => handleGenerateReport('audit', 'Verifier Performance Report')}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Generate Report
                 </Button>
               </CardContent>
@@ -146,7 +265,13 @@ export default function Analytics() {
                 <CardDescription>KYC/AML checks and regulatory reporting</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground" onClick={() => toast.success("Compliance Audit Report generated")}>
+                <Button 
+                  variant="outline" 
+                  className="w-full group-hover:bg-primary group-hover:text-primary-foreground" 
+                  onClick={() => handleGenerateReport('compliance', 'Compliance Audit Report')}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Generate Report
                 </Button>
               </CardContent>
@@ -236,7 +361,10 @@ export default function Analytics() {
 
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => toast.success("Report template saved")}>Save as Template</Button>
-                <Button onClick={() => toast.success("Custom report generated")}>Generate Report</Button>
+                <Button onClick={() => handleGenerateReport('activity', 'Custom Report')} disabled={isGenerating}>
+                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Generate Report
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -260,7 +388,7 @@ export default function Analytics() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {SAVED_REPORTS.map((report) => (
+                  {SAVED_REPORTS_MOCK.map((report) => (
                     <TableRow key={report.id}>
                       <TableCell className="font-medium">{report.name}</TableCell>
                       <TableCell>

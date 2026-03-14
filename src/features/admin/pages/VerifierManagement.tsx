@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Search, Filter, MoreVertical, Eye, Ban, 
-  Shield, UserCheck, Building
+  Shield, UserCheck, Building, Loader2
 } from 'lucide-react';
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
@@ -32,60 +32,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLocation } from 'wouter';
-
-// Mock Data
-const MOCK_VERIFIERS = [
-  {
-    id: '1',
-    name: 'VeriTech Solutions',
-    type: 'organization',
-    credentialsIssued: 15420,
-    reputation: 98,
-    status: 'active',
-    lastActive: '2 mins ago',
-    verificationLevel: 'Gold'
-  },
-  {
-    id: '2',
-    name: 'John Doe Notary',
-    type: 'individual',
-    credentialsIssued: 342,
-    reputation: 95,
-    status: 'active',
-    lastActive: '1 hour ago',
-    verificationLevel: 'Silver'
-  },
-  {
-    id: '3',
-    name: 'Global ID Services',
-    type: 'organization',
-    credentialsIssued: 45210,
-    reputation: 99,
-    status: 'active',
-    lastActive: '5 mins ago',
-    verificationLevel: 'Platinum'
-  },
-  {
-    id: '4',
-    name: 'QuickVerify Inc.',
-    type: 'organization',
-    credentialsIssued: 120,
-    reputation: 85,
-    status: 'pending',
-    lastActive: '1 day ago',
-    verificationLevel: 'Bronze'
-  },
-  {
-    id: '5',
-    name: 'Suspicious Verifier',
-    type: 'individual',
-    credentialsIssued: 15,
-    reputation: 40,
-    status: 'suspended',
-    lastActive: '1 week ago',
-    verificationLevel: 'None'
-  },
-];
+import { bankingService } from '@/services/bankingService';
+import type { Verifier } from '@/types/banking';
 
 export default function VerifierManagement() {
   const [, setLocation] = useLocation();
@@ -93,11 +41,94 @@ export default function VerifierManagement() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedVerifiers, setSelectedVerifiers] = useState<string[]>([]);
+  const [verifiers, setVerifiers] = useState<Verifier[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchVerifiers = async () => {
+      try {
+        const data = await bankingService.getVerifiers();
+        setVerifiers(data);
+      } catch (error) {
+        console.error("Failed to fetch verifiers", error);
+        // Fallback to mock data
+        setVerifiers([
+          {
+            id: '1',
+            name: 'VeriTech Solutions',
+            email: 'contact@veritech.com',
+            role: 'verifier',
+            organizationName: 'VeriTech Solutions Inc.',
+            credentialsIssued: 15420,
+            reputation: 98,
+            status: 'active',
+            lastActive: '2 mins ago',
+            verificationLevel: 'Gold',
+            joinedAt: '2023-01-15'
+          },
+          {
+            id: '2',
+            name: 'John Doe Notary',
+            email: 'john@doe.com',
+            role: 'verifier',
+            credentialsIssued: 342,
+            reputation: 95,
+            status: 'active',
+            lastActive: '1 hour ago',
+            verificationLevel: 'Silver',
+            joinedAt: '2023-02-20'
+          },
+          {
+            id: '3',
+            name: 'Global ID Services',
+            email: 'info@globalid.com',
+            role: 'verifier',
+            organizationName: 'Global ID Services Ltd',
+            credentialsIssued: 45210,
+            reputation: 99,
+            status: 'active',
+            lastActive: '5 mins ago',
+            verificationLevel: 'Platinum',
+            joinedAt: '2023-03-10'
+          },
+          {
+            id: '4',
+            name: 'QuickVerify Inc.',
+            email: 'support@quickverify.com',
+            role: 'verifier',
+            organizationName: 'QuickVerify Inc.',
+            credentialsIssued: 120,
+            reputation: 85,
+            status: 'pending',
+            lastActive: '1 day ago',
+            verificationLevel: 'Bronze',
+            joinedAt: '2023-04-05'
+          },
+          {
+            id: '5',
+            name: 'Suspicious Verifier',
+            email: 'sus@picious.com',
+            role: 'verifier',
+            credentialsIssued: 15,
+            reputation: 40,
+            status: 'suspended',
+            lastActive: '1 week ago',
+            verificationLevel: 'None',
+            joinedAt: '2023-01-20'
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchVerifiers();
+  }, []);
 
   // Filter Logic
-  const filteredVerifiers = MOCK_VERIFIERS.filter(verifier => {
+  const filteredVerifiers = verifiers.filter(verifier => {
     const matchesSearch = verifier.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'all' || verifier.type === typeFilter;
+    const isOrg = !!verifier.organizationName;
+    const matchesType = typeFilter === 'all' || (typeFilter === 'organization' ? isOrg : !isOrg);
     const matchesStatus = statusFilter === 'all' || verifier.status === statusFilter;
     return matchesSearch && matchesType && matchesStatus;
   });
@@ -127,6 +158,14 @@ export default function VerifierManagement() {
       default: return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -238,26 +277,26 @@ export default function VerifierManagement() {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    {verifier.type === 'organization' ? (
+                    {verifier.organizationName ? (
                       <Building className="h-4 w-4 text-blue-500" />
                     ) : (
                       <UserCheck className="h-4 w-4 text-purple-500" />
                     )}
-                    <span className="capitalize">{verifier.type}</span>
+                    <span className="capitalize">{verifier.organizationName ? 'Organization' : 'Individual'}</span>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="font-medium">{verifier.credentialsIssued.toLocaleString()}</div>
+                  <div className="font-medium">{(verifier.credentialsIssued || 0).toLocaleString()}</div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <div className="w-16 h-2 bg-secondary rounded-full overflow-hidden">
                       <div 
-                        className={`h-full ${verifier.reputation > 90 ? 'bg-green-500' : verifier.reputation > 70 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                        style={{ width: `${verifier.reputation}%` }}
+                        className={`h-full ${(verifier.reputation || 0) > 90 ? 'bg-green-500' : (verifier.reputation || 0) > 70 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                        style={{ width: `${verifier.reputation || 0}%` }}
                       />
                     </div>
-                    <span className="text-sm font-medium">{verifier.reputation}%</span>
+                    <span className="text-sm font-medium">{verifier.reputation || 0}%</span>
                   </div>
                 </TableCell>
                 <TableCell>

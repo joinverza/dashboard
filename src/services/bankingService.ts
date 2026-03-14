@@ -33,7 +33,12 @@ import type {
   BulkVerificationResponse,
   CompanySettings,
   ComplianceReport,
-  AnalyticsData
+  AnalyticsData,
+  User,
+  Verifier,
+  VerifierProfile,
+  CredentialIssuanceRequest,
+  CredentialIssuanceResponse
 } from '../types/banking';
 
 const BASE_URL = '/api/v1/banking';
@@ -43,6 +48,11 @@ export const bankingService = {
   getVerificationRequests: async (params?: { limit?: number }): Promise<VerificationRequestResponse[]> => {
     const query = params?.limit ? `?limit=${params.limit}` : '';
     const res = await apiRequest('GET', `${BASE_URL}/requests${query}`);
+    return res.json();
+  },
+
+  updateVerificationStatus: async (verificationId: string, status: string, notes?: string): Promise<VerificationStatusResponse> => {
+    const res = await apiRequest('POST', `${BASE_URL}/requests/${verificationId}/review`, { status, notes });
     return res.json();
   },
 
@@ -189,4 +199,38 @@ export const bankingService = {
     const res = await apiRequest('PATCH', `${BASE_URL}/settings/company`, data);
     return res.json();
   },
+
+  // H. Admin Management
+  getUsers: async (params?: { role?: string; status?: string; search?: string }): Promise<User[]> => {
+    const query = new URLSearchParams(params as any).toString();
+    const res = await apiRequest('GET', `${BASE_URL}/admin/users?${query}`);
+    return res.json();
+  },
+
+  getVerifiers: async (params?: { status?: string; search?: string }): Promise<Verifier[]> => {
+    const query = new URLSearchParams(params as any).toString();
+    const res = await apiRequest('GET', `${BASE_URL}/admin/verifiers?${query}`);
+    return res.json();
+  },
+
+  getVerifierDetails: async (id: string): Promise<Verifier> => {
+    const res = await apiRequest('GET', `${BASE_URL}/admin/verifiers/${id}`);
+    return res.json();
+  },
+
+  // I. Verifier Profile & Issuance
+  getVerifierProfile: async (): Promise<VerifierProfile> => {
+    const res = await apiRequest('GET', `${BASE_URL}/verifier/profile`);
+    return res.json();
+  },
+
+  updateVerifierProfile: async (data: Partial<VerifierProfile>): Promise<VerifierProfile> => {
+    const res = await apiRequest('PATCH', `${BASE_URL}/verifier/profile`, data);
+    return res.json();
+  },
+
+  issueCredential: async (data: CredentialIssuanceRequest): Promise<CredentialIssuanceResponse> => {
+    const res = await apiRequest('POST', `${BASE_URL}/verifier/issue-credential`, data);
+    return res.json();
+  }
 };

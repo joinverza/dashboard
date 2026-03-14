@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
 import { 
-  Users, CheckCircle, AlertTriangle, Activity, 
-  Database, Server, Shield, DollarSign,
-  TrendingUp, Globe, Clock,
-  Eye, Gavel, FileText
+  CheckCircle, AlertTriangle, Activity, 
+  Database, Server, Shield, 
+  Globe, Clock,
+  Eye, Gavel, FileText, Loader2
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -22,6 +22,9 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
+import { useState, useEffect } from 'react';
+import { bankingService } from '@/services/bankingService';
+import type { VerificationStatsResponse } from '@/types/banking';
 
 ChartJS.register(
   CategoryScale,
@@ -34,13 +37,6 @@ ChartJS.register(
   Legend,
   ArcElement
 );
-
-const MOCK_METRICS = [
-  { label: "Total Users", value: "24,589", change: "+12%", icon: Users, color: "text-blue-500" },
-  { label: "Total Verifications", value: "1.2M", change: "+8.5%", icon: CheckCircle, color: "text-green-500" },
-  { label: "Total Revenue", value: "$845k", change: "+24%", icon: DollarSign, color: "text-yellow-500" },
-  { label: "Active Verifiers", value: "1,240", change: "+4%", icon: Shield, color: "text-purple-500" },
-];
 
 const SYSTEM_HEALTH = [
   { name: "API Gateway", status: "operational", uptime: "99.99%" },
@@ -59,37 +55,67 @@ const RECENT_ALERTS = [
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
+  const [stats, setStats] = useState<VerificationStatsResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setIsLoading(true);
+      try {
+        const data = await bankingService.getVerificationStats();
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to fetch admin stats", error);
+        toast.error("Failed to load dashboard statistics");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Process daily breakdown for charts
+  const labels = stats?.dailyBreakdown?.map(d => new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' })) || [];
+  const dataPoints = stats?.dailyBreakdown?.map(d => d.count) || [];
+
   const lineChartData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    labels: labels.length > 0 ? labels : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
       {
-        label: 'User Growth',
-        data: [12000, 15000, 18000, 20000, 22000, 24589],
+        label: 'Verifications',
+        data: dataPoints.length > 0 ? dataPoints : [12, 19, 3, 5, 2, 3],
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.5)',
         tension: 0.4,
-      },
-      {
-        label: 'Revenue ($)',
-        data: [400000, 450000, 550000, 600000, 750000, 845000],
-        borderColor: 'rgb(234, 179, 8)',
-        backgroundColor: 'rgba(234, 179, 8, 0.5)',
-        tension: 0.4,
-        yAxisID: 'y1',
       },
     ],
   };
 
   const barChartData = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    labels: labels.length > 0 ? labels : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [
       {
         label: 'Daily Verifications',
-        data: [4500, 5200, 4800, 5900, 6100, 3200, 2800],
+        data: dataPoints.length > 0 ? dataPoints : [4500, 5200, 4800, 5900, 6100, 3200, 2800],
         backgroundColor: 'rgba(34, 197, 94, 0.8)',
       },
     ],
   };
+
+  const metrics = [
+    { label: "Total Verifications", value: stats?.totalVerifications || 0, change: "+12%", icon: CheckCircle, color: "text-green-500" },
+    { label: "Pending Reviews", value: stats?.pending || 0, change: "+5%", icon: Clock, color: "text-yellow-500" },
+    { label: "Rejected", value: stats?.failed || 0, change: "-2%", icon: AlertTriangle, color: "text-red-500" },
+    { label: "Active Verifiers", value: "1,240", change: "+4%", icon: Shield, color: "text-purple-500" },
+  ];
 
   return (
     <motion.div
@@ -103,34 +129,31 @@ export default function AdminDashboard() {
           <p className="text-muted-foreground">System health, metrics, and alerts.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setLocation('/admin/content')}>
-            <Eye className="mr-2 h-4 w-4" /> Moderate Content
+          <Button variant="outline" onClick={() => setLocation('/admin/verifications')}>
+            <Eye className="mr-2 h-4 w-4" /> Verifications
           </Button>
           <Button variant="outline" onClick={() => setLocation('/admin/disputes')}>
             <Gavel className="mr-2 h-4 w-4" /> Disputes
           </Button>
-          <Button variant="outline" onClick={() => setLocation('/admin/compliance')}>
+          <Button variant="outline" onClick={() => setLocation('/admin/reports')}>
             <FileText className="mr-2 h-4 w-4" /> Reports
           </Button>
           <Button variant="outline" onClick={() => setLocation('/admin/system')}>
             <Activity className="mr-2 h-4 w-4" /> System Monitor
-          </Button>
-          <Button onClick={() => toast.success("Growth Report generated successfully")}>
-            <TrendingUp className="mr-2 h-4 w-4" /> Generate Report
           </Button>
         </div>
       </div>
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {MOCK_METRICS.map((metric, index) => (
+        {metrics.map((metric, index) => (
           <Card key={index} className="bg-card/80 backdrop-blur-sm border-border/50">
             <CardContent className="p-6 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">{metric.label}</p>
                 <div className="flex items-baseline gap-2 mt-1">
                   <h3 className="text-2xl font-bold">{metric.value}</h3>
-                  <span className="text-xs font-medium text-emerald-500">{metric.change}</span>
+                  {/* <span className="text-xs font-medium text-emerald-500">{metric.change}</span> */}
                 </div>
               </div>
               <div className={`p-3 rounded-full bg-secondary/50 ${metric.color}`}>
@@ -145,8 +168,8 @@ export default function AdminDashboard() {
         {/* Charts */}
         <Card className="lg:col-span-2 bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle>Platform Growth</CardTitle>
-            <CardDescription>User base and revenue trends over the last 6 months.</CardDescription>
+            <CardTitle>Verification Trends</CardTitle>
+            <CardDescription>Daily verification requests volume.</CardDescription>
           </CardHeader>
           <CardContent>
              <div className="h-[300px] w-full">
@@ -158,7 +181,6 @@ export default function AdminDashboard() {
                     interaction: { mode: 'index', intersect: false },
                     scales: {
                       y: { type: 'linear', display: true, position: 'left' },
-                      y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } },
                     },
                   }} 
                 />

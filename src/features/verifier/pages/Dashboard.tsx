@@ -11,7 +11,8 @@ import {
   Clock, 
   FileText, 
   Activity,
-  ArrowUpRight
+  ArrowUpRight,
+  Loader2
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -26,6 +27,10 @@ import {
   Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { useState, useEffect } from "react";
+import { bankingService } from "@/services/bankingService";
+import type { VerificationStatsResponse, VerificationRequestResponse } from "@/types/banking";
+import { toast } from "sonner";
 
 ChartJS.register(
   CategoryScale,
@@ -67,26 +72,60 @@ const chartOptions = {
   }
 };
 
-const chartData = {
-  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  datasets: [
-    {
-      label: 'Earnings',
-      data: [150, 230, 180, 320, 290, 140, 380],
-      fill: true,
-      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-      borderColor: '#10b981',
-      tension: 0.4,
-    },
-  ],
-};
-
 export default function VerifierDashboard() {
-  const activeJobs = [
-    { id: 1, type: "Identity Verification", requester: "Acme Corp", deadline: "2h left", status: "In Progress", price: 45.00 },
-    { id: 2, type: "Academic Transcript", requester: "University of Tech", deadline: "5h left", status: "Pending Review", price: 12.00 },
-    { id: 3, type: "Corporate KYC", requester: "FinTech Sol", deadline: "1d left", status: "In Progress", price: 85.00 },
-  ];
+  const [stats, setStats] = useState<VerificationStatsResponse | null>(null);
+  const [activeJobs, setActiveJobs] = useState<VerificationRequestResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [statsData, requestsData] = await Promise.all([
+          bankingService.getVerificationStats(),
+          bankingService.getVerificationRequests()
+        ]);
+        setStats(statsData);
+        // Filter for active jobs (mock logic: pending/review_needed)
+        const active = requestsData.filter(r => ['pending', 'review_needed'].includes(r.status)).slice(0, 3);
+        setActiveJobs(active);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data", error);
+        toast.error("Failed to load dashboard data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const getTypeLabel = (type: string) => {
+    return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const chartData = {
+    labels: stats?.dailyBreakdown?.map(d => new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' })) || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [
+      {
+        label: 'Earnings',
+        data: stats?.dailyBreakdown?.map(d => d.count * 15) || [150, 230, 180, 320, 290, 140, 380], // Estimated $15 per verification
+        fill: true,
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        borderColor: '#10b981',
+        tension: 0.4,
+      },
+    ],
+  };
+
+  const estimatedEarnings = (stats?.successful || 0) * 15;
 
   return (
     <motion.div
@@ -116,7 +155,7 @@ export default function VerifierDashboard() {
             <DollarSign className="h-4 w-4 text-verza-emerald" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$12,450.00</div>
+            <div className="text-2xl font-bold">${estimatedEarnings.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
               <span className="text-verza-emerald flex items-center mr-1"><ArrowUpRight className="h-3 w-3" /> +12%</span> from last month
             </p>
@@ -142,9 +181,9 @@ export default function VerifierDashboard() {
             <Activity className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{stats?.pending || 0}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              3 due today
+              Pending review
             </p>
           </CardContent>
         </Card>
@@ -155,9 +194,9 @@ export default function VerifierDashboard() {
             <CheckCircle className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,245</div>
+            <div className="text-2xl font-bold">{stats?.successful || 0}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              99.8% success rate
+              Successful verifications
             </p>
           </CardContent>
         </Card>
@@ -235,26 +274,28 @@ export default function VerifierDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {activeJobs.map((job) => (
-              <div key={job.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-border/50 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors">
+            {activeJobs.length === 0 ? (
+               <div className="text-center py-4 text-muted-foreground">No active jobs</div>
+            ) : activeJobs.map((job) => (
+              <div key={job.verificationId} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-border/50 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="p-2 rounded-full bg-blue-500/10 text-blue-500 mt-1">
                     <FileText className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-medium">{job.type}</h3>
+                    <h3 className="font-medium">{getTypeLabel(job.type)}</h3>
                     <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                      <span className="flex items-center"><Briefcase className="mr-1 h-3 w-3" /> {job.requester}</span>
-                      <span className="flex items-center text-orange-400"><Clock className="mr-1 h-3 w-3" /> {job.deadline}</span>
+                      <span className="flex items-center"><Briefcase className="mr-1 h-3 w-3" /> {job.details?.firstName || 'Unknown'}</span>
+                      <span className="flex items-center text-orange-400"><Clock className="mr-1 h-3 w-3" /> 2h left</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 justify-between md:justify-end w-full md:w-auto">
                   <div className="text-right mr-4">
-                    <div className="font-bold text-verza-emerald">${job.price.toFixed(2)}</div>
+                    <div className="font-bold text-verza-emerald">$15.00</div>
                     <Badge variant="outline" className="text-[10px]">{job.status}</Badge>
                   </div>
-                  <Link href={`/verifier/jobs/${job.id}`}>
+                  <Link href={`/verifier/jobs/${job.verificationId}`}>
                     <Button size="sm">Continue</Button>
                   </Link>
                 </div>

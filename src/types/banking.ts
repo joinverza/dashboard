@@ -18,7 +18,7 @@ export interface IndividualKYCRequest {
 
 export interface IndividualKYCResponse {
   verificationId: string;
-  status: 'pending' | 'verified' | 'rejected' | 'requires_action';
+  status: 'pending' | 'verified' | 'rejected' | 'requires_action' | 'in_progress' | 'review_needed';
   riskScore: 'low' | 'medium' | 'high';
   createdAt: string;
 }
@@ -26,9 +26,10 @@ export interface IndividualKYCResponse {
 export interface VerificationStatusResponse {
   verificationId: string;
   type?: 'kyc_individual' | 'kyc_business' | 'sanctions' | 'pep' | 'document' | 'aml';
-  status: 'pending' | 'verified' | 'rejected' | 'requires_action';
+  status: 'pending' | 'verified' | 'rejected' | 'requires_action' | 'in_progress' | 'review_needed';
   details?: any;
   updatedAt: string;
+  createdAt: string; // Ensure createdAt is included as it is used in UI
 }
 
 export interface DocumentVerifyRequest {
@@ -204,8 +205,9 @@ export interface AnalyticsData {
 
 export interface VerificationRequestResponse {
   verificationId: string;
-  type: 'kyc_individual' | 'kyc_business' | 'sanctions' | 'pep' | 'document';
-  status: 'pending' | 'verified' | 'rejected' | 'requires_action';
+  type: 'kyc_individual' | 'kyc_business' | 'sanctions' | 'pep' | 'document' | 'aml';
+  status: 'pending' | 'verified' | 'rejected' | 'requires_action' | 'in_progress' | 'review_needed';
+  details?: any;
   createdAt: string;
   updatedAt: string;
   subject?: string;
@@ -240,4 +242,82 @@ export interface CompanySettings {
     mfaEnabled: boolean;
     ipWhitelist?: string[];
   };
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'user' | 'verifier' | 'enterprise';
+  status: 'active' | 'suspended' | 'banned' | 'pending';
+  joinedAt: string;
+  lastActive?: string;
+  avatar?: string;
+  // Verifier specific fields
+  organizationName?: string;
+  verificationLevel?: 'None' | 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
+  credentialsIssued?: number;
+  reputation?: number;
+}
+
+export interface Verifier extends User {
+  role: 'verifier';
+  description?: string;
+  website?: string;
+  location?: string;
+  did?: string;
+  stats?: {
+    issued: number;
+    active: number;
+    revoked: number;
+    reputation: number;
+    earnings: string | number;
+  };
+}
+
+export interface VerifierProfile extends Verifier {
+  title?: string;
+  languages?: string[];
+  specializations?: string[];
+  certifications?: {
+    name: string;
+    issuer: string;
+    date: string;
+    expiry?: string;
+  }[];
+  pricing?: {
+    type: string;
+    price: number;
+    expedited: number;
+  }[];
+  availability?: {
+    vacationMode: boolean;
+    schedule: {
+      day: string;
+      active: boolean;
+      start: string;
+      end: string;
+    }[];
+    timezone: string;
+  };
+  autoAccept?: {
+    enabled: boolean;
+    minPrice: number;
+    allowedTypes: string[];
+  };
+}
+
+export interface CredentialIssuanceRequest {
+  verificationId: string;
+  recipientDid: string;
+  credentialType: string;
+  data: any;
+  notes?: string;
+}
+
+export interface CredentialIssuanceResponse {
+  credentialId: string;
+  transactionHash: string;
+  issuedAt: string;
+  status: 'issued' | 'pending' | 'failed';
 }

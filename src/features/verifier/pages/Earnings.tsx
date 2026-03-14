@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
-import { DollarSign, TrendingUp, Clock, Wallet, ArrowUpRight } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, Wallet, ArrowUpRight, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +13,9 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import { bankingService } from '@/services/bankingService';
+import type { VerificationStatsResponse, VerificationRequestResponse } from '@/types/banking';
+import { toast } from "sonner";
 
 ChartJS.register(
   CategoryScale,
@@ -47,29 +51,62 @@ const options = {
   }
 };
 
-const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-
-const data = {
-  labels,
-  datasets: [
-    {
-      label: 'Earnings ($)',
-      data: [1200, 1900, 1500, 2200, 2800, 3100],
-      backgroundColor: 'rgba(141, 198, 63, 0.7)',
-      borderColor: 'rgba(141, 198, 63, 1)',
-      borderWidth: 1,
-    },
-  ],
-};
-
-const TRANSACTIONS = [
-  { id: 1, type: "Payout", amount: 1250.00, date: "2023-06-15", status: "Completed" },
-  { id: 2, type: "Payout", amount: 850.00, date: "2023-05-30", status: "Completed" },
-  { id: 3, type: "Escrow Release", amount: 45.00, date: "2023-06-20", status: "Pending" },
-  { id: 4, type: "Payout", amount: 2100.00, date: "2023-05-15", status: "Completed" },
-];
-
 export default function Earnings() {
+  const [stats, setStats] = useState<VerificationStatsResponse | null>(null);
+  const [recentJobs, setRecentJobs] = useState<VerificationRequestResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [statsData, requestsData] = await Promise.all([
+          bankingService.getVerificationStats(),
+          bankingService.getVerificationRequests({ limit: 10 })
+        ]);
+        setStats(statsData);
+        // Filter for completed jobs that would generate earnings
+        const completed = requestsData.filter(r => r.status === 'verified' || r.status === 'rejected');
+        setRecentJobs(completed);
+      } catch (error) {
+        console.error("Failed to fetch earnings data", error);
+        toast.error("Failed to load earnings data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Calculate dynamic data
+  const totalEarnings = (stats?.successful || 0) * 15; // $15 per verification
+  const monthlyEarnings = totalEarnings; // For now, assume all are this month as we don't have historical breakdown
+  
+  // Prepare chart data from dailyBreakdown
+  const chartLabels = stats?.dailyBreakdown?.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })) || [];
+  const chartDataPoints = stats?.dailyBreakdown?.map(d => d.count * 15) || [];
+
+  const data = {
+    labels: chartLabels.length > 0 ? chartLabels : ['No Data'],
+    datasets: [
+      {
+        label: 'Earnings ($)',
+        data: chartDataPoints.length > 0 ? chartDataPoints : [0],
+        backgroundColor: 'rgba(141, 198, 63, 0.7)',
+        borderColor: 'rgba(141, 198, 63, 1)',
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -94,18 +131,18 @@ export default function Earnings() {
             <DollarSign className="h-4 w-4 text-verza-emerald" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$12,450.00</div>
-            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+            <div className="text-2xl font-bold">${totalEarnings.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">Based on {stats?.successful || 0} verifications</p>
           </CardContent>
         </Card>
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">This Month</CardTitle>
             <TrendingUp className="h-4 w-4 text-verza-emerald" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$3,100.00</div>
-            <p className="text-xs text-muted-foreground">+12% from last month</p>
+            <div className="text-2xl font-bold">${monthlyEarnings.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">Estimated based on activity</p>
           </CardContent>
         </Card>
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
@@ -114,8 +151,8 @@ export default function Earnings() {
             <Clock className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$450.00</div>
-            <p className="text-xs text-muted-foreground">Will release in ~2 days</p>
+            <div className="text-2xl font-bold">${((stats?.pending || 0) * 15).toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">For {stats?.pending || 0} pending jobs</p>
           </CardContent>
         </Card>
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
@@ -124,8 +161,8 @@ export default function Earnings() {
             <Wallet className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$1,250.00</div>
-            <p className="text-xs text-muted-foreground">Ready to withdraw</p>
+            <div className="text-2xl font-bold">${(totalEarnings * 0.9).toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">Ready to withdraw (90%)</p>
           </CardContent>
         </Card>
       </div>
@@ -146,27 +183,30 @@ export default function Earnings() {
         {/* Recent Transactions */}
         <Card className="col-span-3 bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle>Recent Payouts</CardTitle>
+            <CardTitle>Recent Jobs</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {TRANSACTIONS.map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between border-b border-border/50 pb-2 last:border-0 last:pb-0">
+              {recentJobs.length > 0 ? (
+                recentJobs.map((job) => (
+                <div key={job.verificationId} className="flex items-center justify-between border-b border-border/50 pb-2 last:border-0 last:pb-0">
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${tx.type === 'Payout' ? 'bg-verza-emerald/10 text-verza-emerald' : 'bg-yellow-500/10 text-yellow-500'}`}>
-                      {tx.type === 'Payout' ? <ArrowUpRight className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                    <div className={`p-2 rounded-full ${job.status === 'verified' ? 'bg-verza-emerald/10 text-verza-emerald' : 'bg-red-500/10 text-red-500'}`}>
+                      {job.status === 'verified' ? <ArrowUpRight className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
                     </div>
                     <div>
-                      <p className="font-medium text-sm">{tx.type}</p>
-                      <p className="text-xs text-muted-foreground">{tx.date}</p>
+                      <p className="font-medium text-sm">{job.type.replace('_', ' ').toUpperCase()}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(job.createdAt).toLocaleDateString()}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-sm">${tx.amount.toFixed(2)}</p>
-                    <p className={`text-xs ${tx.status === 'Completed' ? 'text-verza-emerald' : 'text-yellow-500'}`}>{tx.status}</p>
+                    <p className="font-bold text-sm">$15.00</p>
+                    <p className={`text-xs ${job.status === 'verified' ? 'text-verza-emerald' : 'text-red-500'}`}>{job.status}</p>
                   </div>
                 </div>
-              ))}
+              ))) : (
+                <div className="text-center text-muted-foreground py-4">No recent completed jobs</div>
+              )}
             </div>
           </CardContent>
         </Card>

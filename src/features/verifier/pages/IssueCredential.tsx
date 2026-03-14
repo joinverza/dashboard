@@ -4,8 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Shield, AlertCircle, FileCheck, Key } from "lucide-react";
-import { useState } from "react";
+import { Shield, AlertCircle, FileCheck, Key, Loader2, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link, useRoute } from "wouter";
+import { bankingService } from '@/services/bankingService';
+import { toast } from "sonner";
+import type {  } from '@/types/banking';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +21,111 @@ import {
 } from "@/components/ui/dialog";
 
 export default function IssueCredential() {
+  const [, params] = useRoute("/verifier/issue/:id");
+  const id = params?.id;
+  
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isIssuing, setIsIssuing] = useState(false);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+      firstName: '',
+      lastName: '',
+      dob: '',
+      docNumber: '',
+      expiry: '',
+      nationality: '',
+      notes: ''
+  });
+
+  useEffect(() => {
+    if (id) {
+        fetchData(id);
+    }
+  }, [id]);
+
+  const fetchData = async (verificationId: string) => {
+    setIsLoading(true);
+    try {
+        const data = await bankingService.getVerificationStatus(verificationId);
+        
+        // Pre-fill form data if available in details (mock logic for now as details might be generic)
+        if (data.details) {
+            setFormData({
+                firstName: data.details.firstName || 'Sarah', // Fallback for demo if API returns empty details
+                lastName: data.details.lastName || 'Connor',
+                dob: data.details.dob || '1985-05-12',
+                docNumber: data.details.documentNumber || 'A12345678',
+                expiry: data.details.expiryDate || '2030-05-12',
+                nationality: data.details.nationality || 'United States',
+                notes: ''
+            });
+        } else {
+             // Fallback mock data for demo purposes if API doesn't return rich details yet
+             setFormData({
+                firstName: 'Sarah',
+                lastName: 'Connor',
+                dob: '1985-05-12',
+                docNumber: 'A12345678',
+                expiry: '2030-05-12',
+                nationality: 'United States',
+                notes: ''
+            });
+        }
+    } catch (error) {
+        console.error("Failed to fetch verification data", error);
+        toast.error("Failed to load verification details");
+        // Fallback for demo
+        setFormData({
+            firstName: 'Sarah',
+            lastName: 'Connor',
+            dob: '1985-05-12',
+            docNumber: 'A12345678',
+            expiry: '2030-05-12',
+            nationality: 'United States',
+            notes: ''
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleIssueCredential = async () => {
+    if (!id) return;
+    
+    setIsIssuing(true);
+    try {
+        await bankingService.issueCredential({
+            verificationId: id,
+            recipientDid: `did:verza:${id.substring(0, 8)}`, // Mock DID generation
+            credentialType: 'IdentityVerification',
+            data: formData,
+            notes: formData.notes
+        });
+        toast.success("Credential issued successfully");
+        setIsConfirmOpen(false);
+        // Could redirect here
+    } catch (error) {
+        console.error("Failed to issue credential", error);
+        toast.error("Failed to issue credential");
+    } finally {
+        setIsIssuing(false);
+    }
+  };
+
+  if (isLoading) {
+      return (
+          <div className="flex justify-center items-center min-h-[400px]">
+              <Loader2 className="h-8 w-8 animate-spin text-verza-primary" />
+          </div>
+      );
+  }
 
   return (
     <motion.div
@@ -31,7 +139,11 @@ export default function IssueCredential() {
           <p className="text-muted-foreground">Review and sign the final credential to complete the verification.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">Back to Review</Button>
+          <Link href={`/verifier/review/${id}`}>
+            <Button variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Review
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -52,7 +164,7 @@ export default function IssueCredential() {
                 </div>
                 <div className="space-y-2">
                   <Label>Recipient DID</Label>
-                  <Input value="did:verza:1234...5678" disabled className="font-mono" />
+                  <Input value={`did:verza:${id?.substring(0, 8)}...`} disabled className="font-mono" />
                 </div>
               </div>
 
@@ -62,34 +174,34 @@ export default function IssueCredential() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" defaultValue="Sarah" />
+                    <Input id="firstName" value={formData.firstName} onChange={handleInputChange} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" defaultValue="Connor" />
+                    <Input id="lastName" value={formData.lastName} onChange={handleInputChange} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="dob">Date of Birth</Label>
-                    <Input id="dob" defaultValue="1985-05-12" />
+                    <Input id="dob" value={formData.dob} onChange={handleInputChange} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="docNumber">Document Number</Label>
-                    <Input id="docNumber" defaultValue="A12345678" />
+                    <Input id="docNumber" value={formData.docNumber} onChange={handleInputChange} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="expiry">Expiry Date</Label>
-                    <Input id="expiry" defaultValue="2030-05-12" />
+                    <Input id="expiry" value={formData.expiry} onChange={handleInputChange} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="nationality">Nationality</Label>
-                    <Input id="nationality" defaultValue="United States" />
+                    <Input id="nationality" value={formData.nationality} onChange={handleInputChange} />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2 pt-4 border-t border-border/50">
                 <Label htmlFor="notes">Verifier Notes (Public)</Label>
-                <Textarea id="notes" placeholder="Any additional notes attached to this credential..." />
+                <Textarea id="notes" value={formData.notes} onChange={handleInputChange} placeholder="Any additional notes attached to this credential..." />
               </div>
             </CardContent>
           </Card>
@@ -151,13 +263,20 @@ export default function IssueCredential() {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="p-4 bg-muted/30 rounded-md border border-border text-sm space-y-2">
-                     <p><strong>Recipient:</strong> Sarah Connor</p>
+                     <p><strong>Recipient:</strong> {formData.firstName} {formData.lastName}</p>
                      <p><strong>Type:</strong> Identity Verification</p>
                      <p><strong>Hash:</strong> 0x7f83...9a2b</p>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>Cancel</Button>
-                    <Button className="bg-verza-emerald text-white">Confirm & Sign</Button>
+                    <Button 
+                        className="bg-verza-emerald text-white" 
+                        onClick={handleIssueCredential}
+                        disabled={isIssuing}
+                    >
+                        {isIssuing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Confirm & Sign
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>

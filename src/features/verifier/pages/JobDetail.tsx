@@ -9,57 +9,84 @@ import {
   FileText, 
   User, 
   Calendar,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-
-// Mock Data (in a real app, fetch by ID)
-const JOB_DETAILS = {
-  id: "1",
-  type: "Identity Verification",
-  requester: "John D.",
-  requesterId: "DID:verza:123...456",
-  price: 15.00,
-  platformFee: 1.50,
-  netEarnings: 13.50,
-  urgency: "High",
-  deadline: "2 hours",
-  estimatedTime: "15-20 mins",
-  riskScore: "Low",
-  riskDetails: {
-    score: 12,
-    issues: []
-  },
-  location: "USA",
-  postedTime: "10 mins ago",
-  documentType: "Passport",
-  documentPreview: "/placeholder-passport.png", // In real app, secure URL
-  requirements: [
-    "Verify photo match",
-    "Check expiration date",
-    "Validate security features (hologram)",
-    "Confirm MRZ data"
-  ],
-  specialInstructions: "Please pay attention to the signature consistency.",
-  languages: ["English"],
-  description: "Standard identity verification request for new user onboarding."
-};
+import { useState, useEffect } from "react";
+import { bankingService } from "@/services/bankingService";
+import type { VerificationStatusResponse } from "@/types/banking";
+import { toast } from "sonner";
 
 export default function JobDetail() {
-  const [match, params] = useRoute("/verifier/jobs/:id");
-  const id = match ? params.id : null;
+  const [, params] = useRoute("/verifier/jobs/:id");
+  const id = params?.id;
   
-  // In a real app, useQuery to fetch job details by ID
-  const job = JOB_DETAILS; 
+  const [job, setJob] = useState<VerificationStatusResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleAccept = () => {
-    // Navigate to workspace or show success
-    window.location.href = `/verifier/workspace/${id}`;
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchJob = async () => {
+      setIsLoading(true);
+      try {
+        const data = await bankingService.getVerificationStatus(id);
+        setJob(data);
+      } catch (error) {
+        console.error("Failed to fetch job details", error);
+        toast.error("Failed to load job details");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchJob();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!job) {
+    return (
+      <div className="text-center py-10">
+        <h2 className="text-xl font-semibold">Job Not Found</h2>
+        <Button variant="link" onClick={() => window.history.back()}>
+          Return to Jobs
+        </Button>
+      </div>
+    );
+  }
+
+  const getTypeLabel = (type: string) => {
+    return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
+
+  const handleUpdateStatus = async (newStatus: string) => {
+    if (!job) return;
+    try {
+      await bankingService.updateVerificationStatus(id || "", newStatus);
+      setJob({ ...job, status: newStatus as any });
+      toast.success(`Job status updated to ${newStatus.replace('_', ' ')}`);
+      
+      if (newStatus === 'verified' || newStatus === 'rejected') {
+        setTimeout(() => window.history.back(), 1500);
+      }
+    } catch (error) {
+      console.error("Failed to update job status", error);
+      toast.error("Failed to update job status");
+    }
+  };
+
+  const subjectName = job.details?.firstName ? `${job.details.firstName} ${job.details.lastName}` : 'Unknown Subject';
 
   return (
     <motion.div
@@ -75,24 +102,48 @@ export default function JobDetail() {
           </Button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">{job.type}</h1>
-              <Badge variant={job.urgency === 'High' ? 'destructive' : 'secondary'}>
-                {job.urgency} Priority
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">{getTypeLabel(job.type || "")}</h1>
+              <Badge variant={job.status === 'review_needed' ? 'destructive' : 'secondary'}>
+                {job.status === 'review_needed' ? 'High' : 'Normal'} Priority
               </Badge>
             </div>
-            <p className="text-muted-foreground mt-1">Job ID: #{id} • Posted {job.postedTime}</p>
+            <p className="text-muted-foreground mt-1">Job ID: #{id} • Posted {new Date(job.createdAt).toLocaleString()}</p>
           </div>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="border-red-500/50 text-red-500 hover:bg-red-500/10 hover:text-red-600">
-            Decline
-          </Button>
-          <Button 
-            className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow"
-            onClick={handleAccept}
-          >
-            Accept Job
-          </Button>
+          {job.status === 'in_progress' ? (
+            <>
+              <Button 
+                variant="outline" 
+                className="border-red-500/50 text-red-500 hover:bg-red-500/10 hover:text-red-600"
+                onClick={() => handleUpdateStatus('rejected')}
+              >
+                Reject
+              </Button>
+              <Button 
+                className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow"
+                onClick={() => handleUpdateStatus('verified')}
+              >
+                Verify & Complete
+              </Button>
+            </>
+          ) : job.status === 'pending' || job.status === 'review_needed' ? (
+            <>
+              <Button variant="outline" onClick={() => window.history.back()}>
+                Decline
+              </Button>
+              <Button 
+                className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow"
+                onClick={() => handleUpdateStatus('in_progress')}
+              >
+                Accept Job
+              </Button>
+            </>
+          ) : (
+            <div className="text-sm font-medium text-muted-foreground bg-muted px-3 py-2 rounded-md">
+              Status: {job.status.replace('_', ' ').toUpperCase()}
+            </div>
+          )}
         </div>
       </div>
 
@@ -110,15 +161,15 @@ export default function JobDetail() {
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Name</p>
-                <p className="text-lg">{job.requester}</p>
+                <p className="text-lg">{subjectName}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Location</p>
-                <p className="text-lg">{job.location}</p>
+                <p className="text-lg">{job.details.country || 'Global'}</p>
               </div>
               <div className="md:col-span-2">
-                <p className="text-sm font-medium text-muted-foreground">DID</p>
-                <code className="bg-muted px-2 py-1 rounded text-sm font-mono">{job.requesterId}</code>
+                <p className="text-sm font-medium text-muted-foreground">Email</p>
+                <code className="bg-muted px-2 py-1 rounded text-sm font-mono">{job.details.email || 'N/A'}</code>
               </div>
             </CardContent>
           </Card>
@@ -134,7 +185,7 @@ export default function JobDetail() {
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center min-h-[200px] bg-black/20 rounded-lg m-4 border-2 border-dashed border-border/50">
                     <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground font-medium">{job.documentType}</p>
+                    <p className="text-muted-foreground font-medium">{job.details.documentType || 'Standard Document'}</p>
                     <p className="text-xs text-muted-foreground/70">Preview hidden until accepted</p>
                 </CardContent>
              </Card>
@@ -149,9 +200,9 @@ export default function JobDetail() {
                 <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Risk Score</span>
-                        <span className="text-2xl font-bold text-verza-emerald">{job.riskDetails.score}/100</span>
+                        <span className="text-2xl font-bold text-verza-emerald">12/100</span>
                     </div>
-                    <Progress value={job.riskDetails.score} className="h-2 bg-muted [&>div]:bg-verza-emerald" />
+                    <Progress value={12} className="h-2 bg-muted [&>div]:bg-verza-emerald" />
                     
                     <div className="bg-verza-emerald/10 p-3 rounded-md border border-verza-emerald/20 flex gap-3">
                         <CheckCircle className="h-5 w-5 text-verza-emerald shrink-0" />
@@ -174,22 +225,22 @@ export default function JobDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <div>
-                    <p className="text-sm font-medium text-muted-foreground">Special Instructions</p>
-                    <p className="mt-1">{job.specialInstructions}</p>
+                    <p className="text-sm font-medium text-muted-foreground">Raw Data</p>
+                    <pre className="mt-1 text-xs bg-muted p-2 rounded overflow-auto max-h-32">
+                      {JSON.stringify(job.details, null, 2)}
+                    </pre>
                 </div>
                 <Separator />
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                         <p className="text-sm font-medium text-muted-foreground">Required Language</p>
+                         <p className="text-sm font-medium text-muted-foreground">Verification Type</p>
                          <div className="flex gap-2 mt-1">
-                             {job.languages.map(lang => (
-                                 <Badge key={lang} variant="secondary">{lang}</Badge>
-                             ))}
+                             <Badge variant="secondary">{getTypeLabel(job.type || "")}</Badge>
                          </div>
                     </div>
                     <div>
                          <p className="text-sm font-medium text-muted-foreground">Document Type</p>
-                         <p className="mt-1">{job.documentType}</p>
+                         <p className="mt-1">{job.details.documentType || 'N/A'}</p>
                     </div>
                 </div>
             </CardContent>
@@ -208,31 +259,31 @@ export default function JobDetail() {
                 <CardContent className="space-y-4">
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Job Price</span>
-                        <span className="font-mono">${job.price.toFixed(2)}</span>
+                        <span className="font-mono">$15.00</span>
                     </div>
                      <div className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground">Platform Fee (10%)</span>
-                        <span className="font-mono text-red-400">-${job.platformFee.toFixed(2)}</span>
+                        <span className="font-mono text-red-400">-$1.50</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between items-center font-bold text-lg">
                         <span>Net Earnings</span>
-                        <span className="text-verza-emerald">${job.netEarnings.toFixed(2)}</span>
+                        <span className="text-verza-emerald">$13.50</span>
                     </div>
                     
                     <div className="pt-4 space-y-3">
                          <div className="flex items-center justify-between text-sm">
                             <span className="flex items-center text-muted-foreground"><Clock className="h-4 w-4 mr-2" /> Deadline</span>
-                            <span className="font-medium text-orange-500">{job.deadline}</span>
+                            <span className="font-medium text-orange-500">2 hours</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                             <span className="flex items-center text-muted-foreground"><Calendar className="h-4 w-4 mr-2" /> Est. Time</span>
-                            <span>{job.estimatedTime}</span>
+                            <span>15-20 mins</span>
                         </div>
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow" onClick={handleAccept}>
+                    <Button className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow" onClick={() => handleUpdateStatus('in_progress')}>
                         Accept Job Now
                     </Button>
                 </CardFooter>
@@ -244,14 +295,24 @@ export default function JobDetail() {
                 </CardHeader>
                 <CardContent>
                     <ul className="space-y-3">
-                        {job.requirements.map((req, i) => (
-                            <li key={i} className="flex items-start gap-3 text-sm">
-                                <div className="h-5 w-5 rounded-full border border-muted-foreground/30 flex items-center justify-center shrink-0 mt-0.5">
-                                    <span className="text-xs text-muted-foreground">{i+1}</span>
-                                </div>
-                                <span>{req}</span>
-                            </li>
-                        ))}
+                        <li className="flex items-start gap-3 text-sm">
+                            <div className="h-5 w-5 rounded-full border border-muted-foreground/30 flex items-center justify-center shrink-0 mt-0.5">
+                                <span className="text-xs text-muted-foreground">1</span>
+                            </div>
+                            <span>Verify photo match</span>
+                        </li>
+                        <li className="flex items-start gap-3 text-sm">
+                            <div className="h-5 w-5 rounded-full border border-muted-foreground/30 flex items-center justify-center shrink-0 mt-0.5">
+                                <span className="text-xs text-muted-foreground">2</span>
+                            </div>
+                            <span>Check expiration date</span>
+                        </li>
+                        <li className="flex items-start gap-3 text-sm">
+                            <div className="h-5 w-5 rounded-full border border-muted-foreground/30 flex items-center justify-center shrink-0 mt-0.5">
+                                <span className="text-xs text-muted-foreground">3</span>
+                            </div>
+                            <span>Validate security features</span>
+                        </li>
                     </ul>
                 </CardContent>
              </Card>

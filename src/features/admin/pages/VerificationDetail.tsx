@@ -1,8 +1,9 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, CheckCircle, XCircle, Clock, 
-  FileText, Shield, Download, ExternalLink,
-  MessageSquare, AlertTriangle
+  
+  Loader2
 } from 'lucide-react';
 import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
@@ -11,38 +12,67 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-
-const MOCK_REQUEST = {
-  id: 'REQ-001',
-  user: {
-    name: 'Alice Johnson',
-    email: 'alice@example.com',
-    did: 'did:verza:123...456',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice',
-  },
-  verifier: {
-    name: 'VeriTech Solutions',
-    id: 'VER-789',
-    type: 'Organization',
-  },
-  details: {
-    type: 'Identity Verification',
-    submittedAt: 'Oct 25, 2023, 10:30 AM',
-    updatedAt: 'Oct 25, 2023, 2:15 PM',
-    status: 'pending',
-    priority: 'high',
-    documents: [
-      { name: 'passport_scan.pdf', size: '2.4 MB', type: 'PDF' },
-      { name: 'utility_bill.jpg', size: '1.1 MB', type: 'Image' },
-    ],
-    notes: 'User provided additional documentation upon request.',
-  },
-};
+import { bankingService } from '@/services/bankingService';
+import type { VerificationStatusResponse } from '@/types/banking';
 
 export default function VerificationDetail() {
   const [, setLocation] = useLocation();
   const [, params] = useRoute("/admin/verifications/:id");
   const id = params?.id || 'REQ-001';
+
+  const [verification, setVerification] = useState<VerificationStatusResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      setIsLoading(true);
+      try {
+        const data = await bankingService.getVerificationStatus(id);
+        setVerification(data);
+      } catch (error) {
+        console.error("Failed to fetch verification details", error);
+        toast.error("Failed to load verification details");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchDetails();
+  }, [id]);
+
+  const handleStatusUpdate = async (newStatus: 'verified' | 'rejected') => {
+    try {
+      await bankingService.updateVerificationStatus(id, newStatus);
+      setVerification(prev => prev ? { ...prev, status: newStatus } : null);
+      toast.success(`Request ${newStatus === 'verified' ? 'approved' : 'rejected'} successfully`);
+    } catch (error) {
+      console.error("Failed to update status", error);
+      toast.error("Failed to update request status");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!verification) {
+    return (
+      <div className="text-center py-10">
+        <h2 className="text-xl font-semibold">Verification Request Not Found</h2>
+        <Button variant="link" onClick={() => setLocation('/admin/verifications')}>
+          Return to Requests
+        </Button>
+      </div>
+    );
+  }
+
+  const details = verification.details || {};
+  const subjectName = details.firstName && details.lastName 
+    ? `${details.firstName} ${details.lastName}` 
+    : 'Unknown Subject';
 
   return (
     <motion.div
@@ -57,18 +87,41 @@ export default function VerificationDetail() {
       <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">Request {id}</h1>
-            <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Pending Review</Badge>
+            <h1 className="text-3xl font-bold tracking-tight">Request {verification.verificationId}</h1>
+            <Badge className={
+              verification.status === 'verified' ? "bg-green-500/10 text-green-500 border-green-500/20" :
+              verification.status === 'rejected' ? "bg-red-500/10 text-red-500 border-red-500/20" :
+              "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+            }>
+              {verification.status.toUpperCase()}
+            </Badge>
           </div>
-          <p className="text-muted-foreground mt-1">Identity Verification for Alice Johnson</p>
+          <p className="text-muted-foreground mt-1">
+            {verification?.type?.replace(/_/g, ' ')} for {subjectName}
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="text-red-500 border-red-500/20 hover:bg-red-500/10" onClick={() => toast.error("Request rejected")}>
-            <XCircle className="mr-2 h-4 w-4" /> Reject
-          </Button>
-          <Button className="bg-green-600 hover:bg-green-700" onClick={() => toast.success("Request approved")}>
-            <CheckCircle className="mr-2 h-4 w-4" /> Approve
-          </Button>
+          {verification.status === 'pending' || verification.status === 'review_needed' ? (
+            <>
+              <Button 
+                variant="outline" 
+                className="text-red-500 border-red-500/20 hover:bg-red-500/10" 
+                onClick={() => handleStatusUpdate('rejected')}
+              >
+                <XCircle className="mr-2 h-4 w-4" /> Reject
+              </Button>
+              <Button 
+                className="bg-green-600 hover:bg-green-700" 
+                onClick={() => handleStatusUpdate('verified')}
+              >
+                <CheckCircle className="mr-2 h-4 w-4" /> Approve
+              </Button>
+            </>
+          ) : (
+            <div className="text-sm text-muted-foreground italic flex items-center">
+              Request is {verification.status}
+            </div>
+          )}
         </div>
       </div>
 
@@ -84,13 +137,13 @@ export default function VerificationDetail() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Request Type</div>
-                  <div className="font-medium mt-1">{MOCK_REQUEST.details.type}</div>
+                  <div className="font-medium mt-1 capitalize">{verification?.type?.replace(/_/g, ' ')}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Submitted At</div>
                   <div className="font-medium mt-1 flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    {MOCK_REQUEST.details.submittedAt}
+                    {new Date(verification.createdAt).toLocaleString()}
                   </div>
                 </div>
               </div>
@@ -98,73 +151,30 @@ export default function VerificationDetail() {
               <Separator />
 
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">Submitted Documents</h3>
-                <div className="grid gap-3">
-                  {MOCK_REQUEST.details.documents.map((doc, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-secondary/20 border border-border/50">
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="font-medium text-sm">{doc.name}</p>
-                          <p className="text-xs text-muted-foreground">{doc.size} • {doc.type}</p>
-                        </div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-4">Subject Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
+                  {Object.entries(details).map(([key, value]) => (
+                    typeof value !== 'object' && value !== null ? (
+                      <div key={key}>
+                        <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{key.replace(/([A-Z])/g, ' $1').trim()}</div>
+                        <div className="font-medium">{String(value)}</div>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => toast.success("Downloading document...")}>
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    ) : null
                   ))}
-                </div>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Notes</h3>
-                <div className="p-3 rounded-lg bg-secondary/10 text-sm">
-                  {MOCK_REQUEST.details.notes}
                 </div>
               </div>
             </CardContent>
           </Card>
-
+          
           <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardHeader>
-              <CardTitle>Communication Log</CardTitle>
-            </CardHeader>
-            <CardContent>
-               <div className="space-y-4">
-                 <div className="flex gap-3">
-                   <Avatar className="h-8 w-8">
-                     <AvatarFallback>SYS</AvatarFallback>
-                   </Avatar>
-                   <div className="flex-1 space-y-1">
-                     <div className="flex items-center justify-between">
-                       <p className="text-sm font-medium">System</p>
-                       <span className="text-xs text-muted-foreground">Oct 25, 10:30 AM</span>
-                     </div>
-                     <p className="text-sm text-muted-foreground">Request created automatically.</p>
-                   </div>
-                 </div>
-                 <div className="flex gap-3">
-                   <Avatar className="h-8 w-8">
-                     <AvatarFallback>VER</AvatarFallback>
-                   </Avatar>
-                   <div className="flex-1 space-y-1">
-                     <div className="flex items-center justify-between">
-                       <p className="text-sm font-medium">Verifier Agent</p>
-                       <span className="text-xs text-muted-foreground">Oct 25, 1:00 PM</span>
-                     </div>
-                     <p className="text-sm text-muted-foreground">Requested additional proof of address.</p>
-                   </div>
-                 </div>
-               </div>
-               <div className="mt-4 pt-4 border-t border-border/50">
-                 <Button variant="outline" className="w-full">
-                   <MessageSquare className="mr-2 h-4 w-4" /> Add Note
-                 </Button>
-               </div>
-            </CardContent>
+             <CardHeader>
+               <CardTitle>Raw Response Data</CardTitle>
+             </CardHeader>
+             <CardContent>
+               <pre className="bg-muted p-4 rounded-md overflow-auto text-xs font-mono max-h-96">
+                 {JSON.stringify(verification, null, 2)}
+               </pre>
+             </CardContent>
           </Card>
         </div>
 
@@ -172,57 +182,41 @@ export default function VerificationDetail() {
         <div className="space-y-6">
           <Card className="bg-card/80 backdrop-blur-sm border-border/50">
             <CardHeader>
-              <CardTitle>User Info</CardTitle>
+              <CardTitle>Requester</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12 border-2 border-background">
-                  <AvatarImage src={MOCK_REQUEST.user.avatar} />
-                  <AvatarFallback>AJ</AvatarFallback>
+                <Avatar>
+                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${subjectName}`} />
+                  <AvatarFallback>
+                    {subjectName.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium">{MOCK_REQUEST.user.name}</p>
-                  <p className="text-sm text-muted-foreground">{MOCK_REQUEST.user.email}</p>
+                  <div className="font-medium">{subjectName}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {details.email || 'No email provided'}
+                  </div>
                 </div>
               </div>
-              <div className="text-xs font-mono p-2 bg-secondary/30 rounded break-all">
-                {MOCK_REQUEST.user.did}
-              </div>
-              <Button variant="outline" className="w-full" onClick={() => setLocation('/admin/users/1')}>
-                View Profile <ExternalLink className="ml-2 h-3 w-3" />
-              </Button>
             </CardContent>
           </Card>
 
           <Card className="bg-card/80 backdrop-blur-sm border-border/50">
             <CardHeader>
-              <CardTitle>Assigned Verifier</CardTitle>
+              <CardTitle>Risk Assessment</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium">{MOCK_REQUEST.verifier.name}</p>
-                  <p className="text-sm text-muted-foreground">{MOCK_REQUEST.verifier.type}</p>
-                </div>
+            <CardContent>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Risk Score</span>
+                <span className="text-sm font-bold text-green-500">Low</span>
               </div>
-              <Button variant="outline" className="w-full" onClick={() => setLocation('/admin/verifiers/1')}>
-                View Verifier <ExternalLink className="ml-2 h-3 w-3" />
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50 border-l-4 border-l-yellow-500">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-yellow-500 shrink-0" />
-                <div>
-                  <p className="font-medium text-sm">High Priority</p>
-                  <p className="text-xs text-muted-foreground mt-1">This request has been flagged for expedited review due to enterprise SLA.</p>
-                </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-green-500 w-[15%]" />
               </div>
+              <p className="text-xs text-muted-foreground mt-4">
+                Automated risk assessment based on provided data and global watchlists.
+              </p>
             </CardContent>
           </Card>
         </div>

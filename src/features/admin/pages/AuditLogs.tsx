@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Search, Filter, Shield, 
-  User, Database, Globe, Calendar
+  User, Database, Globe, Calendar, Loader2
 } from 'lucide-react';
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
@@ -12,90 +12,60 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { bankingService } from '@/services/bankingService';
+import type { AuditLogResponse } from '@/types/banking';
 
 export default function AuditLogs() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [logs, setLogs] = useState<AuditLogResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock Data
-  const logs = [
-    { 
-      id: 'LOG-5521', 
-      actor: 'Sarah Connor', 
-      role: 'Super Admin',
-      action: 'USER_SUSPEND', 
-      target: 'User: u_9921 (John Doe)', 
-      ip: '192.168.1.42',
-      location: 'New York, US',
-      timestamp: '2025-04-10 14:32:01',
-      status: 'success'
-    },
-    { 
-      id: 'LOG-5520', 
-      actor: 'System', 
-      role: 'System',
-      action: 'DB_BACKUP', 
-      target: 'Database: Primary', 
-      ip: '10.0.0.1',
-      location: 'Data Center 1',
-      timestamp: '2025-04-10 14:00:00',
-      status: 'success'
-    },
-    { 
-      id: 'LOG-5519', 
-      actor: 'Mike Brown', 
-      role: 'Support',
-      action: 'TICKET_RESOLVE', 
-      target: 'Ticket: #8821', 
-      ip: '192.168.1.105',
-      location: 'London, UK',
-      timestamp: '2025-04-10 13:45:12',
-      status: 'success'
-    },
-    { 
-      id: 'LOG-5518', 
-      actor: 'Unknown', 
-      role: 'Unknown',
-      action: 'LOGIN_ATTEMPT', 
-      target: 'Admin Portal', 
-      ip: '45.22.11.99',
-      location: 'Moscow, RU',
-      timestamp: '2025-04-10 13:30:05',
-      status: 'failed'
-    },
-    { 
-      id: 'LOG-5517', 
-      actor: 'Sarah Connor', 
-      role: 'Super Admin',
-      action: 'CONFIG_CHANGE', 
-      target: 'Feature Flag: Beta_UI', 
-      ip: '192.168.1.42',
-      location: 'New York, US',
-      timestamp: '2025-04-10 11:20:18',
-      status: 'success'
-    },
-  ];
+  useEffect(() => {
+    const fetchLogs = async () => {
+      setIsLoading(true);
+      try {
+        const data = await bankingService.getAuditLogs();
+        setLogs(data);
+      } catch (error) {
+        console.error("Failed to fetch audit logs", error);
+        toast.error("Failed to load audit logs");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchLogs();
+  }, []);
 
   const getActionIcon = (action: string) => {
     if (action.includes('USER')) return <User className="h-4 w-4 text-blue-500" />;
-    if (action.includes('DB') || action.includes('CONFIG')) return <Database className="h-4 w-4 text-purple-500" />;
-    if (action.includes('LOGIN')) return <Shield className="h-4 w-4 text-orange-500" />;
+    if (action.includes('DB') || action.includes('CONFIG') || action.includes('KEY')) return <Database className="h-4 w-4 text-purple-500" />;
+    if (action.includes('LOGIN') || action.includes('AUTH')) return <Shield className="h-4 w-4 text-orange-500" />;
     return <Globe className="h-4 w-4 text-gray-500" />;
   };
 
   const filteredLogs = logs.filter(log => {
+    const detailsStr = typeof log.details === 'string' ? log.details : JSON.stringify(log.details);
     const matchesSearch = 
-      log.actor.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      log.actorId.toLowerCase().includes(searchTerm.toLowerCase()) || 
       log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.target.toLowerCase().includes(searchTerm.toLowerCase());
+      detailsStr.toLowerCase().includes(searchTerm.toLowerCase());
       
     const matchesType = typeFilter === 'all' || 
-      (typeFilter === 'security' && log.action.includes('LOGIN')) ||
-      (typeFilter === 'system' && (log.action.includes('DB') || log.action.includes('CONFIG'))) ||
+      (typeFilter === 'security' && (log.action.includes('LOGIN') || log.action.includes('AUTH'))) ||
+      (typeFilter === 'system' && (log.action.includes('KEY') || log.action.includes('CONFIG'))) ||
       (typeFilter === 'user' && log.action.includes('USER'));
       
     return matchesSearch && matchesType;
   });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -152,12 +122,12 @@ export default function AuditLogs() {
             <TableHeader>
               <TableRow>
                 <TableHead>Timestamp</TableHead>
-                <TableHead>Actor</TableHead>
+                <TableHead>Actor ID</TableHead>
                 <TableHead>Action</TableHead>
-                <TableHead>Target</TableHead>
-                <TableHead>Location</TableHead>
+                <TableHead>Resource ID</TableHead>
+                <TableHead>Details</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Details</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -171,12 +141,11 @@ export default function AuditLogs() {
                 filteredLogs.map((log) => (
                 <TableRow key={log.id} className="hover:bg-muted/50">
                   <TableCell className="font-mono text-xs text-muted-foreground">
-                    {log.timestamp}
+                    {new Date(log.timestamp).toLocaleString()}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="font-medium">{log.actor}</span>
-                      <span className="text-xs text-muted-foreground">{log.role}</span>
+                      <span className="font-medium">{log.actorId}</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -187,20 +156,14 @@ export default function AuditLogs() {
                       </Badge>
                     </div>
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate" title={log.target}>
-                    {log.target}
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {log.resourceId}
+                  </TableCell>
+                  <TableCell className="max-w-[200px] truncate" title={typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}>
+                    {typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm">{log.location}</span>
-                      <span className="text-xs text-muted-foreground">{log.ip}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={log.status === 'success' ? 'default' : 'destructive'}
-                      className={log.status === 'success' ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' : ''}
-                    >
+                    <Badge variant={log.status === 'success' ? 'default' : 'destructive'}>
                       {log.status}
                     </Badge>
                   </TableCell>

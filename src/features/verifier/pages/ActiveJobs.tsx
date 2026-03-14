@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Clock, FileText, MessageSquare, MoreHorizontal, Search, Filter, Calendar as CalendarIcon } from "lucide-react";
+import { Clock, FileText, MessageSquare, MoreHorizontal, Search, Filter, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,55 +14,47 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-// Mock Data
-const ACTIVE_JOBS = [
-  {
-    id: "101",
-    type: "Identity Verification",
-    requester: "Sarah C.",
-    deadline: "1 hour",
-    status: "in_progress",
-    progress: 60,
-    started: "30 mins ago"
-  },
-  {
-    id: "102",
-    type: "Employment Check",
-    requester: "MegaCorp",
-    deadline: "5 hours",
-    status: "in_progress",
-    progress: 30,
-    started: "2 hours ago"
-  },
-  {
-    id: "103",
-    type: "Degree Verification",
-    requester: "University X",
-    deadline: "Overdue",
-    status: "overdue",
-    progress: 90,
-    started: "2 days ago"
-  },
-  {
-    id: "104",
-    type: "Criminal Record",
-    requester: "Law Office",
-    deadline: "2 hours",
-    status: "pending_review",
-    progress: 100,
-    started: "4 hours ago"
-  }
-];
+import { bankingService } from "@/services/bankingService";
+import type { VerificationRequestResponse } from "@/types/banking";
+import { toast } from "sonner";
+import { Link } from "wouter";
 
 export default function ActiveJobs() {
   const [activeTab, setActiveTab] = useState("in_progress");
   const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
+  const [jobs, setJobs] = useState<VerificationRequestResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredJobs = ACTIVE_JOBS.filter(job => {
-    if (activeTab === "in_progress") return job.status === "in_progress";
-    if (activeTab === "pending_review") return job.status === "pending_review";
-    if (activeTab === "overdue") return job.status === "overdue";
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setIsLoading(true);
+      try {
+        // In a real app, we would filter by the current verifier's ID
+        const allRequests = await bankingService.getVerificationRequests();
+        // Filter for jobs that are likely "active" for a verifier
+        const activeRequests = allRequests.filter(req => 
+          ['pending', 'in_progress', 'review_needed'].includes(req.status)
+        );
+        setJobs(activeRequests);
+      } catch (error) {
+        console.error("Failed to fetch active jobs", error);
+        toast.error("Failed to load active jobs");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchJobs();
+  }, []);
+
+  const filteredJobs = jobs.filter(job => {
+    if (activeTab === "in_progress") return job.status === "in_progress" || job.status === "pending";
+    if (activeTab === "pending_review") return job.status === "review_needed";
+    if (activeTab === "overdue") {
+      const createdAt = new Date(job.createdAt);
+      const now = new Date();
+      const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+      return diffInHours > 24 && (job.status === 'pending' || job.status === 'in_progress' || job.status === 'review_needed');
+    }
     return true;
   });
 
@@ -70,7 +62,7 @@ export default function ActiveJobs() {
     if (selectedJobs.length === filteredJobs.length) {
       setSelectedJobs([]);
     } else {
-      setSelectedJobs(filteredJobs.map(j => j.id));
+      setSelectedJobs(filteredJobs.map(j => j.verificationId));
     }
   };
 
@@ -81,6 +73,14 @@ export default function ActiveJobs() {
       setSelectedJobs(prev => prev.filter(jobId => jobId !== id));
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -115,8 +115,8 @@ export default function ActiveJobs() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="identity">Identity</SelectItem>
-                    <SelectItem value="employment">Employment</SelectItem>
+                    <SelectItem value="kyc_individual">Identity</SelectItem>
+                    <SelectItem value="document_verification">Document</SelectItem>
                 </SelectContent>
              </Select>
              <Button variant="outline" size="icon" className="bg-card/50">
@@ -165,7 +165,7 @@ function JobsList({
   selectedJobs, 
   onSelectJob 
 }: { 
-  jobs: typeof ACTIVE_JOBS, 
+  jobs: VerificationRequestResponse[], 
   selectedJobs: string[], 
   onSelectJob: (id: string, checked: boolean) => void 
 }) {
@@ -177,39 +177,44 @@ function JobsList({
     );
   }
 
+  const getTypeLabel = (type: string) => {
+    return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
   return (
     <div className="space-y-4">
       {jobs.map((job) => (
         <motion.div
-          key={job.id}
+          key={job.verificationId}
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <Card className={`bg-card/80 backdrop-blur-sm border-border/50 transition-colors ${selectedJobs.includes(job.id) ? 'border-verza-emerald/50 bg-verza-emerald/5' : ''}`}>
+          <Card className={`bg-card/80 backdrop-blur-sm border-border/50 transition-colors ${selectedJobs.includes(job.verificationId) ? 'border-verza-emerald/50 bg-verza-emerald/5' : ''}`}>
             <CardContent className="p-6">
               <div className="flex gap-4 items-start">
                 <div className="pt-1">
                   <Checkbox 
-                    checked={selectedJobs.includes(job.id)}
-                    onCheckedChange={(checked) => onSelectJob(job.id, checked as boolean)}
+                    checked={selectedJobs.includes(job.verificationId)}
+                    onCheckedChange={(checked) => onSelectJob(job.verificationId, checked as boolean)}
                   />
                 </div>
                 
                 <div className="flex-1 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
                   <div className="flex items-start gap-4">
                     <div className={`p-3 rounded-full ${
-                      job.status === 'overdue' ? 'bg-red-500/10 text-red-500' : 
-                      job.status === 'pending_review' ? 'bg-yellow-500/10 text-yellow-500' : 
+                      job.status === 'review_needed' ? 'bg-yellow-500/10 text-yellow-500' : 
                       'bg-verza-emerald/10 text-verza-emerald'
                     }`}>
                       <FileText className="h-6 w-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg">{job.type}</h3>
-                      <p className="text-sm text-muted-foreground">Requester: {job.requester}</p>
+                      <h3 className="font-semibold text-lg">{getTypeLabel(job.type)}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Requester: {job.details?.firstName ? `${job.details.firstName} ${job.details.lastName}` : 'Unknown Subject'}
+                      </p>
                       <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        <span>Started: {job.started}</span>
+                        <span>Started: {new Date(job.createdAt).toLocaleTimeString()}</span>
                       </div>
                     </div>
                   </div>
@@ -217,18 +222,20 @@ function JobsList({
                   <div className="flex-1 md:max-w-xs w-full space-y-2">
                      <div className="flex justify-between text-sm">
                         <span>Progress</span>
-                        <span>{job.progress}%</span>
+                        <span>{job.status === 'review_needed' ? '90' : '50'}%</span>
                      </div>
-                     <Progress value={job.progress} className="h-2" />
-                     <p className={`text-xs ${job.status === 'overdue' ? 'text-red-500 font-bold' : 'text-muted-foreground'}`}>
-                        Deadline: {job.deadline}
+                     <Progress value={job.status === 'review_needed' ? 90 : 50} className="h-2" />
+                     <p className="text-xs text-muted-foreground">
+                        Deadline: 2 hours
                      </p>
                   </div>
 
                   <div className="flex items-center gap-2 w-full md:w-auto mt-4 md:mt-0">
-                    <Button className="flex-1 md:flex-none bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow">
-                      Continue
-                    </Button>
+                    <Link href={`/verifier/jobs/${job.verificationId}`}>
+                        <Button className="flex-1 md:flex-none bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow">
+                        Continue
+                        </Button>
+                    </Link>
                     <Button variant="outline" size="icon">
                       <MessageSquare className="h-4 w-4" />
                     </Button>
