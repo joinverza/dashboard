@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type SVGProps } from 'react';
 import { 
   Shield, User, FileText, ScanFace, Search, Upload, 
   CheckCircle, AlertTriangle, Loader2, Code, 
@@ -14,10 +14,45 @@ import { Badge } from '@/components/ui/badge';
 import { bankingService } from '@/services/bankingService';
 import type { IndividualKYCRequest } from '@/types/banking';
 
+type ToolResult = Record<string, unknown>;
+
+const isObjectResult = (value: unknown): value is ToolResult => typeof value === 'object' && value !== null;
+
+const getResultBadgeVariant = (value: ToolResult): 'default' | 'destructive' | 'secondary' => {
+  const status = typeof value.status === 'string' ? value.status : '';
+  const isValid = value.isValid === true;
+  const isLive = value.isLive === true;
+  const match = value.match === true;
+  const matchFound = value.matchFound === true;
+  if (status === 'verified' || status === 'completed' || isValid || isLive || match || (!matchFound && 'matchFound' in value)) {
+    return 'default';
+  }
+  if (status === 'rejected' || status === 'failed' || matchFound) {
+    return 'destructive';
+  }
+  return 'secondary';
+};
+
+const getResultBadgeLabel = (value: ToolResult): string => {
+  if (typeof value.status === 'string') {
+    return value.status;
+  }
+  if (value.isValid === true) {
+    return 'valid';
+  }
+  if (value.match === true) {
+    return 'matched';
+  }
+  if (value.isLive === true) {
+    return 'live';
+  }
+  return 'processed';
+};
+
 export default function VerificationTools() {
   const [activeTab, setActiveTab] = useState("kyc");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ToolResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // KYC State
@@ -62,15 +97,16 @@ export default function VerificationTools() {
     }
   };
 
-  const executeRequest = async (fn: () => Promise<any>) => {
+  const executeRequest = async (fn: () => Promise<unknown>) => {
     setLoading(true);
     setResult(null);
     setError(null);
     try {
       const res = await fn();
-      setResult(res);
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+      setResult(isObjectResult(res) ? res : { value: res });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'An error occurred';
+      setError(message);
       console.error(err);
     } finally {
       setLoading(false);
@@ -227,7 +263,7 @@ export default function VerificationTools() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>ID Type</Label>
-                      <Select value={kycData.idDocumentType} onValueChange={(v: any) => setKycData({...kycData, idDocumentType: v})}>
+                      <Select value={kycData.idDocumentType} onValueChange={(v: 'passport' | 'drivers_license' | 'national_id') => setKycData({...kycData, idDocumentType: v})}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -272,7 +308,7 @@ export default function VerificationTools() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Document Type</Label>
-                      <Select value={docType} onValueChange={(v: any) => setDocType(v)}>
+                      <Select value={docType} onValueChange={(v: 'passport' | 'drivers_license' | 'national_id') => setDocType(v)}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -409,12 +445,9 @@ export default function VerificationTools() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Result</span>
-                {result && (
-                  <Badge variant={
-                    result.status === 'verified' || result.isValid || result.match || !result.matchFound ? 'default' : 
-                    result.status === 'rejected' || result.matchFound ? 'destructive' : 'secondary'
-                  }>
-                    {result.status || (result.isValid ? 'Valid' : 'Processed')}
+                {result && isObjectResult(result) && (
+                  <Badge variant={getResultBadgeVariant(result)}>
+                    {getResultBadgeLabel(result).toUpperCase()}
                   </Badge>
                 )}
               </CardTitle>
@@ -462,7 +495,7 @@ export default function VerificationTools() {
   );
 }
 
-function Activity(props: any) {
+function Activity(props: SVGProps<SVGSVGElement>) {
     return (
       <svg
         {...props}

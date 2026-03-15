@@ -86,7 +86,7 @@ export default function AuditTrail() {
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
             <div className="w-full md:w-1/4">
-                <Select value={searchType} onValueChange={(v: any) => setSearchType(v)}>
+                <Select value={searchType} onValueChange={(v: 'customer' | 'verification') => setSearchType(v)}>
                     <SelectTrigger>
                         <SelectValue placeholder="Search by..." />
                     </SelectTrigger>

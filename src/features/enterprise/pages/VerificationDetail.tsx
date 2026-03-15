@@ -126,7 +126,7 @@ export default function VerificationDetail() {
                     <span className="text-sm text-muted-foreground">Document Type</span>
                     <p className="font-medium">{documentType}</p>
                   </div>
-                  {details.extractedData && Object.entries(details.extractedData).map(([key, value]: [string, any]) => (
+                  {details.extractedData && Object.entries(details.extractedData).map(([key, value]) => (
                     <div key={key} className="space-y-1">
                         <span className="text-sm text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                         <p className="font-medium">{String(value)}</p>

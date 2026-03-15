@@ -145,9 +145,10 @@ export default function DocumentReview() {
     );
   }
 
-  const documentUrl = job.details?.documentUrl || "/placeholder-passport.png";
-  const documentType = job.details?.documentType || "Identity Document";
-  const requesterName = job.details?.firstName ? `${job.details.firstName} ${job.details.lastName}` : "Unknown Subject";
+  const details = job.details ?? {};
+  const documentUrl = typeof details.documentUrl === 'string' ? details.documentUrl : "/placeholder-passport.png";
+  const documentType = typeof details.documentType === 'string' ? details.documentType : "Identity Document";
+  const requesterName = details.firstName ? `${details.firstName} ${details.lastName}` : "Unknown Subject";
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col bg-background">

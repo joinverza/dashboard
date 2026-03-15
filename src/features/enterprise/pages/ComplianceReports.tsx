@@ -118,7 +118,7 @@ export default function ComplianceReports() {
                   <Label htmlFor="type">Report Type</Label>
                   <Select 
                     value={newReportType} 
-                    onValueChange={(val: any) => setNewReportType(val)}
+                    onValueChange={(val: 'compliance' | 'audit' | 'activity') => setNewReportType(val)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />

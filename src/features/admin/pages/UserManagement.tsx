@@ -90,7 +90,6 @@ export default function UserManagement() {
             lastActive: '1 month ago',
           },
         ]);
-      } finally {
       }
     };
     fetchUsers();

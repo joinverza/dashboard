@@ -26,10 +26,33 @@ export interface IndividualKYCResponse {
 export interface VerificationStatusResponse {
   verificationId: string;
   type?: 'kyc_individual' | 'kyc_business' | 'sanctions' | 'pep' | 'document' | 'aml';
-  status: 'pending' | 'verified' | 'rejected' | 'requires_action' | 'in_progress' | 'review_needed';
-  details?: any;
+  status: 'pending' | 'verified' | 'rejected' | 'requires_action' | 'in_progress' | 'review_needed' | 'not_found';
+  details?: VerificationDetails;
   updatedAt: string;
   createdAt: string; // Ensure createdAt is included as it is used in UI
+}
+
+export interface VerificationDetails {
+  firstName?: string;
+  lastName?: string;
+  dob?: string;
+  country?: string;
+  email?: string;
+  documentType?: string;
+  documentNumber?: string;
+  idDocumentNumber?: string;
+  expiryDate?: string;
+  nationality?: string;
+  aiScore?: number;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+  extractedData?: Record<string, string | number | boolean | null>;
+  [key: string]: unknown;
 }
 
 export interface DocumentVerifyRequest {
@@ -41,7 +64,7 @@ export interface DocumentVerifyRequest {
 export interface DocumentVerifyResponse {
   isValid: boolean;
   issues: string[];
-  extractedData?: any;
+  extractedData?: Record<string, string | number | boolean | null>;
 }
 
 export interface DocumentExtractRequest {
@@ -55,7 +78,9 @@ export interface DocumentExtractResponse {
 
 export interface BiometricFaceMatchRequest {
   selfieImage: string; // Base64
-  documentImage: string; // Base64
+  documentImage?: string; // Base64
+  idPhotoImage?: string; // Base64
+  threshold?: number;
 }
 
 export interface BiometricFaceMatchResponse {
@@ -64,6 +89,8 @@ export interface BiometricFaceMatchResponse {
 }
 
 export interface BiometricLivenessRequest {
+  livenessType?: 'passive' | 'active';
+  selfieImage?: string | string[];
   videoUrl?: string;
   imageSequence?: string[];
 }
@@ -74,28 +101,52 @@ export interface BiometricLivenessResponse {
 }
 
 export interface SanctionsCheckRequest {
-  name: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
   dob?: string;
+  nationality?: string;
   country?: string;
+  fuzzyMatching?: boolean;
+  matchThreshold?: number;
 }
 
 export interface SanctionsCheckResponse {
   matchFound: boolean;
-  hits: any[];
+  hits: SanctionsHit[];
+}
+
+export interface SanctionsHit {
+  name?: string;
+  listName?: string;
+  score?: number;
+  [key: string]: unknown;
 }
 
 export interface PEPCheckRequest {
-  name: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
+  nationality?: string;
   country?: string;
+  fuzzyMatching?: boolean;
+  matchThreshold?: number;
 }
 
 export interface PEPCheckResponse {
   isPEP: boolean;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export interface AMLRiskScoreRequest {
-  customerData: IndividualKYCRequest;
+  customerId?: string;
+  customerProfile?: Record<string, unknown>;
+  verificationResults?: Record<string, unknown>;
+  transactionProfile?: Record<string, unknown>;
+  relationshipFactors?: Record<string, unknown>;
+  customerData?: IndividualKYCRequest;
 }
 
 export interface AMLRiskScoreResponse {
@@ -106,11 +157,21 @@ export interface AMLRiskScoreResponse {
 
 export interface TransactionMonitoringRequest {
   transactionId: string;
-  amount: number;
-  currency: string;
-  senderId: string;
-  receiverId: string;
-  timestamp: string;
+  customerId?: string;
+  amount?: number;
+  currency?: string;
+  senderId?: string;
+  receiverId?: string;
+  timestamp?: string;
+  transaction?: {
+    amount: number;
+    destinationCountry?: string;
+    highRiskCountries?: string[];
+  };
+  customerRiskProfile?: {
+    typicalTransactionSize?: number;
+    riskLevel?: string;
+  };
 }
 
 export interface TransactionMonitoringResponse {
@@ -120,40 +181,66 @@ export interface TransactionMonitoringResponse {
 }
 
 export interface WebhookRegisterRequest {
-  url: string;
+  url?: string;
+  webhookUrl?: string;
   events: string[];
   secret?: string;
+  active?: boolean;
 }
 
 export interface WebhookResponse {
   id: string;
+  webhookId?: string;
   url: string;
+  webhookUrl?: string;
   events: string[];
   isActive: boolean;
+  active?: boolean;
   createdAt: string;
 }
 
 export interface ApiKeyCreateRequest {
-  name: string;
-  scopes: string[];
+  name?: string;
+  scopes?: string[];
+  keyName?: string;
+  permissions?: string[];
+  expiresAt?: string | null;
+  ipWhitelist?: string[];
+  rateLimit?: number;
 }
 
 export interface ApiKeyResponse {
   id: string;
+  keyId?: string;
   name: string;
+  keyName?: string;
   keyPrefix: string;
+  apiKey?: string;
   createdAt: string;
+  expiresAt?: string | null;
+  revokedAt?: string | null;
+  status?: string;
+  rateLimit?: number;
   lastUsed?: string;
   scopes: string[];
+  permissions?: string[];
 }
 
 export interface AuditLogResponse {
   id: string;
+  eventId?: string;
   action: string;
+  eventType?: string;
   actorId: string;
+  actor?: string;
   resourceId: string;
+  targetType?: string;
+  targetId?: string;
+  requestId?: string;
   timestamp: string;
-  details: any;
+  createdAt?: string;
+  details: Record<string, unknown> | string | number | boolean | null;
+  data?: Record<string, unknown> | string | number | boolean | null;
   status: 'success' | 'failure';
 }
 
@@ -162,27 +249,43 @@ export interface VerificationStatsResponse {
   approved: number;
   rejected: number;
   pending: number;
+  manualReview?: number;
   averageTime: number; // in seconds
+  averageProcessingTime?: number;
   successful: number;
   failed: number;
+  successRate?: number;
   dailyBreakdown: {
     date: string;
     count: number;
   }[];
+  breakdown?: {
+    period: string;
+    total: number;
+    approved: number;
+    rejected: number;
+    manualReview: number;
+  }[];
 }
 
 export interface ReportCreateRequest {
-  type: 'compliance' | 'audit' | 'activity';
+  type?: 'compliance' | 'audit' | 'activity';
+  reportType?: 'verification_summary' | 'compliance_summary' | 'risk_distribution';
   dateRange: {
-    start: string;
-    end: string;
+    start?: string;
+    end?: string;
+    from?: string;
+    to?: string;
   };
-  filters?: any;
+  filters?: Record<string, string | number | boolean | Array<string | number> | null>;
+  format?: 'pdf' | 'csv' | 'excel';
+  includeCharts?: boolean;
 }
 
 export interface ReportResponse {
   reportId: string;
   status: 'generating' | 'ready' | 'failed';
+  estimatedCompletion?: string | null;
   downloadUrl?: string;
 }
 
@@ -206,8 +309,8 @@ export interface AnalyticsData {
 export interface VerificationRequestResponse {
   verificationId: string;
   type: 'kyc_individual' | 'kyc_business' | 'sanctions' | 'pep' | 'document' | 'aml';
-  status: 'pending' | 'verified' | 'rejected' | 'requires_action' | 'in_progress' | 'review_needed';
-  details?: any;
+  status: 'pending' | 'verified' | 'rejected' | 'requires_action' | 'in_progress' | 'review_needed' | 'not_found';
+  details?: VerificationDetails;
   createdAt: string;
   updatedAt: string;
   subject?: string;
@@ -311,7 +414,7 @@ export interface CredentialIssuanceRequest {
   verificationId: string;
   recipientDid: string;
   credentialType: string;
-  data: any;
+  data: Record<string, unknown>;
   notes?: string;
 }
 

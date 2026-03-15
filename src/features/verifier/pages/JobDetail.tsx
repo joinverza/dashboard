@@ -70,11 +70,11 @@ export default function JobDetail() {
     return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
-  const handleUpdateStatus = async (newStatus: string) => {
+  const handleUpdateStatus = async (newStatus: VerificationStatusResponse['status']) => {
     if (!job) return;
     try {
       await bankingService.updateVerificationStatus(id || "", newStatus);
-      setJob({ ...job, status: newStatus as any });
+      setJob({ ...job, status: newStatus });
       toast.success(`Job status updated to ${newStatus.replace('_', ' ')}`);
       
       if (newStatus === 'verified' || newStatus === 'rejected') {
@@ -86,7 +86,8 @@ export default function JobDetail() {
     }
   };
 
-  const subjectName = job.details?.firstName ? `${job.details.firstName} ${job.details.lastName}` : 'Unknown Subject';
+  const details = job.details ?? {};
+  const subjectName = details.firstName ? `${details.firstName} ${details.lastName}` : 'Unknown Subject';
 
   return (
     <motion.div
@@ -165,11 +166,11 @@ export default function JobDetail() {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Location</p>
-                <p className="text-lg">{job.details.country || 'Global'}</p>
+                <p className="text-lg">{details.country || 'Global'}</p>
               </div>
               <div className="md:col-span-2">
                 <p className="text-sm font-medium text-muted-foreground">Email</p>
-                <code className="bg-muted px-2 py-1 rounded text-sm font-mono">{job.details.email || 'N/A'}</code>
+                <code className="bg-muted px-2 py-1 rounded text-sm font-mono">{details.email || 'N/A'}</code>
               </div>
             </CardContent>
           </Card>
@@ -185,7 +186,7 @@ export default function JobDetail() {
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center min-h-[200px] bg-black/20 rounded-lg m-4 border-2 border-dashed border-border/50">
                     <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground font-medium">{job.details.documentType || 'Standard Document'}</p>
+                    <p className="text-muted-foreground font-medium">{details.documentType || 'Standard Document'}</p>
                     <p className="text-xs text-muted-foreground/70">Preview hidden until accepted</p>
                 </CardContent>
              </Card>
@@ -227,7 +228,7 @@ export default function JobDetail() {
                 <div>
                     <p className="text-sm font-medium text-muted-foreground">Raw Data</p>
                     <pre className="mt-1 text-xs bg-muted p-2 rounded overflow-auto max-h-32">
-                      {JSON.stringify(job.details, null, 2)}
+                      {JSON.stringify(details, null, 2)}
                     </pre>
                 </div>
                 <Separator />
@@ -240,7 +241,7 @@ export default function JobDetail() {
                     </div>
                     <div>
                          <p className="text-sm font-medium text-muted-foreground">Document Type</p>
-                         <p className="mt-1">{job.details.documentType || 'N/A'}</p>
+                         <p className="mt-1">{details.documentType || 'N/A'}</p>
                     </div>
                 </div>
             </CardContent>

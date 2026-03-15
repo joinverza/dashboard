@@ -12,10 +12,12 @@ import { Progress } from '@/components/ui/progress';
 import { bankingService } from '@/services/bankingService';
 import type { BulkVerificationResponse, IndividualKYCRequest } from '@/types/banking';
 
+type CsvRow = Record<string, string>;
+
 export default function BulkVerification() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [file, setFile] = useState<File | null>(null);
-  const [parsedData, setParsedData] = useState<any[]>([]);
+  const [parsedData, setParsedData] = useState<CsvRow[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -32,14 +34,14 @@ export default function BulkVerification() {
   });
 
   // Helper to parse CSV
-  const parseCSV = (text: string) => {
+  const parseCSV = (text: string): { headers: string[]; data: CsvRow[] } => {
     const lines = text.split('\n');
     const headers = lines[0].split(',').map(h => h.trim());
-    const data = [];
+    const data: CsvRow[] = [];
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
       const values = lines[i].split(',').map(v => v.trim());
-      const row: any = {};
+      const row: CsvRow = {};
       headers.forEach((h, index) => {
         row[h] = values[index];
       });
