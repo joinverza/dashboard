@@ -41,7 +41,16 @@ import type {
   CredentialIssuanceResponse
 } from '../types/banking';
 
-const BASE_URL = '/api/v1/banking';
+const API_PATH = '/api/v1/banking';
+
+const normalizeBaseUrl = (value: string): string => {
+  const trimmed = value.trim().replace(/\/+$/, '');
+  if (!trimmed) return API_PATH;
+  if (trimmed.endsWith(API_PATH)) return trimmed;
+  return `${trimmed}${API_PATH}`;
+};
+
+const BASE_URL = normalizeBaseUrl(import.meta.env.VITE_BANKING_API_BASE_URL || '');
 
 export const bankingService = {
   // A0. Requests Management
