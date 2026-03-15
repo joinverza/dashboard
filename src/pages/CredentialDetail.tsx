@@ -254,22 +254,22 @@ export default function CredentialDetailPage() {
           {/* Blockchain Proof */}
           <Card className="border-border/50 bg-card/30">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Blockchain Proof</CardTitle>
+              <CardTitle className="text-lg">Zero-Knowledge Proof</CardTitle>
               <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
-                Anchored on Cardano
+                Secured by ZK Proofs
               </Badge>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center p-4 rounded-lg bg-secondary/20 border border-border/50">
                 <div className="space-y-1">
-                   <span className="text-xs text-muted-foreground">Transaction Hash</span>
+                   <span className="text-xs text-muted-foreground">Proof Hash</span>
                    <div className="flex items-center gap-2">
                      <span className="font-mono text-sm">{credential.txHash}</span>
                      <ExternalLink className="w-3 h-3 text-muted-foreground cursor-pointer hover:text-foreground" />
                    </div>
                 </div>
                 <div className="space-y-1 text-right">
-                   <span className="text-xs text-muted-foreground">Block Height</span>
+                   <span className="text-xs text-muted-foreground">Proof Batch</span>
                    <div className="font-mono text-sm">#8921029</div>
                 </div>
               </div>

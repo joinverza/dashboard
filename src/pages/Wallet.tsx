@@ -93,7 +93,7 @@ const TRANSACTIONS = [
   {
     id: 2,
     type: "Payment",
-    asset: "ADA",
+    asset: "VZT",
     amount: "-150.00",
     status: "Processing",
     date: "Today, 09:15 AM",
@@ -113,7 +113,7 @@ const TRANSACTIONS = [
   {
     id: 4,
     type: "Swap",
-    asset: "ADA -> USDM",
+    asset: "VZT -> USDM",
     amount: "500.00",
     status: "Completed",
     date: "Oct 24, 2023",
@@ -326,7 +326,7 @@ export default function WalletPage() {
                         variant="ghost" 
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
                         onClick={() => {
-                          window.open(`https://explorer.cardano.org/en/transaction?id=${tx.hash}`, '_blank');
+                          window.open(`#`, '_blank');
                         }}
                       >
                         <ExternalLink className="w-3.5 h-3.5" />

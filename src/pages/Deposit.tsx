@@ -64,7 +64,7 @@ async function ensurePaystackInlineLoaded(): Promise<void> {
 
 const ASSETS = [
   { id: "verza", name: "Verza Token", ticker: "VZT", icon: "https://verza.io/favicon.ico" },
-  { id: "ada", name: "Cardano", ticker: "ADA", icon: "https://cryptologos.cc/logos/cardano-ada-logo.png" },
+  { id: "zk-net", name: "Verza ZK Network", ticker: "VZK", icon: "/vite.svg" },
   { id: "usdm", name: "Mehen USD", ticker: "USDM", icon: "https://mehen.io/favicon.ico" },
 ];
 

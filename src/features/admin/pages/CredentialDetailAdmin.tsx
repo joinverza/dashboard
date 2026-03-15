@@ -250,18 +250,18 @@ export default function CredentialDetailAdmin() {
 
           <Card className="bg-card/80 backdrop-blur-sm border-border/50">
             <CardHeader>
-              <CardTitle className="text-lg">Blockchain Info</CardTitle>
+              <CardTitle className="text-lg">Zero-Knowledge Proof</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Network</p>
                 <p className="text-sm font-medium flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                  {credential.network}
+                  Verza ZK Network
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Transaction Hash</p>
+                <p className="text-xs text-muted-foreground mb-1">Proof Hash</p>
                 <div className="flex items-center gap-2">
                   <p className="text-xs font-mono truncate flex-1">{credential.txHash}</p>
                   <ExternalLink className="h-3 w-3 text-muted-foreground" />

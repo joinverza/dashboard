@@ -145,7 +145,7 @@ export default function PlatformSettings() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="text-base">Cross-Chain Bridge</Label>
-                  <p className="text-sm text-muted-foreground">Enable bridging between Midnight and Cardano</p>
+                  <p className="text-sm text-muted-foreground">Enable bridging between Verza ZK and External Networks</p>
                 </div>
                 <Switch defaultChecked />
               </div>

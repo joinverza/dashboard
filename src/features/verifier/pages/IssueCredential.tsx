@@ -229,7 +229,7 @@ export default function IssueCredential() {
                   <span className="font-medium">Blockchain Anchoring</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  A hash of this credential will be anchored to the Cardano blockchain for immutability.
+                  A ZK proof of this credential will be anchored for immutability and privacy.
                 </p>
               </div>
 
@@ -259,13 +259,13 @@ export default function IssueCredential() {
                   <DialogHeader>
                     <DialogTitle>Confirm Issuance</DialogTitle>
                     <DialogDescription>
-                      Are you sure you want to issue this credential? This action cannot be undone and will be recorded on the blockchain.
+                      Are you sure you want to issue this credential? This action cannot be undone and will be recorded as a ZK proof.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="p-4 bg-muted/30 rounded-md border border-border text-sm space-y-2">
                      <p><strong>Recipient:</strong> {formData.firstName} {formData.lastName}</p>
                      <p><strong>Type:</strong> Identity Verification</p>
-                     <p><strong>Hash:</strong> 0x7f83...9a2b</p>
+                     <p><strong>Proof Hash:</strong> 0x7f83...9a2b</p>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>Cancel</Button>
