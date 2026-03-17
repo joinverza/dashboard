@@ -160,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast.success("Signed in successfully.");
       return "authenticated";
     } catch (error) {
-      toast.error(mapAuthErrorToMessage(error));
+      toast.error(mapAuthErrorToMessage(error, "login"));
       throw error;
     } finally {
       setIsLoading(false);
@@ -184,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       redirectByRole(nextSession.user.role);
       toast.success("MFA verified.");
     } catch (error) {
-      toast.error(mapAuthErrorToMessage(error));
+      toast.error(mapAuthErrorToMessage(error, "mfa_verify"));
       throw error;
     } finally {
       setIsLoading(false);
@@ -198,7 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast.success("Signup completed. Save your auth key.");
       return response.generatedAuthKey;
     } catch (error) {
-      toast.error(mapAuthErrorToMessage(error));
+      toast.error(mapAuthErrorToMessage(error, "signup"));
       throw error;
     } finally {
       setIsLoading(false);
@@ -211,7 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await forgotPasswordRequest(email);
       toast.success("If the email exists, a reset link has been sent.");
     } catch (error) {
-      toast.error(mapAuthErrorToMessage(error));
+      toast.error(mapAuthErrorToMessage(error, "forgot_password"));
       throw error;
     } finally {
       setIsLoading(false);
@@ -224,7 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await resetPasswordRequest(token, newPassword);
       toast.success("Password reset successful.");
     } catch (error) {
-      toast.error(mapAuthErrorToMessage(error));
+      toast.error(mapAuthErrorToMessage(error, "reset_password"));
       throw error;
     } finally {
       setIsLoading(false);

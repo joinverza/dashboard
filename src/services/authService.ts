@@ -311,35 +311,133 @@ export const getMeRequest = async (accessToken: string): Promise<{ id: string; e
   return assertSuccess(status, payload);
 };
 
-export const mapAuthErrorToMessage = (error: unknown): string => {
-  if (error instanceof AuthApiError) {
-    switch (error.code) {
-      case "validation_error":
-        return "Please check your inputs and try again.";
-      case "invalid_credentials":
-        return "Email, password, or auth key is incorrect.";
-      case "mfa_failed":
-        return "The MFA code is invalid or expired.";
-      case "token_invalid":
-        return "Your session has expired. Please sign in again.";
-      case "role_mismatch":
-        return "Selected role does not match this account.";
-      case "account_disabled":
-        return "This account is disabled. Contact support.";
-      case "ip_blocked":
-        return "Access from this network is blocked.";
-      case "email_conflict":
-        return "An account with this email already exists.";
-      case "account_locked":
-        return "Account is temporarily locked due to failed attempts.";
-      case "rate_limited":
-        return "Too many attempts. Please wait and try again.";
-      default:
-        return error.message;
+const detailsToMessage = (details?: unknown[]): string => {
+  if (!details || details.length === 0) return "";
+  const normalized = details
+    .map((detail) => {
+      if (typeof detail === "string") return detail;
+      if (detail && typeof detail === "object") {
+        const record = detail as Record<string, unknown>;
+        const message = typeof record.message === "string" ? record.message : "";
+        const field = typeof record.field === "string" ? record.field : typeof record.path === "string" ? record.path : "";
+        if (field && message) return `${field}: ${message}`;
+        if (message) return message;
+        if (field) return field;
+      }
+      return "";
+    })
+    .filter(Boolean);
+  return normalized.length > 0 ? normalized.join(" | ") : "";
+};
+
+const withRequestId = (message: string, requestId?: string): string =>
+  requestId ? `${message} (request: ${requestId})` : message;
+
+export type AuthOperation =
+  | "signup"
+  | "login"
+  | "mfa_verify"
+  | "refresh"
+  | "logout"
+  | "forgot_password"
+  | "reset_password"
+  | "me";
+
+const fallbackByOperation: Record<AuthOperation, string> = {
+  signup: "Signup failed. Please review your registration details and try again.",
+  login: "Login failed. Please check your credentials and try again.",
+  mfa_verify: "MFA verification failed. Please retry with a valid code.",
+  refresh: "Session refresh failed. Please sign in again.",
+  logout: "Logout request failed.",
+  forgot_password: "Password reset request failed.",
+  reset_password: "Password reset failed. Please request a new reset link.",
+  me: "Could not load account profile. Please sign in again.",
+};
+
+const mapKnownAuthError = (error: AuthApiError, operation?: AuthOperation): string => {
+  if (error.code === "validation_error") {
+    if (operation === "login") {
+      return withRequestId(
+        detailsToMessage(error.details) || "Invalid login request. Check email, role, and auth key.",
+        error.requestId,
+      );
     }
+    if (operation === "signup") {
+      return withRequestId(
+        detailsToMessage(error.details) || "Invalid signup data. Check email, role fields, consent, and password policy.",
+        error.requestId,
+      );
+    }
+    if (operation === "reset_password") {
+      return withRequestId(
+        detailsToMessage(error.details) || "Password does not meet policy or was previously used.",
+        error.requestId,
+      );
+    }
+    if (operation === "logout" || operation === "forgot_password") {
+      return withRequestId(
+        detailsToMessage(error.details) || "Request body is malformed. Please retry.",
+        error.requestId,
+      );
+    }
+    return withRequestId(
+      detailsToMessage(error.details) || error.message || "Please check your inputs and try again.",
+      error.requestId,
+    );
+  }
+  if (error.code === "rate_limited") {
+    return withRequestId(
+      operation === "signup"
+        ? "Too many signup attempts. Please wait and try again."
+        : operation === "login"
+          ? "Too many login attempts. Please wait and try again."
+          : "Too many attempts. Please wait and try again.",
+      error.requestId,
+    );
+  }
+  if (error.code === "invalid_credentials") {
+    return withRequestId("Email, password, or auth key is incorrect.", error.requestId);
+  }
+  if (error.code === "mfa_failed") {
+    return withRequestId(
+      operation === "login"
+        ? "MFA method is unsupported or MFA code is invalid."
+        : "The MFA challenge or code is invalid, used, or expired.",
+      error.requestId,
+    );
+  }
+  if (error.code === "role_mismatch") {
+    return withRequestId("Requested role does not match account role.", error.requestId);
+  }
+  if (error.code === "account_disabled") {
+    return withRequestId("Account is disabled, suspended, or verifier approval is pending.", error.requestId);
+  }
+  if (error.code === "ip_blocked") {
+    return withRequestId("Access from this network is blocked by policy.", error.requestId);
+  }
+  if (error.code === "account_locked") {
+    return withRequestId("Account is temporarily locked due to failed attempts.", error.requestId);
+  }
+  if (error.code === "email_conflict") {
+    return withRequestId("Email is already registered.", error.requestId);
+  }
+  if (error.code === "token_invalid") {
+    return withRequestId(
+      operation === "reset_password"
+        ? "Reset token is invalid, used, or expired."
+        : "Token is invalid or expired. Please sign in again.",
+      error.requestId,
+    );
+  }
+  return withRequestId(error.message || (operation ? fallbackByOperation[operation] : "Authentication request failed."), error.requestId);
+};
+
+export const mapAuthErrorToMessage = (error: unknown, operation?: AuthOperation): string => {
+  if (error instanceof AuthApiError) {
+    return mapKnownAuthError(error, operation);
   }
   if (error instanceof Error) {
     return error.message;
   }
-  return "Authentication request failed.";
+  return operation ? fallbackByOperation[operation] : "Authentication request failed.";
 };
