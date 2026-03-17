@@ -71,6 +71,7 @@ const ENV_ADMIN_TOKEN = (import.meta.env.VITE_BANKING_ADMIN_TOKEN || '').trim();
 
 type JsonRecord = Record<string, unknown>;
 type ApiEnvelope<T> = { success: boolean; data: T; timestamp?: string; error?: { code?: string; message?: string; details?: unknown[] } };
+type StoredAuthSession = { accessToken?: string };
 
 const isRecord = (value: unknown): value is JsonRecord => typeof value === 'object' && value !== null;
 
@@ -110,6 +111,33 @@ export const clearBankingApiKey = (): void => removeStorage(API_KEY_STORAGE_KEY)
 export const setBankingAdminToken = (token: string): void => writeStorage(ADMIN_TOKEN_STORAGE_KEY, token.trim());
 
 const getAdminToken = (): string => readStorage(ADMIN_TOKEN_STORAGE_KEY) || ENV_ADMIN_TOKEN;
+const getAuthAccessToken = (): string => {
+  if (typeof window === 'undefined') return '';
+  const raw = window.localStorage.getItem('verza:auth:session');
+  if (!raw) return '';
+  try {
+    const parsed = JSON.parse(raw) as StoredAuthSession;
+    return typeof parsed.accessToken === 'string' ? parsed.accessToken.trim() : '';
+  } catch {
+    return '';
+  }
+};
+
+class BankingApiError extends Error {
+  status: number;
+  path: string;
+  requestId?: string;
+
+  constructor(status: number, path: string, message: string, requestId?: string) {
+    super(message);
+    this.name = 'BankingApiError';
+    this.status = status;
+    this.path = path;
+    this.requestId = requestId;
+  }
+}
+
+const isBankingApiError = (error: unknown): error is BankingApiError => error instanceof BankingApiError;
 
 const toErrorMessage = (status: number, payload: unknown): string => {
   if (isRecord(payload)) {
@@ -147,10 +175,15 @@ const request = async <T>(
     headers['Content-Type'] = 'application/json';
   }
 
+  const accessToken = getAuthAccessToken();
   const apiKey = getBankingApiKey();
-  if (apiKey) {
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  } else if (apiKey) {
     headers.Authorization = `Bearer ${apiKey}`;
-  } else if (options?.allowBootstrapAdminToken) {
+  }
+
+  if (!headers.Authorization && options?.allowBootstrapAdminToken) {
     const adminToken = getAdminToken();
     if (adminToken) {
       headers['x-verza-admin-token'] = adminToken;
@@ -172,7 +205,12 @@ const request = async <T>(
   const payload = text ? safeParseJson(text) : {};
 
   if (!res.ok) {
-    throw new Error(toErrorMessage(res.status, payload));
+    throw new BankingApiError(
+      res.status,
+      normalizedPath,
+      toErrorMessage(res.status, payload),
+      res.headers.get('x-request-id') || undefined,
+    );
   }
 
   return unwrapEnvelope<T>(payload);
@@ -313,14 +351,21 @@ const mapAuditLog = (item: JsonRecord): AuditLogResponse => ({
 export const bankingService = {
   getVerificationRequests: async (params?: { limit?: number }): Promise<VerificationRequestResponse[]> => {
     const query = params?.limit ? `?limit=${params.limit}` : '';
-    const payload = await request<unknown>('GET', `/requests${query}`, undefined, { idempotent: false });
-    if (Array.isArray(payload)) {
-      return payload.filter(isRecord).map(mapVerificationRequest);
+    try {
+      const payload = await request<unknown>('GET', `/requests${query}`, undefined, { idempotent: false });
+      if (Array.isArray(payload)) {
+        return payload.filter(isRecord).map(mapVerificationRequest);
+      }
+      if (isRecord(payload) && Array.isArray(payload.items)) {
+        return payload.items.filter(isRecord).map(mapVerificationRequest);
+      }
+      return [];
+    } catch (error) {
+      if (isBankingApiError(error) && (error.status === 401 || error.status === 403 || error.status === 404)) {
+        return [];
+      }
+      throw error;
     }
-    if (isRecord(payload) && Array.isArray(payload.items)) {
-      return payload.items.filter(isRecord).map(mapVerificationRequest);
-    }
-    return [];
   },
 
   updateVerificationStatus: async (verificationId: string, status: string, notes?: string): Promise<VerificationStatusResponse> => {
@@ -595,21 +640,38 @@ export const bankingService = {
   },
 
   getVerificationStats: async (): Promise<VerificationStatsResponse> => {
-    const result = await request<JsonRecord>('GET', '/analytics/verification-stats', undefined, { idempotent: false });
-    return {
-      totalVerifications: Number(result.totalVerifications || 0),
-      approved: Number(result.approved || 0),
-      rejected: Number(result.rejected || 0),
-      pending: Number(result.pending || 0),
-      manualReview: Number(result.manualReview || 0),
-      averageTime: typeof result.averageTime === 'number' ? result.averageTime : 0,
-      averageProcessingTime: typeof result.averageProcessingTime === 'number' ? result.averageProcessingTime : undefined,
-      successful: typeof result.successful === 'number' ? result.successful : 0,
-      failed: typeof result.failed === 'number' ? result.failed : 0,
-      successRate: typeof result.successRate === 'number' ? result.successRate : undefined,
-      dailyBreakdown: Array.isArray(result.dailyBreakdown) ? result.dailyBreakdown as VerificationStatsResponse['dailyBreakdown'] : [],
-      breakdown: Array.isArray(result.breakdown) ? result.breakdown as VerificationStatsResponse['breakdown'] : undefined,
-    };
+    try {
+      const result = await request<JsonRecord>('GET', '/analytics/verification-stats', undefined, { idempotent: false });
+      return {
+        totalVerifications: Number(result.totalVerifications || 0),
+        approved: Number(result.approved || 0),
+        rejected: Number(result.rejected || 0),
+        pending: Number(result.pending || 0),
+        manualReview: Number(result.manualReview || 0),
+        averageTime: typeof result.averageTime === 'number' ? result.averageTime : 0,
+        averageProcessingTime: typeof result.averageProcessingTime === 'number' ? result.averageProcessingTime : undefined,
+        successful: typeof result.successful === 'number' ? result.successful : 0,
+        failed: typeof result.failed === 'number' ? result.failed : 0,
+        successRate: typeof result.successRate === 'number' ? result.successRate : undefined,
+        dailyBreakdown: Array.isArray(result.dailyBreakdown) ? result.dailyBreakdown as VerificationStatsResponse['dailyBreakdown'] : [],
+        breakdown: Array.isArray(result.breakdown) ? result.breakdown as VerificationStatsResponse['breakdown'] : undefined,
+      };
+    } catch (error) {
+      if (isBankingApiError(error) && (error.status === 401 || error.status === 403 || error.status === 404)) {
+        return {
+          totalVerifications: 0,
+          approved: 0,
+          rejected: 0,
+          pending: 0,
+          manualReview: 0,
+          averageTime: 0,
+          successful: 0,
+          failed: 0,
+          dailyBreakdown: [],
+        };
+      }
+      throw error;
+    }
   },
 
   createReport: async (data: ReportCreateRequest): Promise<ReportResponse> => {
