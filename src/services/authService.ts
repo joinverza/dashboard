@@ -140,12 +140,25 @@ const generateRequestId = (): string => {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
 };
 
+const sanitizeUrlString = (value: string): string =>
+  value
+    .trim()
+    .replace(/[`"'“”‘’]/g, "")
+    .replace(/\s+/g, "")
+    .replace(/\/+$/, "");
+
+const normalizeEndpointPath = (value: string): string => {
+  const clean = sanitizeUrlString(value);
+  if (!clean) return "/";
+  return clean.startsWith("/") ? clean : `/${clean}`;
+};
+
 const normalizeAuthBaseUrl = (value: string): string => {
-  const trimmed = value.trim().replace(/\/+$/, "");
-  if (!trimmed) return AUTH_PATH;
-  const withoutBankingPath = trimmed.endsWith("/api/v1/banking")
-    ? trimmed.slice(0, -"/api/v1/banking".length)
-    : trimmed;
+  const cleaned = sanitizeUrlString(value);
+  if (!cleaned) return AUTH_PATH;
+  const withoutBankingPath = cleaned.endsWith("/api/v1/banking")
+    ? cleaned.slice(0, -"/api/v1/banking".length)
+    : cleaned;
   if (withoutBankingPath.endsWith(AUTH_PATH)) return withoutBankingPath;
   return `${withoutBankingPath}${AUTH_PATH}`;
 };
@@ -153,6 +166,7 @@ const normalizeAuthBaseUrl = (value: string): string => {
 const AUTH_BASE_URL = normalizeAuthBaseUrl(import.meta.env.VITE_BANKING_API_BASE_URL || "");
 
 const request = async <T>(method: string, path: string, body?: unknown, accessToken?: string): Promise<{ status: number; payload: ApiSuccess<T> | ApiFailure | null }> => {
+  const normalizedPath = normalizeEndpointPath(path);
   const headers: Record<string, string> = {
     Accept: "application/json",
     "X-Request-Id": generateRequestId(),
@@ -163,7 +177,7 @@ const request = async <T>(method: string, path: string, body?: unknown, accessTo
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
   }
-  const response = await fetch(`${AUTH_BASE_URL}${path}`, {
+  const response = await fetch(`${AUTH_BASE_URL}${normalizedPath}`, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),

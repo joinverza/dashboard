@@ -45,11 +45,24 @@ const API_KEY_STORAGE_KEY = 'verza:banking:apiKey';
 const ADMIN_TOKEN_STORAGE_KEY = 'verza:banking:adminToken';
 const DEFAULT_IMAGE_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEmgJ3H2jyxQAAAABJRU5ErkJggg==';
 
+const sanitizeUrlString = (value: string): string =>
+  value
+    .trim()
+    .replace(/[`"'“”‘’]/g, '')
+    .replace(/\s+/g, '')
+    .replace(/\/+$/, '');
+
+const normalizeEndpointPath = (value: string): string => {
+  const clean = sanitizeUrlString(value);
+  if (!clean) return '/';
+  return clean.startsWith('/') ? clean : `/${clean}`;
+};
+
 const normalizeBaseUrl = (value: string): string => {
-  const trimmed = value.trim().replace(/\/+$/, '');
-  if (!trimmed) return API_PATH;
-  if (trimmed.endsWith(API_PATH)) return trimmed;
-  return `${trimmed}${API_PATH}`;
+  const cleaned = sanitizeUrlString(value);
+  if (!cleaned) return API_PATH;
+  if (cleaned.endsWith(API_PATH)) return cleaned;
+  return `${cleaned}${API_PATH}`;
 };
 
 const BASE_URL = normalizeBaseUrl(import.meta.env.VITE_BANKING_API_BASE_URL || '');
@@ -124,6 +137,7 @@ const request = async <T>(
   body?: unknown,
   options?: { allowBootstrapAdminToken?: boolean; idempotent?: boolean }
 ): Promise<T> => {
+  const normalizedPath = normalizeEndpointPath(path);
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'X-Request-Id': generateToken('req'),
@@ -147,7 +161,7 @@ const request = async <T>(
     headers['Idempotency-Key'] = generateToken('idem');
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${BASE_URL}${normalizedPath}`, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
