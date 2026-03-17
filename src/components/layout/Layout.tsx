@@ -22,12 +22,33 @@ export default function Layout({ children }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isSupportChatOpen, setIsSupportChatOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, hasPermission, permissions } = useAuth();
 
-  const navItems = user?.role === "verifier" ? verifierNavItems :
+  const roleNavItems = user?.role === "verifier" ? verifierNavItems :
                    user?.role === "enterprise" ? enterpriseNavItems :
                    user?.role === "admin" ? adminNavItems :
                    userNavItems;
+  const permissionByPath: Record<string, string | undefined> = {
+    "/enterprise/tools": "kyc:write",
+    "/enterprise/api": "webhooks:write",
+    "/enterprise/analytics": "analytics:read",
+    "/enterprise/audit": "audit:read",
+    "/verifier/jobs": "verification:read",
+    "/verifier/active": "verification:write",
+    "/verifier/profile": "verifier:profile:read",
+    "/admin/users": "users:manage",
+    "/admin/verifiers": "verifiers:manage",
+    "/admin/enterprises": "enterprises:manage",
+    "/admin/system": "system:manage",
+    "/admin/audit": "audit:read",
+  };
+  const navItems =
+    permissions.length === 0
+      ? roleNavItems
+      : roleNavItems.filter((item) => {
+          const needed = permissionByPath[item.path];
+          return !needed || hasPermission(needed);
+        });
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -42,7 +63,7 @@ export default function Layout({ children }: LayoutProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const isAuthPage = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/onboarding'].includes(location);
+  const isAuthPage = ['/', '/login', '/signup', '/portal/login', '/portal/signup', '/admin/login', '/admin/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/onboarding'].includes(location);
 
   if (isAuthPage || !user) {
     return (

@@ -13,14 +13,28 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { Separator } from "@/components/ui/separator";
 
 export default function AdminLoginPage() {
-  const { login, isLoading } = useAuth();
+  const { login, verifyMfa, mfaChallenge, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [adminKey, setAdminKey] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, "admin", adminKey);
+    try {
+      if (mfaChallenge) {
+        await verifyMfa(mfaCode);
+        return;
+      }
+      await login({
+        email,
+        password,
+        role: "admin",
+        authKey: adminKey,
+      });
+    } catch {
+      return;
+    }
   };
 
   return (
@@ -130,12 +144,25 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
+            {mfaChallenge && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-400">MFA Code</label>
+                <Input
+                  type="text"
+                  placeholder="123456"
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value)}
+                  className="bg-zinc-900/30 border-zinc-800 focus:border-red-500/50 h-11 text-white placeholder:text-zinc-700 transition-colors font-mono"
+                />
+              </div>
+            )}
+
             <Button 
               type="submit" 
               className="w-full h-11 bg-red-600 hover:bg-red-500 text-white font-medium transition-all shadow-[0_0_20px_-5px_rgba(220,38,38,0.5)]"
               disabled={isLoading}
             >
-              {isLoading ? "Authenticating Root..." : "Access Control Panel"}
+              {isLoading ? "Authenticating Root..." : mfaChallenge ? "Verify MFA" : "Access Control Panel"}
             </Button>
           </form>
 

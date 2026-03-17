@@ -110,9 +110,16 @@ const TermsOfServicePage = lazy(() => import("@/pages/TermsOfService"));
 const OnboardingPage = lazy(() => import("@/pages/Onboarding"));
 
 function Router() {
-  const { user, isLoading } = useAuth();
+  const { user, isBootstrapping } = useAuth();
+  const getDefaultRoute = () => {
+    if (!user) return "/login";
+    if (user.role === "admin") return "/admin";
+    if (user.role === "verifier") return "/verifier";
+    if (user.role === "enterprise") return "/enterprise";
+    return "/app";
+  };
   
-  if (isLoading) {
+  if (isBootstrapping) {
     return <PageLoader />;
   }
   
@@ -122,12 +129,24 @@ function Router() {
         <Route path="/">
           <Redirect to="/login" />
         </Route>
-        <Route path="/login" component={LoginPage} />
-        <Route path="/signup" component={SignupPage} />
-        <Route path="/portal/login" component={EnterpriseLoginPage} />
-        <Route path="/portal/signup" component={EnterpriseSignupPage} />
-        <Route path="/admin/login" component={AdminLoginPage} />
-        <Route path="/admin/signup" component={AdminSignupPage} />
+        <Route path="/login">
+          {user ? <Redirect to={getDefaultRoute()} /> : <LoginPage />}
+        </Route>
+        <Route path="/signup">
+          {user ? <Redirect to={getDefaultRoute()} /> : <SignupPage />}
+        </Route>
+        <Route path="/portal/login">
+          {user ? <Redirect to={getDefaultRoute()} /> : <EnterpriseLoginPage />}
+        </Route>
+        <Route path="/portal/signup">
+          {user ? <Redirect to={getDefaultRoute()} /> : <EnterpriseSignupPage />}
+        </Route>
+        <Route path="/admin/login">
+          {user ? <Redirect to={getDefaultRoute()} /> : <AdminLoginPage />}
+        </Route>
+        <Route path="/admin/signup">
+          {user ? <Redirect to={getDefaultRoute()} /> : <AdminSignupPage />}
+        </Route>
         <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/reset-password" component={ResetPasswordPage} />
         <Route path="/privacy" component={PrivacyPolicyPage} />
@@ -174,9 +193,17 @@ function Router() {
           </>
         )}
 
-        {/* Redirect unauthenticated users trying to access app */}
         <Route path="/app/:rest*">
-          <Redirect to="/login" />
+          {!user ? <Redirect to="/login" /> : user.role === "user" ? <Redirect to="/app" /> : <Redirect to={getDefaultRoute()} />}
+        </Route>
+        <Route path="/verifier/:rest*">
+          {!user ? <Redirect to="/login" /> : user.role === "verifier" ? <Redirect to="/verifier" /> : <Redirect to={getDefaultRoute()} />}
+        </Route>
+        <Route path="/enterprise/:rest*">
+          {!user ? <Redirect to="/portal/login" /> : user.role === "enterprise" ? <Redirect to="/enterprise" /> : <Redirect to={getDefaultRoute()} />}
+        </Route>
+        <Route path="/admin/:rest*">
+          {!user ? <Redirect to="/admin/login" /> : user.role === "admin" ? <Redirect to="/admin" /> : <Redirect to={getDefaultRoute()} />}
         </Route>
 
         {/* Verifier Routes */}

@@ -18,22 +18,25 @@ export default function AdminSignupPage() {
   const { signup, isLoading } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [department, setDepartment] = useState("");
   const [authorizationCode, setAuthorizationCode] = useState("");
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [generatedMasterKey, setGeneratedMasterKey] = useState("");
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate master key generation
-    const mockKey = "ROOT_" + Math.random().toString(36).substring(2, 15).toUpperCase() + "_" + Date.now();
-    setGeneratedMasterKey(mockKey);
+    const generatedAuthKey = await signup({
+      role: "admin",
+      fullName: name,
+      email,
+      password,
+      department,
+      authorizationCode,
+      consentAccepted: true,
+    });
+    setGeneratedMasterKey(generatedAuthKey);
     setShowKeyModal(true);
-  };
-
-  const confirmSignup = () => {
-    setShowKeyModal(false);
-    signup(name, email, "admin");
   };
 
   return (
@@ -129,7 +132,18 @@ export default function AdminSignupPage() {
               />
             </div>
 
-             <div className="space-y-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-400">Password</label>
+              <Input
+                type="password"
+                placeholder="Create strong password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-zinc-900/30 border-zinc-800 focus:border-red-500/50 h-11 text-white placeholder:text-zinc-700 transition-colors"
+              />
+            </div>
+
+            <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-400">Department</label>
               <Input 
                 type="text" 
@@ -197,8 +211,8 @@ export default function AdminSignupPage() {
               {generatedMasterKey}
             </p>
           </div>
-          <Button onClick={confirmSignup} className="w-full bg-red-600 hover:bg-red-500 text-white">
-            I have backed up this key
+          <Button onClick={() => setShowKeyModal(false)} className="w-full bg-red-600 hover:bg-red-500 text-white">
+            Close
           </Button>
         </DialogContent>
       </Dialog>

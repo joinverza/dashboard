@@ -25,21 +25,41 @@ export default function EnterpriseSignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("enterprise");
+  const [countryCode, setCountryCode] = useState("US");
+  const [registrationNumber, setRegistrationNumber] = useState("");
+  const [licenseId, setLicenseId] = useState("");
+  const [jurisdiction, setJurisdiction] = useState("");
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [generatedKey, setGeneratedKey] = useState("");
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate key generation
-    const mockKey = "vz_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    setGeneratedKey(mockKey);
+    const generatedAuthKey =
+      role === "enterprise"
+        ? await signup({
+            role: "enterprise",
+            organizationName: company,
+            contactName: name,
+            email,
+            password,
+            countryCode,
+            registrationNumber,
+            consentAccepted: true,
+          })
+        : await signup({
+            role: "verifier",
+            organizationName: company,
+            contactName: name,
+            email,
+            password,
+            verificationLicenseId: licenseId,
+            jurisdiction,
+            consentAccepted: true,
+          });
+    setGeneratedKey(generatedAuthKey);
     setShowKeyModal(true);
-  };
-
-  const confirmSignup = () => {
-    setShowKeyModal(false);
-    signup(name, email, role);
   };
 
   return (
@@ -156,6 +176,65 @@ export default function EnterpriseSignupPage() {
               />
             </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">Password</label>
+              <Input
+                type="password"
+                placeholder="Create a strong password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+              />
+            </div>
+
+            {role === "enterprise" ? (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-300">Country Code</label>
+                  <Input
+                    type="text"
+                    placeholder="US"
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
+                    className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors uppercase"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-300">Registration Number</label>
+                  <Input
+                    type="text"
+                    placeholder="REG-12345"
+                    value={registrationNumber}
+                    onChange={(e) => setRegistrationNumber(e.target.value)}
+                    className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-300">Verifier License ID</label>
+                  <Input
+                    type="text"
+                    placeholder="VL-9981"
+                    value={licenseId}
+                    onChange={(e) => setLicenseId(e.target.value)}
+                    className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-300">Jurisdiction</label>
+                  <Input
+                    type="text"
+                    placeholder="NG"
+                    value={jurisdiction}
+                    onChange={(e) => setJurisdiction(e.target.value)}
+                    className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+                  />
+                </div>
+              </>
+            )}
+
             <Button 
               type="submit" 
               className="w-full h-11 bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all mt-2"
@@ -199,8 +278,8 @@ export default function EnterpriseSignupPage() {
               {generatedKey}
             </p>
           </div>
-          <Button onClick={confirmSignup} className="w-full bg-blue-600 hover:bg-blue-500">
-            I have saved my key
+          <Button onClick={() => setShowKeyModal(false)} className="w-full bg-blue-600 hover:bg-blue-500">
+            Close
           </Button>
         </DialogContent>
       </Dialog>
