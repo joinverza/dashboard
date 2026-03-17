@@ -4,7 +4,7 @@ const AUTH_PATH = "/auth";
 const AUTH_STORAGE_KEY = "verza:auth:session";
 
 type BackendRole = Exclude<UserRole, "user">;
-type MfaMethod = "totp" | "webauthn";
+type MfaMethod = "totp" | "webauthn" | "recovery_code";
 
 type ApiSuccess<T> = {
   success: true;
@@ -63,6 +63,12 @@ export type LoginMfaChallenge = {
   mfaRequired: true;
   challengeId: string;
   methods: MfaMethod[];
+};
+
+export type MfaEnrollment = {
+  qrCodeImageUrl?: string;
+  otpauthUri?: string;
+  backupCodes: string[];
 };
 
 export type SignupPayload =
@@ -266,6 +272,38 @@ export const verifyMfaRequest = async (payload: { challengeId: string; method: "
   return assertSuccess<AuthTokenResponse>(status, response);
 };
 
+export const verifyMfaRecoveryCodeRequest = async (payload: { challengeId: string; code: string }): Promise<AuthTokenResponse> => {
+  const { status, payload: response } = await request<AuthTokenResponse>("POST", "/mfa/recovery-code/verify", payload);
+  if (status !== 200) {
+    throw toAuthApiError(status, response);
+  }
+  return assertSuccess<AuthTokenResponse>(status, response);
+};
+
+export const enrollMfaRequest = async (accessToken: string): Promise<MfaEnrollment> => {
+  const { status, payload: response } = await request<{
+    qrCodeImageUrl?: string;
+    otpauthUri?: string;
+    backupCodes?: string[];
+  }>("GET", "/mfa/enroll", undefined, accessToken);
+  if (status !== 200) {
+    throw toAuthApiError(status, response);
+  }
+  const data = assertSuccess(status, response) as { qrCodeImageUrl?: unknown; otpauthUri?: unknown; backupCodes?: unknown };
+  return {
+    qrCodeImageUrl: typeof data.qrCodeImageUrl === "string" ? data.qrCodeImageUrl : undefined,
+    otpauthUri: typeof data.otpauthUri === "string" ? data.otpauthUri : undefined,
+    backupCodes: Array.isArray(data.backupCodes) ? data.backupCodes.map(String) : [],
+  };
+};
+
+export const verifyMfaEnrollRequest = async (accessToken: string, code: string): Promise<void> => {
+  const { status, payload: response } = await request("POST", "/mfa/enroll/verify", { code }, accessToken);
+  if (status !== 200 && status !== 204) {
+    throw toAuthApiError(status, response);
+  }
+};
+
 export const signupRequest = async (payload: SignupPayload): Promise<SignupResponse> => {
   const { status, payload: response } = await request<SignupResponse>("POST", "/signup", payload);
   if (status !== 201) {
@@ -337,6 +375,9 @@ export type AuthOperation =
   | "signup"
   | "login"
   | "mfa_verify"
+  | "mfa_recovery_verify"
+  | "mfa_enroll"
+  | "mfa_enroll_verify"
   | "refresh"
   | "logout"
   | "forgot_password"
@@ -347,6 +388,9 @@ const fallbackByOperation: Record<AuthOperation, string> = {
   signup: "Signup failed. Please review your registration details and try again.",
   login: "Login failed. Please check your credentials and try again.",
   mfa_verify: "MFA verification failed. Please retry with a valid code.",
+  mfa_recovery_verify: "Recovery code verification failed. Please retry with a valid code.",
+  mfa_enroll: "Could not start MFA setup.",
+  mfa_enroll_verify: "MFA enrollment verification failed.",
   refresh: "Session refresh failed. Please sign in again.",
   logout: "Logout request failed.",
   forgot_password: "Password reset request failed.",
