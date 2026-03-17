@@ -193,19 +193,6 @@ function Router() {
           </>
         )}
 
-        <Route path="/app/:rest*">
-          {!user ? <Redirect to="/login" /> : user.role === "user" ? <Redirect to="/app" /> : <Redirect to={getDefaultRoute()} />}
-        </Route>
-        <Route path="/verifier/:rest*">
-          {!user ? <Redirect to="/login" /> : user.role === "verifier" ? <Redirect to="/verifier" /> : <Redirect to={getDefaultRoute()} />}
-        </Route>
-        <Route path="/enterprise/:rest*">
-          {!user ? <Redirect to="/portal/login" /> : user.role === "enterprise" ? <Redirect to="/enterprise" /> : <Redirect to={getDefaultRoute()} />}
-        </Route>
-        <Route path="/admin/:rest*">
-          {!user ? <Redirect to="/admin/login" /> : user.role === "admin" ? <Redirect to="/admin" /> : <Redirect to={getDefaultRoute()} />}
-        </Route>
-
         {/* Verifier Routes */}
         {user?.role === 'verifier' && (
           <>
@@ -289,6 +276,19 @@ function Router() {
             <Route path="/admin/*" component={AdminDashboard} />
           </>
         )}
+
+        <Route path="/app/:rest*">
+          {!user ? <Redirect to="/login" /> : user.role === "user" ? <Redirect to="/app" /> : <Redirect to={getDefaultRoute()} />}
+        </Route>
+        <Route path="/verifier/:rest*">
+          {!user ? <Redirect to="/login" /> : user.role === "verifier" ? <Redirect to="/verifier" /> : <Redirect to={getDefaultRoute()} />}
+        </Route>
+        <Route path="/enterprise/:rest*">
+          {!user ? <Redirect to="/portal/login" /> : user.role === "enterprise" ? <Redirect to="/enterprise" /> : <Redirect to={getDefaultRoute()} />}
+        </Route>
+        <Route path="/admin/:rest*">
+          {!user ? <Redirect to="/admin/login" /> : user.role === "admin" ? <Redirect to="/admin" /> : <Redirect to={getDefaultRoute()} />}
+        </Route>
 
         <Route component={NotFound} />
       </Switch>
