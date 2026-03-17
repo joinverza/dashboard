@@ -5,10 +5,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useAuth } from "@/features/auth/AuthContext";
 
 export default function QuickActions() {
+  const { user } = useAuth();
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const profileLink = `${window.location.origin}/u/${user?.id || "profile"}`;
 
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -16,7 +19,7 @@ export default function QuickActions() {
   };
 
   const copyLink = () => {
-    navigator.clipboard.writeText("https://verza.io/u/johndoe");
+    navigator.clipboard.writeText(profileLink);
     setCopied(true);
     toast.success("Profile link copied!");
     setTimeout(() => setCopied(false), 2000);
@@ -118,7 +121,7 @@ export default function QuickActions() {
             <div className="grid flex-1 gap-2">
               <Input
                 id="link"
-                defaultValue="https://verza.io/u/johndoe"
+                value={profileLink}
                 readOnly
                 className="bg-muted/50 border-white/10"
               />

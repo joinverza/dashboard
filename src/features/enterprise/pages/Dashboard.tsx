@@ -31,6 +31,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import { bankingService } from '@/services/bankingService';
 import type { VerificationStatsResponse, VerificationRequestResponse } from '@/types/banking';
+import { toast } from "sonner";
 
 ChartJS.register(
   CategoryScale,
@@ -87,13 +88,13 @@ export default function EnterpriseDashboard() {
         ]);
         setStats(statsData);
         setRecentVerifications(requestsData);
-      } catch (error) {
-        console.error("Failed to fetch dashboard data", error);
+      } catch {
+        toast.error("Failed to load enterprise dashboard data");
       } finally {
         setIsLoading(false);
       }
     };
-    fetchData();
+    void fetchData();
   }, []);
 
   if (isLoading) {
@@ -149,7 +150,7 @@ export default function EnterpriseDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalVerifications.toLocaleString() || 0}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <span className="text-verza-emerald flex items-center mr-1"><ArrowUpRight className="h-3 w-3" /> +12%</span> from last month
+              <span className="text-verza-emerald flex items-center mr-1"><ArrowUpRight className="h-3 w-3" /> Live</span> from backend totals
             </p>
           </CardContent>
         </Card>
@@ -162,7 +163,7 @@ export default function EnterpriseDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats ? ((stats.successful / stats.totalVerifications) * 100).toFixed(1) : 0}%</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              vs 85% industry avg
+              Based on completed verifications
             </p>
           </CardContent>
         </Card>
@@ -186,9 +187,9 @@ export default function EnterpriseDashboard() {
             <Users className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.failed || 0}</div>
+            <div className="text-2xl font-bold">{stats?.rejected || 0}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              {(stats && stats.totalVerifications > 0) ? ((stats.failed / stats.totalVerifications) * 100).toFixed(1) : 0}% failure rate
+              {(stats && stats.totalVerifications > 0) ? ((stats.rejected / stats.totalVerifications) * 100).toFixed(1) : 0}% rejection rate
             </p>
           </CardContent>
         </Card>
@@ -202,9 +203,15 @@ export default function EnterpriseDashboard() {
             <CardDescription>Daily verification requests over the last 30 days.</CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            <div className="h-[300px] w-full">
-              <Line options={chartOptions} data={chartData} />
-            </div>
+            {chartData.labels.length > 0 ? (
+              <div className="h-[300px] w-full">
+                <Line options={chartOptions} data={chartData} />
+              </div>
+            ) : (
+              <div className="h-[300px] w-full flex items-center justify-center text-muted-foreground text-sm">
+                No volume data available
+              </div>
+            )}
           </CardContent>
         </Card>
         
@@ -248,9 +255,9 @@ export default function EnterpriseDashboard() {
                  <h3 className="font-bold text-lg">System Status</h3>
                  <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-verza-emerald animate-pulse"></div>
-                    <span className="text-sm text-muted-foreground">All systems operational</span>
+                    <span className="text-sm text-muted-foreground">Dashboard API connected</span>
                  </div>
-                 <p className="text-xs text-muted-foreground mt-2">Last checked: Just now</p>
+                 <p className="text-xs text-muted-foreground mt-2">Last data refresh: {recentVerifications[0]?.updatedAt ? new Date(recentVerifications[0].updatedAt).toLocaleString() : "N/A"}</p>
                </div>
             </CardContent>
           </Card>

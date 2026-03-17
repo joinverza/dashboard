@@ -37,7 +37,12 @@ import type {
   VerifierProfile,
   VerificationDetails,
   CredentialIssuanceRequest,
-  CredentialIssuanceResponse
+  CredentialIssuanceResponse,
+  DashboardNotification,
+  MarketplaceVerifier,
+  UserWalletOverview,
+  SystemHealthService,
+  GeoDistributionItem
 } from '../types/banking';
 
 const API_PATH = '/api/v1/banking';
@@ -346,6 +351,66 @@ const mapAuditLog = (item: JsonRecord): AuditLogResponse => ({
   details: toAuditValue(item.details) ?? toAuditValue(item.data),
   data: toAuditValue(item.data),
   status: item.status === 'failure' ? 'failure' : 'success',
+});
+
+const mapDashboardNotification = (item: JsonRecord): DashboardNotification => {
+  const rawType = String(item.type ?? item.category ?? item.eventType ?? 'info').toLowerCase();
+  const type: DashboardNotification['type'] =
+    rawType.includes('alert') || rawType.includes('risk')
+      ? 'alert'
+      : rawType.includes('transaction') || rawType.includes('payment')
+        ? 'transaction'
+        : rawType.includes('message') || rawType.includes('chat')
+          ? 'message'
+          : rawType.includes('update') || rawType.includes('system')
+            ? 'update'
+            : 'info';
+  const readValue = item.read ?? item.isRead ?? item.readAt;
+  return {
+    id: String(item.id ?? item.notificationId ?? item.eventId ?? generateToken('notif')),
+    type,
+    title: String(item.title ?? item.subject ?? item.eventType ?? 'Notification'),
+    message: String(item.message ?? item.body ?? item.description ?? ''),
+    createdAt: String(item.createdAt ?? item.timestamp ?? toIsoNow()),
+    read: Boolean(readValue),
+    actionLabel: typeof item.actionLabel === 'string' ? item.actionLabel : typeof item.action === 'string' ? item.action : undefined,
+  };
+};
+
+const mapMarketplaceVerifier = (item: JsonRecord): MarketplaceVerifier => ({
+  id: String(item.id ?? item.verifierId ?? item.userId ?? ''),
+  name: String(item.name ?? item.organizationName ?? item.displayName ?? 'Unknown Verifier'),
+  category: String(item.category ?? item.specialization ?? item.service ?? 'General'),
+  rating: typeof item.rating === 'number' ? item.rating : Number(item.rating || 0),
+  verified: Boolean(item.verified ?? item.isVerified ?? item.status === 'verified'),
+  imageUrl:
+    typeof item.imageUrl === 'string'
+      ? item.imageUrl
+      : typeof item.logoUrl === 'string'
+        ? item.logoUrl
+        : typeof item.avatar === 'string'
+          ? item.avatar
+          : undefined,
+});
+
+const mapSystemHealthService = (item: JsonRecord): SystemHealthService => {
+  const statusRaw = String(item.status ?? 'operational').toLowerCase();
+  const status: SystemHealthService['status'] =
+    statusRaw === 'down' || statusRaw === 'critical'
+      ? 'down'
+      : statusRaw === 'degraded' || statusRaw === 'warning'
+        ? 'degraded'
+        : 'operational';
+  return {
+    name: String(item.name ?? item.service ?? item.component ?? 'Service'),
+    status,
+    uptime: String(item.uptime ?? item.availability ?? 'N/A'),
+  };
+};
+
+const mapGeoDistribution = (item: JsonRecord): GeoDistributionItem => ({
+  region: String(item.region ?? item.country ?? item.name ?? 'Unknown'),
+  percentage: typeof item.percentage === 'number' ? item.percentage : Number(item.percentage || item.share || 0),
 });
 
 export const bankingService = {
@@ -706,6 +771,166 @@ export const bankingService = {
 
   getAnalytics: async (timeRange: string): Promise<AnalyticsData> => {
     return request<AnalyticsData>('GET', `/analytics?timeRange=${encodeURIComponent(timeRange)}`, undefined, { idempotent: false });
+  },
+
+  getUserVerifications: async (params?: { status?: string; page?: number; limit?: number }): Promise<VerificationRequestResponse[]> => {
+    const query = new URLSearchParams(
+      Object.entries({
+        status: params?.status,
+        page: params?.page ? String(params.page) : undefined,
+        limit: params?.limit ? String(params.limit) : undefined,
+      }).filter(([, value]) => value !== undefined) as [string, string][],
+    ).toString();
+    const path = query ? `/user/verifications?${query}` : '/user/verifications';
+    try {
+      const payload = await request<unknown>('GET', path, undefined, { idempotent: false });
+      if (Array.isArray(payload)) {
+        return payload.filter(isRecord).map(mapVerificationRequest);
+      }
+      if (isRecord(payload) && Array.isArray(payload.items)) {
+        return payload.items.filter(isRecord).map(mapVerificationRequest);
+      }
+      return [];
+    } catch (error) {
+      if (isBankingApiError(error) && (error.status === 401 || error.status === 403 || error.status === 404)) {
+        return [];
+      }
+      throw error;
+    }
+  },
+
+  getNotifications: async (params?: { page?: number; limit?: number }): Promise<DashboardNotification[]> => {
+    const query = new URLSearchParams(
+      Object.entries({
+        page: params?.page ? String(params.page) : undefined,
+        limit: params?.limit ? String(params.limit) : undefined,
+      }).filter(([, value]) => value !== undefined) as [string, string][],
+    ).toString();
+    const path = query ? `/notifications?${query}` : '/notifications';
+    try {
+      const payload = await request<unknown>('GET', path, undefined, { idempotent: false });
+      if (Array.isArray(payload)) {
+        return payload.filter(isRecord).map(mapDashboardNotification);
+      }
+      if (isRecord(payload) && Array.isArray(payload.items)) {
+        return payload.items.filter(isRecord).map(mapDashboardNotification);
+      }
+      return [];
+    } catch (error) {
+      if (isBankingApiError(error) && (error.status === 401 || error.status === 403 || error.status === 404)) {
+        return [];
+      }
+      throw error;
+    }
+  },
+
+  getMarketplaceVerifiers: async (params?: {
+    search?: string;
+    service?: string;
+    rating?: string;
+    sort?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<MarketplaceVerifier[]> => {
+    const query = new URLSearchParams(
+      Object.entries({
+        search: params?.search,
+        service: params?.service,
+        rating: params?.rating,
+        sort: params?.sort,
+        page: params?.page ? String(params.page) : undefined,
+        limit: params?.limit ? String(params.limit) : undefined,
+      }).filter(([, value]) => value !== undefined) as [string, string][],
+    ).toString();
+    const path = query ? `/marketplace/verifiers?${query}` : '/marketplace/verifiers';
+    try {
+      const payload = await request<unknown>('GET', path, undefined, { idempotent: false });
+      if (Array.isArray(payload)) {
+        return payload.filter(isRecord).map(mapMarketplaceVerifier);
+      }
+      if (isRecord(payload) && Array.isArray(payload.items)) {
+        return payload.items.filter(isRecord).map(mapMarketplaceVerifier);
+      }
+      return [];
+    } catch (error) {
+      if (isBankingApiError(error) && (error.status === 401 || error.status === 403 || error.status === 404)) {
+        return [];
+      }
+      throw error;
+    }
+  },
+
+  getUserWalletOverview: async (): Promise<UserWalletOverview> => {
+    try {
+      const payload = await request<unknown>('GET', '/user/wallet', undefined, { idempotent: false });
+      if (isRecord(payload)) {
+        return {
+          currency: typeof payload.currency === 'string' ? payload.currency : 'USD',
+          balance: typeof payload.balance === 'number' ? payload.balance : Number(payload.balance || 0),
+          totalSpent: typeof payload.totalSpent === 'number' ? payload.totalSpent : Number(payload.totalSpent || payload.spent || 0),
+        };
+      }
+      return { currency: 'USD', balance: 0, totalSpent: 0 };
+    } catch (error) {
+      if (isBankingApiError(error) && (error.status === 401 || error.status === 403 || error.status === 404)) {
+        return { currency: 'USD', balance: 0, totalSpent: 0 };
+      }
+      throw error;
+    }
+  },
+
+  getSystemHealth: async (): Promise<SystemHealthService[]> => {
+    try {
+      const payload = await request<unknown>('GET', '/admin/system-health', undefined, { idempotent: false });
+      if (Array.isArray(payload)) {
+        return payload.filter(isRecord).map(mapSystemHealthService);
+      }
+      if (isRecord(payload) && Array.isArray(payload.items)) {
+        return payload.items.filter(isRecord).map(mapSystemHealthService);
+      }
+      return [];
+    } catch (error) {
+      if (isBankingApiError(error) && (error.status === 401 || error.status === 403 || error.status === 404)) {
+        return [];
+      }
+      throw error;
+    }
+  },
+
+  getRecentAlerts: async (): Promise<DashboardNotification[]> => {
+    try {
+      const payload = await request<unknown>('GET', '/admin/alerts', undefined, { idempotent: false });
+      if (Array.isArray(payload)) {
+        return payload.filter(isRecord).map(mapDashboardNotification);
+      }
+      if (isRecord(payload) && Array.isArray(payload.items)) {
+        return payload.items.filter(isRecord).map(mapDashboardNotification);
+      }
+      return [];
+    } catch (error) {
+      if (isBankingApiError(error) && (error.status === 401 || error.status === 403 || error.status === 404)) {
+        return [];
+      }
+      throw error;
+    }
+  },
+
+  getGeoDistribution: async (): Promise<GeoDistributionItem[]> => {
+    try {
+      const payload = await request<unknown>('GET', '/analytics/geographic-distribution', undefined, { idempotent: false });
+      if (Array.isArray(payload)) {
+        return payload.filter(isRecord).map(mapGeoDistribution);
+      }
+      if (isRecord(payload) && Array.isArray(payload.items)) {
+        return payload.items.filter(isRecord).map(mapGeoDistribution);
+      }
+      return [];
+    } catch (error) {
+      if (isBankingApiError(error) && (error.status === 401 || error.status === 403 || error.status === 404)) {
+        return [];
+      }
+      throw error;
+    }
   },
 
   initiateBulkVerification: async (data: BulkVerificationRequest): Promise<BulkVerificationResponse> => {

@@ -29,8 +29,9 @@ import {
 import { Line } from 'react-chartjs-2';
 import { useState, useEffect } from "react";
 import { bankingService } from "@/services/bankingService";
-import type { VerificationStatsResponse, VerificationRequestResponse } from "@/types/banking";
+import type { VerificationStatsResponse, VerificationRequestResponse, VerifierProfile } from "@/types/banking";
 import { toast } from "sonner";
+import { useAuth } from "@/features/auth/AuthContext";
 
 ChartJS.register(
   CategoryScale,
@@ -73,31 +74,33 @@ const chartOptions = {
 };
 
 export default function VerifierDashboard() {
+  const { user } = useAuth();
   const [stats, setStats] = useState<VerificationStatsResponse | null>(null);
   const [activeJobs, setActiveJobs] = useState<VerificationRequestResponse[]>([]);
+  const [profile, setProfile] = useState<VerifierProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [statsData, requestsData] = await Promise.all([
+        const [statsData, requestsData, profileData] = await Promise.all([
           bankingService.getVerificationStats(),
-          bankingService.getVerificationRequests()
+          bankingService.getVerificationRequests(),
+          user?.id ? bankingService.getVerifierProfile() : Promise.resolve(null),
         ]);
         setStats(statsData);
-        // Filter for active jobs (mock logic: pending/review_needed)
-        const active = requestsData.filter(r => ['pending', 'review_needed'].includes(r.status)).slice(0, 3);
+        const active = requestsData.filter(r => ['pending', 'review_needed', 'in_progress'].includes(r.status)).slice(0, 3);
         setActiveJobs(active);
-      } catch (error) {
-        console.error("Failed to fetch dashboard data", error);
+        setProfile(profileData);
+      } catch {
         toast.error("Failed to load dashboard data");
       } finally {
         setIsLoading(false);
       }
     };
-    fetchData();
-  }, []);
+    void fetchData();
+  }, [user?.id]);
 
   const getTypeLabel = (type: string) => {
     return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -112,11 +115,11 @@ export default function VerifierDashboard() {
   }
 
   const chartData = {
-    labels: stats?.dailyBreakdown?.map(d => new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' })) || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    labels: stats?.dailyBreakdown?.map(d => new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' })) || [],
     datasets: [
       {
-        label: 'Earnings',
-        data: stats?.dailyBreakdown?.map(d => d.count * 15) || [150, 230, 180, 320, 290, 140, 380], // Estimated $15 per verification
+        label: 'Verification Volume',
+        data: stats?.dailyBreakdown?.map(d => d.count) || [],
         fill: true,
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
         borderColor: '#10b981',
@@ -125,7 +128,9 @@ export default function VerifierDashboard() {
     ],
   };
 
-  const estimatedEarnings = (stats?.successful || 0) * 15;
+  const earningsValue = typeof profile?.stats?.earnings === "number"
+    ? profile.stats.earnings
+    : Number(profile?.stats?.earnings || 0);
 
   return (
     <motion.div
@@ -155,9 +160,9 @@ export default function VerifierDashboard() {
             <DollarSign className="h-4 w-4 text-verza-emerald" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${estimatedEarnings.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+            <div className="text-2xl font-bold">${earningsValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <span className="text-verza-emerald flex items-center mr-1"><ArrowUpRight className="h-3 w-3" /> +12%</span> from last month
+              <span className="text-verza-emerald flex items-center mr-1"><ArrowUpRight className="h-3 w-3" /> Live</span> from verifier profile
             </p>
           </CardContent>
         </Card>
@@ -168,9 +173,9 @@ export default function VerifierDashboard() {
             <Award className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">98/100</div>
+            <div className="text-2xl font-bold">{profile?.stats?.reputation ?? "--"}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              Top 5% of verifiers
+              Based on backend reputation metrics
             </p>
           </CardContent>
         </Card>
@@ -206,13 +211,19 @@ export default function VerifierDashboard() {
         {/* Earnings Chart */}
         <Card className="lg:col-span-2 bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle>Earnings Trend</CardTitle>
-            <CardDescription>Your earnings over the last 7 days.</CardDescription>
+            <CardTitle>Verification Trend</CardTitle>
+            <CardDescription>Your completed verification volume over recent days.</CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            <div className="h-[300px] w-full">
-              <Line options={chartOptions} data={chartData} />
-            </div>
+            {chartData.labels.length > 0 ? (
+              <div className="h-[300px] w-full">
+                <Line options={chartOptions} data={chartData} />
+              </div>
+            ) : (
+              <div className="h-[300px] w-full flex items-center justify-center text-muted-foreground text-sm">
+                No trend data available
+              </div>
+            )}
           </CardContent>
         </Card>
         
@@ -286,13 +297,13 @@ export default function VerifierDashboard() {
                     <h3 className="font-medium">{getTypeLabel(job.type)}</h3>
                     <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                       <span className="flex items-center"><Briefcase className="mr-1 h-3 w-3" /> {job.details?.firstName || 'Unknown'}</span>
-                      <span className="flex items-center text-orange-400"><Clock className="mr-1 h-3 w-3" /> 2h left</span>
+                      <span className="flex items-center text-orange-400"><Clock className="mr-1 h-3 w-3" /> Updated {new Date(job.updatedAt).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 justify-between md:justify-end w-full md:w-auto">
                   <div className="text-right mr-4">
-                    <div className="font-bold text-verza-emerald">$15.00</div>
+                    <div className="font-bold text-verza-emerald">{typeof job.details?.amount === "number" ? `$${job.details.amount.toFixed(2)}` : "--"}</div>
                     <Badge variant="outline" className="text-[10px]">{job.status}</Badge>
                   </div>
                   <Link href={`/verifier/jobs/${job.verificationId}`}>

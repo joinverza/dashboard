@@ -418,6 +418,42 @@ export interface CredentialIssuanceRequest {
   notes?: string;
 }
 
+export interface DashboardNotification {
+  id: string;
+  type: 'alert' | 'transaction' | 'message' | 'update' | 'info';
+  title: string;
+  message: string;
+  createdAt: string;
+  read: boolean;
+  actionLabel?: string;
+}
+
+export interface MarketplaceVerifier {
+  id: string;
+  name: string;
+  category: string;
+  rating: number;
+  verified: boolean;
+  imageUrl?: string;
+}
+
+export interface UserWalletOverview {
+  currency: string;
+  balance: number;
+  totalSpent: number;
+}
+
+export interface SystemHealthService {
+  name: string;
+  status: 'operational' | 'degraded' | 'down';
+  uptime: string;
+}
+
+export interface GeoDistributionItem {
+  region: string;
+  percentage: number;
+}
+
 export interface CredentialIssuanceResponse {
   credentialId: string;
   transactionHash: string;
