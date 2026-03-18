@@ -1,9 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Key, Copy, RefreshCw, Trash2, Plus, Eye, EyeOff, CheckCircle, 
-  AlertTriangle, Server, Activity, Shield, Code, ExternalLink, Loader2
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  Code,
+  Copy,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Key,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Server,
+  Shield,
+  Trash2
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,16 +28,22 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { bankingService } from '@/services/bankingService';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
+import { getBankingErrorMessage } from '@/services/bankingService';
+import { apiKeysService, apiManagementEndpointMappings, webhooksService } from '@/services/apiManagementService';
 import type { ApiKeyResponse, WebhookResponse } from '@/types/banking';
-import { toast } from 'sonner';
 
 export default function ApiManagement() {
   const [apiKeys, setApiKeys] = useState<ApiKeyResponse[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookResponse[]>([]);
-  // const [isLoading, setIsLoading] = useState(true); // Removed unused state
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [pageError, setPageError] = useState('');
   const [isCreatingKey, setIsCreatingKey] = useState(false);
+  const [isTestingWebhookId, setIsTestingWebhookId] = useState<string | null>(null);
+  const [isDeletingWebhookId, setIsDeletingWebhookId] = useState<string | null>(null);
+  const [isDeletingKeyId, setIsDeletingKeyId] = useState<string | null>(null);
   const [newKeyName, setNewKeyName] = useState('');
   const [isCreatingWebhook, setIsCreatingWebhook] = useState(false);
   const [newWebhookUrl, setNewWebhookUrl] = useState('');
@@ -36,93 +56,128 @@ export default function ApiManagement() {
   }, []);
 
   const loadData = async () => {
-    // setIsLoading(true);
+    setIsLoadingData(true);
+    setPageError('');
     try {
-      // In a real app, we would handle errors more gracefully
-      // For now we might catch if the service fails (e.g. 404/500)
-      const keys = await bankingService.listApiKeys().catch(() => []);
-      const hooks = await bankingService.listWebhooks().catch(() => []);
-      
-      // If empty (mock/initial), let's populate with some dummy data if the API fails or returns empty
-      if (keys.length === 0) {
-        setApiKeys([
-            { id: "key_prod_1", name: "Production Key 1", keyPrefix: "vz_live_...", createdAt: "2023-11-15", lastUsed: "2 mins ago", scopes: ["read", "write"] },
-            { id: "key_dev_1", name: "Development Key", keyPrefix: "vz_test_...", createdAt: "2025-02-10", lastUsed: "2 days ago", scopes: ["read"] },
-        ]);
-      } else {
-        setApiKeys(keys);
-      }
-
-      if (hooks.length === 0) {
-        setWebhooks([
-            { id: "wh_1", url: "https://api.example.com/webhooks", events: ["verification.completed"], isActive: true, createdAt: "2024-01-01" }
-        ]);
-      } else {
-        setWebhooks(hooks);
-      }
+      const [keys, hooks] = await Promise.all([apiKeysService.list(), webhooksService.list()]);
+      setApiKeys(keys);
+      setWebhooks(hooks);
     } catch (error) {
-      console.error(error);
-      // setIsLoading(false);
+      const message = getBankingErrorMessage(error, 'Failed to load API management data');
+      setPageError(message);
+      toast.error(message);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const isValidUrl = (value: string): boolean => {
+    try {
+      const parsed = new URL(value.trim());
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
     }
   };
 
   const handleCreateKey = async () => {
+    const trimmedName = newKeyName.trim();
+    if (!trimmedName || trimmedName.length > 128) {
+      toast.error('Key name must be 1-128 characters');
+      return;
+    }
     setIsCreatingKey(true);
     try {
-        const newKey = await bankingService.createApiKey({ name: newKeyName, scopes: ["read", "write"] });
-        setApiKeys([...apiKeys, newKey]);
-        setNewKeyName('');
-        toast.success("API Key created successfully");
-        // Close dialog logic would go here if controlled
-    } catch (e) {
-        console.error(e);
-        toast.error("Failed to create API key");
+      const created = await apiKeysService.create({
+        keyName: trimmedName,
+        permissions: ['api_keys:read', 'api_keys:write', 'webhooks:read', 'webhooks:write']
+      });
+      setNewKeyName('');
+      await loadData();
+      toast.success('API Key created successfully');
+      if (created.apiKey) {
+        void navigator.clipboard.writeText(created.apiKey);
+      }
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to create API key'));
     } finally {
-        setIsCreatingKey(false);
+      setIsCreatingKey(false);
     }
   };
 
   const handleDeleteKey = async (id: string) => {
+    setIsDeletingKeyId(id);
     try {
-        await bankingService.revokeApiKey(id);
-        setApiKeys(apiKeys.filter(k => k.id !== id));
-        toast.success("API Key revoked");
-    } catch (e) {
-        console.error(e);
-        toast.error("Failed to revoke API key");
+      await apiKeysService.revoke(id);
+      setApiKeys((current) => current.filter((item) => item.id !== id));
+      toast.success('API Key revoked');
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to revoke API key'));
+    } finally {
+      setIsDeletingKeyId(null);
     }
   };
 
   const handleCreateWebhook = async () => {
+    if (!isValidUrl(newWebhookUrl)) {
+      toast.error('Enter a valid webhook URL');
+      return;
+    }
     setIsCreatingWebhook(true);
     try {
-        const newHook = await bankingService.registerWebhook({ url: newWebhookUrl, events: newWebhookEvents.length ? newWebhookEvents : ["all"] });
-        setWebhooks([...webhooks, newHook]);
-        setNewWebhookUrl('');
-        setNewWebhookEvents([]);
-        toast.success("Webhook registered successfully");
-    } catch (e) {
-        console.error(e);
-        toast.error("Failed to register webhook");
+      await webhooksService.register({
+        url: newWebhookUrl.trim(),
+        events: newWebhookEvents.length ? newWebhookEvents : ['verification.completed'],
+      });
+      setNewWebhookUrl('');
+      setNewWebhookEvents([]);
+      await loadData();
+      toast.success('Webhook registered successfully');
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to register webhook'));
     } finally {
-        setIsCreatingWebhook(false);
+      setIsCreatingWebhook(false);
     }
   };
 
   const handleDeleteWebhook = async (id: string) => {
+    setIsDeletingWebhookId(id);
     try {
-        await bankingService.deleteWebhook(id);
-        setWebhooks(webhooks.filter(w => w.id !== id));
-        toast.success("Webhook deleted");
-    } catch (e) {
-        console.error(e);
-        toast.error("Failed to delete webhook");
+      await webhooksService.delete(id);
+      setWebhooks((current) => current.filter((item) => item.id !== id));
+      toast.success('Webhook deleted');
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to delete webhook'));
+    } finally {
+      setIsDeletingWebhookId(null);
     }
   };
 
+  const handleTestWebhook = async (id: string) => {
+    setIsTestingWebhookId(id);
+    try {
+      const response = await webhooksService.test({
+        webhookId: id,
+        eventType: 'verification.completed',
+        payload: { source: 'api-management' }
+      });
+      toast.success(`Webhook test status: ${response.status}`);
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to test webhook'));
+    } finally {
+      setIsTestingWebhookId(null);
+    }
+  };
+
+  const copyText = async (value: string): Promise<void> => {
+    if (!value.trim()) return;
+    await navigator.clipboard.writeText(value);
+    toast.success('Copied to clipboard');
+  };
 
   return (
-    <div className="space-y-6 pb-10">
+    <ApiErrorBoundary>
+      <div className="space-y-6 pb-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-verza-primary to-verza-secondary bg-clip-text text-transparent">
@@ -186,8 +241,29 @@ export default function ApiManagement() {
           </Dialog>
         </div>
       </div>
+      {pageError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Unable to load API resources</AlertTitle>
+          <AlertDescription>
+            <div className="flex items-center justify-between gap-2">
+              <span>{pageError}</span>
+              <Button variant="outline" size="sm" onClick={loadData} disabled={isLoadingData}>
+                {isLoadingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                Retry
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+      {isLoadingData && (
+        <Card>
+          <CardContent className="py-8 flex justify-center">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Usage Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -284,10 +360,10 @@ export default function ApiManagement() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyText(key.keyPrefix || '')}>
                                 <Copy className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={loadData} disabled={isLoadingData}>
                                 <RefreshCw className="h-4 w-4" />
                               </Button>
                               <Button 
@@ -295,8 +371,9 @@ export default function ApiManagement() {
                                 size="icon" 
                                 className="h-8 w-8 text-destructive hover:text-destructive"
                                 onClick={() => handleDeleteKey(key.id)}
+                                disabled={isDeletingKeyId === key.id}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                {isDeletingKeyId === key.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                               </Button>
                             </div>
                           </TableCell>
@@ -487,8 +564,12 @@ export default function ApiManagement() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="sm">Test</Button>
-                                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteWebhook(hook.id)}>Delete</Button>
+                                        <Button variant="ghost" size="sm" onClick={() => handleTestWebhook(hook.id)} disabled={isTestingWebhookId === hook.id}>
+                                          {isTestingWebhookId === hook.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Test'}
+                                        </Button>
+                                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteWebhook(hook.id)} disabled={isDeletingWebhookId === hook.id}>
+                                          {isDeletingWebhookId === hook.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
+                                        </Button>
                                     </div>
                                 </div>
                             ))
@@ -527,10 +608,37 @@ export default function ApiManagement() {
                         </div>
                         <Switch />
                     </div>
+                    <Separator />
+                    <div className="space-y-3">
+                      <Label>Endpoint-to-Page Mapping</Label>
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Method</TableHead>
+                              <TableHead>Endpoint</TableHead>
+                              <TableHead>Pages</TableHead>
+                              <TableHead>Permission</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {apiManagementEndpointMappings.map((mapping) => (
+                              <TableRow key={`${mapping.method}-${mapping.endpoint}`}>
+                                <TableCell>{mapping.method}</TableCell>
+                                <TableCell className="font-mono text-xs">{mapping.endpoint}</TableCell>
+                                <TableCell>{mapping.pages.join(', ')}</TableCell>
+                                <TableCell>{mapping.permission}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
                 </CardContent>
             </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </ApiErrorBoundary>
   );
 }

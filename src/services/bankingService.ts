@@ -61,6 +61,9 @@ const API_PATH = '/api/v1/banking';
 const API_KEY_STORAGE_KEY = 'verza:banking:apiKey';
 const ADMIN_TOKEN_STORAGE_KEY = 'verza:banking:adminToken';
 const DEFAULT_IMAGE_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEmgJ3H2jyxQAAAABJRU5ErkJggg==';
+const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
+const RETRY_ATTEMPTS = 3;
+const RETRY_BASE_DELAY_MS = 300;
 
 const sanitizeUrlString = (value: string): string =>
   value
@@ -243,13 +246,15 @@ class BankingApiError extends Error {
   status: number;
   path: string;
   requestId?: string;
+  retryable: boolean;
 
-  constructor(status: number, path: string, message: string, requestId?: string) {
+  constructor(status: number, path: string, message: string, requestId?: string, retryable = false) {
     super(message);
     this.name = 'BankingApiError';
     this.status = status;
     this.path = path;
     this.requestId = requestId;
+    this.retryable = retryable;
   }
 }
 
@@ -264,6 +269,23 @@ const toErrorMessage = (status: number, payload: unknown): string => {
   }
   return `Request failed with status ${status}`;
 };
+
+export const getBankingErrorMessage = (error: unknown, fallback = 'Request failed'): string => {
+  if (isBankingApiError(error)) {
+    return error.requestId ? `${error.message} (requestId: ${error.requestId})` : error.message;
+  }
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+};
+
+const delay = (durationMs: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, durationMs);
+  });
+
+const isRetryableMethod = (method: string): boolean => method === 'GET' || method === 'POST' || method === 'DELETE';
+
+const nextRetryDelayMs = (attempt: number): number => RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
 
 const unwrapEnvelope = <T>(payload: unknown): T => {
   if (isRecord(payload) && typeof payload.success === 'boolean') {
@@ -310,26 +332,47 @@ const request = async <T>(
     headers['Idempotency-Key'] = generateToken('idem');
   }
 
-  const res = await fetch(`${BASE_URL}${normalizedPath}`, {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    credentials: 'include',
-  });
-
-  const text = await res.text();
-  const payload = text ? safeParseJson(text) : {};
-
-  if (!res.ok) {
-    throw new BankingApiError(
-      res.status,
-      normalizedPath,
-      toErrorMessage(res.status, payload),
-      res.headers.get('x-request-id') || undefined,
-    );
+  const attemptLimit = isRetryableMethod(method) ? RETRY_ATTEMPTS : 1;
+  let attempt = 0;
+  while (attempt < attemptLimit) {
+    attempt += 1;
+    try {
+      const res = await fetch(`${BASE_URL}${normalizedPath}`, {
+        method,
+        headers,
+        body: body === undefined ? undefined : JSON.stringify(body),
+        credentials: 'include',
+      });
+      const text = await res.text();
+      const payload = text ? safeParseJson(text) : {};
+      if (!res.ok) {
+        const retryable = RETRYABLE_STATUSES.has(res.status);
+        if (retryable && attempt < attemptLimit) {
+          await delay(nextRetryDelayMs(attempt));
+          continue;
+        }
+        throw new BankingApiError(
+          res.status,
+          normalizedPath,
+          toErrorMessage(res.status, payload),
+          res.headers.get('x-request-id') || undefined,
+          retryable,
+        );
+      }
+      return unwrapEnvelope<T>(payload);
+    } catch (error) {
+      if (isBankingApiError(error)) throw error;
+      if (attempt < attemptLimit) {
+        await delay(nextRetryDelayMs(attempt));
+        continue;
+      }
+      if (error instanceof Error) {
+        throw new BankingApiError(0, normalizedPath, error.message, undefined, true);
+      }
+      throw new BankingApiError(0, normalizedPath, 'Network request failed', undefined, true);
+    }
   }
-
-  return unwrapEnvelope<T>(payload);
+  throw new BankingApiError(0, normalizedPath, 'Request failed', undefined, true);
 };
 
 const toIsoNow = (): string => new Date().toISOString();
@@ -407,6 +450,43 @@ const mapVerificationRequest = (item: JsonRecord): VerificationRequestResponse =
     subject: typeof item.subject === 'string' ? item.subject : undefined,
   };
 };
+
+const webhookResponseSchema = z.object({
+  webhookId: z.string().min(1),
+  webhookUrl: z.string().url(),
+  events: z.array(z.string()),
+  active: z.boolean(),
+  createdAt: z.string(),
+}).passthrough();
+
+const apiKeyResponseSchema = z.object({
+  keyId: z.string().min(1),
+  keyName: z.string().min(1),
+  permissions: z.array(z.string()),
+  createdAt: z.string(),
+  expiresAt: z.string().nullable().optional(),
+  revokedAt: z.string().nullable().optional(),
+  rateLimit: z.number().nullable().optional(),
+  status: z.string().optional(),
+  keyPrefix: z.string().optional(),
+  apiKey: z.string().optional(),
+  lastUsed: z.string().optional(),
+}).passthrough();
+
+const webhookTestResponseSchema = z.object({
+  webhookId: z.string().nullable().optional(),
+  status: z.enum(['delivered', 'invalid_target', 'inactive', 'not_found']),
+  eventType: z.string().optional(),
+  targetUrl: z.string().nullable().optional(),
+  sentAt: z.string().optional(),
+}).passthrough();
+
+const webhookLegacyTestResponseSchema = z.object({
+  requestId: z.string(),
+  delivered: z.boolean(),
+  statusCode: z.number(),
+  latencyMs: z.number(),
+}).passthrough();
 
 const mapWebhook = (item: JsonRecord): WebhookResponse => ({
   id: String(item.webhookId ?? item.id ?? ''),
@@ -802,23 +882,52 @@ export const bankingService = {
       secret: data.secret || generateToken('whsec'),
       active: data.active ?? true,
     });
-    return mapWebhook(result);
+    return mapWebhook(parseWithSchema(webhookResponseSchema, result, 'registerWebhook response'));
   },
 
   testWebhookEndpoint: async (webhookId: string): Promise<WebhookTestResponse> => {
-    const result = await request<JsonRecord>('POST', `/webhooks/${webhookId}/test`, undefined, { idempotent: false });
-    return {
-      requestId: String(result.requestId ?? generateToken('whreq')),
-      delivered: Boolean(result.delivered ?? true),
-      statusCode: Number(result.statusCode ?? 200),
-      latencyMs: Number(result.latencyMs ?? 120),
-    };
+    return bankingService.testWebhook({
+      webhookId,
+      eventType: 'verification.completed',
+      payload: { source: 'dashboard' },
+    });
   },
 
-  listWebhooks: async (): Promise<WebhookResponse[]> => {
-    const result = await request<JsonRecord>('GET', '/webhooks', undefined, { idempotent: false });
+  testWebhook: async (input: { webhookId?: string; webhookUrl?: string; eventType: string; payload?: Record<string, unknown> }): Promise<WebhookTestResponse> => {
+    try {
+      const result = await request<JsonRecord>('POST', '/webhooks/test', input);
+      const parsed = parseWithSchema(webhookTestResponseSchema, result, 'testWebhook response');
+      return {
+        webhookId: parsed.webhookId ?? null,
+        status: parsed.status,
+        eventType: parsed.eventType,
+        targetUrl: parsed.targetUrl,
+        sentAt: parsed.sentAt,
+      };
+    } catch (error) {
+      if (!input.webhookId || !(isBankingApiError(error) && error.status === 404)) {
+        throw error;
+      }
+      const fallbackResult = await request<JsonRecord>('POST', `/webhooks/${input.webhookId}/test`, undefined, { idempotent: false });
+      const legacy = parseWithSchema(webhookLegacyTestResponseSchema, fallbackResult, 'testWebhook legacy response');
+      return {
+        webhookId: input.webhookId,
+        status: legacy.delivered ? 'delivered' : 'invalid_target',
+        eventType: input.eventType,
+        targetUrl: input.webhookUrl ?? null,
+        sentAt: new Date().toISOString(),
+      };
+    }
+  },
+
+  listWebhooks: async (active?: boolean): Promise<WebhookResponse[]> => {
+    const query = typeof active === 'boolean' ? `?active=${active}` : '';
+    const result = await request<JsonRecord>('GET', `/webhooks${query}`, undefined, { idempotent: false });
     const items = Array.isArray(result.items) ? result.items : [];
-    return items.filter(isRecord).map(mapWebhook);
+    return items
+      .filter(isRecord)
+      .map((item) => parseWithSchema(webhookResponseSchema, item, 'listWebhooks item'))
+      .map((item) => mapWebhook(item));
   },
 
   deleteWebhook: async (webhookId: string): Promise<void> => {
@@ -874,7 +983,7 @@ export const bankingService = {
       rateLimit: data.rateLimit,
     };
     const result = await request<JsonRecord>('POST', '/api-keys/create', payload, { allowBootstrapAdminToken: true });
-    const mapped = mapApiKey(result);
+    const mapped = mapApiKey(parseWithSchema(apiKeyResponseSchema, result, 'createApiKey response'));
     if (mapped.apiKey) {
       setBankingApiKey(mapped.apiKey);
     }
@@ -884,7 +993,10 @@ export const bankingService = {
   listApiKeys: async (): Promise<ApiKeyResponse[]> => {
     const result = await request<JsonRecord>('GET', '/api-keys', undefined, { idempotent: false });
     const items = Array.isArray(result.items) ? result.items : [];
-    return items.filter(isRecord).map(mapApiKey);
+    return items
+      .filter(isRecord)
+      .map((item) => parseWithSchema(apiKeyResponseSchema, item, 'listApiKeys item'))
+      .map((item) => mapApiKey(item));
   },
 
   revokeApiKey: async (keyId: string): Promise<void> => {

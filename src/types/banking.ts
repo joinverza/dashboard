@@ -237,6 +237,30 @@ export interface WebhookRegisterRequest {
   active?: boolean;
 }
 
+export interface ApiValidationErrorDetail {
+  loc: Array<string | number>;
+  msg: string;
+  type: string;
+}
+
+export interface ApiValidationError {
+  code: 'validation_error';
+  message: string;
+  details: ApiValidationErrorDetail[];
+}
+
+export interface ApiSuccessEnvelope<T> {
+  success: true;
+  data: T;
+  timestamp: string;
+}
+
+export interface ApiErrorEnvelope {
+  success: false;
+  error: ApiValidationError;
+  timestamp: string;
+}
+
 export interface WebhookResponse {
   id: string;
   webhookId?: string;
@@ -273,6 +297,41 @@ export interface ApiKeyResponse {
   lastUsed?: string;
   scopes: string[];
   permissions?: string[];
+}
+
+export interface ApiKeyCreateResult {
+  keyId: string;
+  apiKey: string;
+  permissions: string[];
+  createdAt: string;
+  expiresAt: string | null;
+}
+
+export interface ApiKeyRevokeResult {
+  keyId: string;
+  revoked: boolean;
+  revokedAt: string;
+}
+
+export type ApiKeyListItem = ApiKeyResponse;
+
+export interface WebhookRegisterResult {
+  webhookId: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+}
+
+export interface WebhookDeleteResult {
+  webhookId: string;
+  deleted: boolean;
+  deletedAt: string;
+}
+
+export interface WebhookTestRequest {
+  webhookId?: string;
+  webhookUrl?: string;
+  eventType: string;
+  payload?: Record<string, unknown>;
 }
 
 export interface AuditLogResponse {
@@ -454,10 +513,11 @@ export interface WebhookRetryItem {
 }
 
 export interface WebhookTestResponse {
-  requestId: string;
-  delivered: boolean;
-  statusCode: number;
-  latencyMs: number;
+  webhookId: string | null;
+  status: 'delivered' | 'invalid_target' | 'inactive' | 'not_found';
+  eventType?: string;
+  targetUrl?: string | null;
+  sentAt?: string;
 }
 
 export interface WebhookSecretRotateResponse {

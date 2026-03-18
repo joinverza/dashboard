@@ -8,7 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { bankingService } from '@/services/bankingService';
+import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
+import { webhooksService } from '@/services/apiManagementService';
 import type { AuditLogResponse, LicenseUsageMetrics, RiskSimulationResponse, WebhookResponse, WebhookRetryItem } from '@/types/banking';
 import { calculateQuotaPercent, parseCsvText, toCsvErrorReport } from './operationsHub.utils';
 
@@ -72,7 +74,7 @@ export default function VerificationTools() {
       setBulkIssues(result.issues);
       toast.success(`Validation finished: ${result.validRows}/${result.totalRows} valid`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Validation failed');
+      toast.error(getBankingErrorMessage(error, 'Validation failed'));
       setBulkProgress(0);
     } finally {
       setLoading(false);
@@ -86,7 +88,7 @@ export default function VerificationTools() {
       const result = await bankingService.importBulkOnboardingRows(csvRows);
       toast.success(`Import ${result.status}: ${result.acceptedRows} accepted`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Import failed');
+      toast.error(getBankingErrorMessage(error, 'Import failed'));
     } finally {
       setLoading(false);
     }
@@ -101,7 +103,7 @@ export default function VerificationTools() {
       });
       setRiskResult(result);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Simulation failed');
+      toast.error(getBankingErrorMessage(error, 'Simulation failed'));
     } finally {
       setLoading(false);
     }
@@ -137,7 +139,7 @@ export default function VerificationTools() {
       });
       setAuditLogs(result);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Audit search failed');
+      toast.error(getBankingErrorMessage(error, 'Audit search failed'));
     } finally {
       setLoading(false);
     }
@@ -157,11 +159,11 @@ export default function VerificationTools() {
   const loadWebhooks = async () => {
     setLoading(true);
     try {
-      const [items, retries] = await Promise.all([bankingService.listWebhooks(), bankingService.getWebhookRetryQueue()]);
+      const [items, retries] = await Promise.all([webhooksService.list(), bankingService.getWebhookRetryQueue()]);
       setWebhooks(items);
       setRetryQueue(retries);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to load webhooks');
+      toast.error(getBankingErrorMessage(error, 'Failed to load webhooks'));
     } finally {
       setLoading(false);
     }
@@ -169,7 +171,7 @@ export default function VerificationTools() {
 
   const registerWebhook = async () => {
     if (!webhookForm.url.trim()) return;
-    await bankingService.registerWebhook({
+    await webhooksService.register({
       url: webhookForm.url.trim(),
       events: webhookForm.events.split(',').map((item) => item.trim()).filter(Boolean),
       active: true,
@@ -185,7 +187,7 @@ export default function VerificationTools() {
 
   const testWebhook = async (webhookId: string) => {
     const result = await bankingService.testWebhookEndpoint(webhookId);
-    toast.success(`Test delivered=${result.delivered} status=${result.statusCode}`);
+    toast.success(`Test status=${result.status} event=${result.eventType}`);
   };
 
   const loadUsage = async () => {
@@ -194,7 +196,7 @@ export default function VerificationTools() {
       const result = await bankingService.getLicenseUsageMetrics();
       setUsage(result);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to load SLA metrics');
+      toast.error(getBankingErrorMessage(error, 'Failed to load SLA metrics'));
     } finally {
       setLoading(false);
     }
@@ -207,6 +209,7 @@ export default function VerificationTools() {
   };
 
   return (
+    <ApiErrorBoundary>
     <div className="space-y-6 pb-10">
       <div>
         <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-verza-primary to-verza-secondary bg-clip-text text-transparent">Operations Hub</h1>
@@ -384,5 +387,6 @@ export default function VerificationTools() {
       </Tabs>
       {loading && <div className="fixed bottom-6 right-6 bg-card border rounded-lg p-3 flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm">Processing...</span></div>}
     </div>
+    </ApiErrorBoundary>
   );
 }

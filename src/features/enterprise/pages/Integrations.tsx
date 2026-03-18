@@ -2,17 +2,21 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Plug, Plus, 
-  ExternalLink, Settings, Trash2, RefreshCw, Loader2
+  ExternalLink, Settings, Trash2, RefreshCw, Loader2, AlertTriangle
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Link, useLocation } from 'wouter';
-import { bankingService } from '@/services/bankingService';
+import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
+import { getBankingErrorMessage } from '@/services/bankingService';
+import { webhooksService } from '@/services/apiManagementService';
 import type { WebhookResponse } from '@/types/banking';
 
 // Mock data for integrations
@@ -74,34 +78,53 @@ export default function EnterpriseIntegrations() {
   const [webhooks, setWebhooks] = useState<WebhookResponse[]>([]);
   const [isLoadingWebhooks, setIsLoadingWebhooks] = useState(false);
   const [isAddingWebhook, setIsAddingWebhook] = useState(false);
+  const [activeWebhookId, setActiveWebhookId] = useState<string | null>(null);
+  const [webhookError, setWebhookError] = useState('');
   const [newWebhookUrl, setNewWebhookUrl] = useState('');
 
+  const loadWebhooks = async () => {
+    setIsLoadingWebhooks(true);
+    setWebhookError('');
+    try {
+      const data = await webhooksService.list();
+      setWebhooks(data);
+    } catch (error) {
+      const message = getBankingErrorMessage(error, 'Failed to fetch webhooks');
+      setWebhookError(message);
+      toast.error(message);
+    } finally {
+      setIsLoadingWebhooks(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchWebhooks = async () => {
-        setIsLoadingWebhooks(true);
-        try {
-            const data = await bankingService.listWebhooks();
-            setWebhooks(data);
-        } catch (error) {
-            console.error("Failed to fetch webhooks", error);
-        } finally {
-            setIsLoadingWebhooks(false);
-        }
-    };
-    fetchWebhooks();
+    void loadWebhooks();
   }, []);
 
+  const isValidUrl = (value: string): boolean => {
+    try {
+      const parsed = new URL(value.trim());
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
   const handleAddWebhook = async () => {
-    if (!newWebhookUrl) return;
+    if (!isValidUrl(newWebhookUrl)) {
+      toast.error('Enter a valid webhook URL');
+      return;
+    }
     setIsAddingWebhook(true);
     try {
-        const newHook = await bankingService.registerWebhook({ url: newWebhookUrl, events: ["all"] });
-        setWebhooks([...webhooks, newHook]);
-        setNewWebhookUrl('');
+      await webhooksService.register({ url: newWebhookUrl.trim(), events: ['verification.completed'] });
+      setNewWebhookUrl('');
+      await loadWebhooks();
+      toast.success('Webhook added');
     } catch (error) {
-        console.error("Failed to add webhook", error);
+      toast.error(getBankingErrorMessage(error, 'Failed to add webhook'));
     } finally {
-        setIsAddingWebhook(false);
+      setIsAddingWebhook(false);
     }
   };
 
@@ -126,11 +149,15 @@ export default function EnterpriseIntegrations() {
   };
 
   const handleDeleteWebhook = async (webhookId: string) => {
+    setActiveWebhookId(webhookId);
     try {
-      await bankingService.deleteWebhook(webhookId);
+      await webhooksService.delete(webhookId);
       setWebhooks((current) => current.filter((item) => item.id !== webhookId));
+      toast.success('Webhook deleted');
     } catch (error) {
-      console.error('Failed to delete webhook', error);
+      toast.error(getBankingErrorMessage(error, 'Failed to delete webhook'));
+    } finally {
+      setActiveWebhookId(null);
     }
   };
 
@@ -139,11 +166,27 @@ export default function EnterpriseIntegrations() {
   );
 
   return (
+    <ApiErrorBoundary>
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8"
     >
+      {webhookError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Webhook loading failed</AlertTitle>
+          <AlertDescription>
+            <div className="flex items-center justify-between gap-2">
+              <span>{webhookError}</span>
+              <Button size="sm" variant="outline" onClick={loadWebhooks} disabled={isLoadingWebhooks}>
+                {isLoadingWebhooks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                Retry
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Integrations</h1>
@@ -297,8 +340,8 @@ export default function EnterpriseIntegrations() {
                     <span className={`h-2 w-2 rounded-full ${webhook.isActive ? 'bg-emerald-500' : 'bg-yellow-500'}`} />
                     <span className="text-sm text-muted-foreground capitalize">{webhook.isActive ? 'Active' : 'Inactive'}</span>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => handleDeleteWebhook(webhook.id)}>
-                    <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                  <Button variant="ghost" size="icon" onClick={() => handleDeleteWebhook(webhook.id)} disabled={activeWebhookId === webhook.id}>
+                    {activeWebhookId === webhook.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />}
                   </Button>
                 </div>
               </div>
@@ -307,5 +350,6 @@ export default function EnterpriseIntegrations() {
         </Card>
       </div>
     </motion.div>
+    </ApiErrorBoundary>
   );
 }
