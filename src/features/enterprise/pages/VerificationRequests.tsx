@@ -87,11 +87,11 @@ export default function VerificationRequests() {
                 country: 'US'
             });
         } else if (requestType === 'document') {
-             // For demo purposes, we'll send a dummy base64 or URL
              await bankingService.verifyDocument({
-                 documentImage: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+                 documentImage: "https://signed-cdn-url/front.jpg",
                  documentType: 'national_id',
-                 country: 'US'
+                 issuingCountry: 'US',
+                 useOcr: true,
              });
         } else if (requestType === 'aml') {
             const kycData: IndividualKYCRequest = {

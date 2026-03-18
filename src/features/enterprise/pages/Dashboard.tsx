@@ -222,7 +222,7 @@ export default function EnterpriseDashboard() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
-              <Link href="/enterprise/bulk-upload">
+              <Link href="/enterprise/bulk">
                 <Button variant="outline" className="w-full h-24 flex flex-col gap-2 hover:border-blue-500/50 hover:bg-blue-500/5">
                   <Upload className="h-6 w-6 text-blue-500" />
                   <span>Bulk Upload</span>

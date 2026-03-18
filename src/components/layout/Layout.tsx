@@ -33,7 +33,8 @@ export default function Layout({ children }: LayoutProps) {
                    user?.role === "admin" ? adminNavItems :
                    userNavItems;
   const permissionByPath: Record<string, string | undefined> = {
-    "/enterprise/tools": "kyc:write",
+    "/enterprise/tools": "documents:write",
+    "/enterprise/bulk": "kyc:write",
     "/enterprise/api": "webhooks:write",
     "/enterprise/analytics": "analytics:read",
     "/enterprise/audit": "audit:read",

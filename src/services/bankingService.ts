@@ -44,6 +44,7 @@ import type {
   SystemHealthService,
   GeoDistributionItem
 } from '../types/banking';
+import { z } from 'zod';
 
 const API_PATH = '/api/v1/banking';
 const API_KEY_STORAGE_KEY = 'verza:banking:apiKey';
@@ -79,6 +80,105 @@ type ApiEnvelope<T> = { success: boolean; data: T; timestamp?: string; error?: {
 type StoredAuthSession = { accessToken?: string };
 
 const isRecord = (value: unknown): value is JsonRecord => typeof value === 'object' && value !== null;
+
+const parseWithSchema = <T>(schema: z.ZodType<T>, value: unknown, context: string): T => {
+  const result = schema.safeParse(value);
+  if (!result.success) {
+    const reason = result.error.issues
+      .map((issue) => `${issue.path.join('.') || 'root'}: ${issue.message}`)
+      .join('; ');
+    throw new Error(`${context} schema validation failed: ${reason}`);
+  }
+  return result.data;
+};
+
+const countryCodeSchema = z.string().regex(/^[A-Z]{2}$/);
+const documentTypeSchema = z.enum(['passport', 'drivers_license', 'national_id']);
+const documentVerifyRequestSchema = z.object({
+  documentType: documentTypeSchema,
+  documentImage: z.string().url(),
+  documentBackImage: z.string().url().optional(),
+  issuingCountry: countryCodeSchema,
+  expectedData: z.record(z.string(), z.string()).optional(),
+  useOcr: z.boolean().optional(),
+}).strict();
+const documentSecurityFeatureSchema = z.object({
+  type: z.string().min(1),
+  status: z.string().min(1),
+  valid: z.boolean().optional(),
+}).strict();
+const documentVerifyResponseSchema = z.object({
+  authentic: z.boolean(),
+  confidenceScore: z.number(),
+  securityFeaturesDetected: z.array(documentSecurityFeatureSchema),
+  fraudIndicators: z.object({
+    forgery: z.string().min(1),
+    manipulation: z.string().min(1),
+    photoSubstitution: z.string().min(1),
+  }).strict(),
+  qualityAssessment: z.object({
+    imageQuality: z.string().min(1),
+    blur: z.string().min(1),
+    glare: z.string().min(1),
+    orientation: z.string().min(1),
+  }).strict(),
+  expectedDataMatch: z.object({
+    checked: z.number(),
+    matched: z.number(),
+    matchRate: z.number(),
+    details: z.array(z.object({
+      field: z.string().min(1),
+      expected: z.string(),
+      matched: z.boolean(),
+    }).strict()),
+  }).strict().optional(),
+  mrz: z.object({
+    detected: z.boolean(),
+    parsed: z.record(z.string(), z.unknown()).optional(),
+    valid: z.boolean().optional(),
+  }).strict().optional(),
+  signals: z.object({
+    imageSize: z.object({
+      width: z.number(),
+      height: z.number(),
+    }).strict().optional(),
+    textCoverage: z.number().optional(),
+    blockCount: z.number().optional(),
+    brightness: z.number().optional(),
+    contrast: z.number().optional(),
+    edgeDensity: z.number().optional(),
+  }).strict().optional(),
+}).strict();
+const bulkVerifyItemSchema = z.object({
+  requestId: z.string().min(1),
+  customerId: z.string().min(1),
+  personalInfo: z.object({
+    firstName: z.string().min(1),
+    lastName: z.string().min(1),
+    country: countryCodeSchema,
+  }).strict(),
+  contactInfo: z.object({
+    email: z.string().email(),
+    address: z.object({
+      country: countryCodeSchema,
+    }).strict(),
+  }).strict(),
+  identityDocuments: z.array(z.object({
+    type: documentTypeSchema,
+    number: z.string().min(1),
+  }).strict()).min(1),
+  callbackUrl: z.string().url().optional(),
+}).strict();
+const bulkVerificationRequestSchema = z.object({
+  items: z.array(bulkVerifyItemSchema).min(1).max(1000),
+}).strict();
+const bulkVerificationResponseSchema = z.object({
+  batchId: z.string().min(1),
+  items: z.array(z.object({
+    requestId: z.string().min(1),
+    verificationId: z.string().min(1),
+  }).strict()),
+}).strict();
 
 const generateToken = (prefix: string): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -246,16 +346,6 @@ const toAuditValue = (value: unknown): AuditLogResponse['details'] => {
   if (isRecord(value)) return value as Record<string, unknown>;
   return null;
 };
-
-const toScalarRecord = (value: JsonRecord): Record<string, string | number | boolean | null> =>
-  Object.fromEntries(
-    Object.entries(value).map(([key, item]) => {
-      if (item === null || typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean') {
-        return [key, item];
-      }
-      return [key, String(item)];
-    }),
-  );
 
 const normalizeVerificationStatus = (status: string, overallResult?: string): VerificationStatusResponse['status'] => {
   if (status === 'not_found') return 'not_found';
@@ -512,16 +602,20 @@ export const bankingService = {
   },
 
   verifyDocument: async (data: DocumentVerifyRequest): Promise<DocumentVerifyResponse> => {
-    const result = await request<JsonRecord>('POST', '/documents/verify', {
-      documentType: data.documentType,
-      documentImage: data.documentImage,
-      issuingCountry: data.country,
-    });
-    return {
-      isValid: Boolean(result.authentic),
-      issues: [],
-      extractedData: toScalarRecord(result),
-    };
+    const payload = parseWithSchema(
+      documentVerifyRequestSchema,
+      {
+        documentType: data.documentType,
+        documentImage: data.documentImage,
+        documentBackImage: data.documentBackImage,
+        issuingCountry: data.issuingCountry,
+        expectedData: data.expectedData,
+        useOcr: data.useOcr ?? true,
+      },
+      'verifyDocument request',
+    );
+    const result = await request<unknown>('POST', '/documents/verify', payload);
+    return parseWithSchema(documentVerifyResponseSchema, result, 'verifyDocument response');
   },
 
   extractDocumentData: async (data: DocumentExtractRequest): Promise<DocumentExtractResponse> => {
@@ -934,7 +1028,9 @@ export const bankingService = {
   },
 
   initiateBulkVerification: async (data: BulkVerificationRequest): Promise<BulkVerificationResponse> => {
-    return request<BulkVerificationResponse>('POST', '/bulk/verify', data);
+    const payload = parseWithSchema(bulkVerificationRequestSchema, data, 'initiateBulkVerification request');
+    const result = await request<unknown>('POST', '/bulk/verify', payload);
+    return parseWithSchema(bulkVerificationResponseSchema, result, 'initiateBulkVerification response');
   },
 
   getCompanySettings: async (): Promise<CompanySettings> => {

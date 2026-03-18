@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Progress } from '@/components/ui/progress';
 
 import { bankingService } from '@/services/bankingService';
-import type { BulkVerificationResponse, IndividualKYCRequest } from '@/types/banking';
+import type { BulkVerificationResponse } from '@/types/banking';
 
 type CsvRow = Record<string, string>;
 
@@ -105,21 +105,31 @@ export default function BulkVerification() {
     setProcessingProgress(10);
     
     try {
-        // Transform parsed data to API request format
-        const requests: IndividualKYCRequest[] = parsedData.map(row => ({
-            firstName: row[fieldMapping.firstName] || '',
-            lastName: row[fieldMapping.lastName] || '',
-            email: row[fieldMapping.email] || '',
-            dob: row[fieldMapping.dob] || '1990-01-01',
-            phone: 'N/A',
-            address: { street: 'N/A', city: 'N/A', state: 'N/A', zipCode: '00000', country: 'US' },
-            idDocumentType: 'national_id',
-            idDocumentNumber: row[fieldMapping.idNumber] || ''
+        const items = parsedData.map((row, index) => ({
+            requestId: `req_${index + 1}`,
+            customerId: row[fieldMapping.email] || `customer_${index + 1}`,
+            personalInfo: {
+              firstName: row[fieldMapping.firstName] || '',
+              lastName: row[fieldMapping.lastName] || '',
+              country: 'US',
+            },
+            contactInfo: {
+              email: row[fieldMapping.email] || '',
+              address: {
+                country: 'US',
+              },
+            },
+            identityDocuments: [
+              {
+                type: 'national_id' as const,
+                number: row[fieldMapping.idNumber] || '',
+              },
+            ],
         }));
 
         setProcessingProgress(50);
         
-        const response = await bankingService.initiateBulkVerification({ requests });
+        const response = await bankingService.initiateBulkVerification({ items });
         setBulkResponse(response);
         setProcessingProgress(100);
         
@@ -450,12 +460,12 @@ export default function BulkVerification() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 flex flex-col items-center justify-center text-center">
                     <CheckCircle className="h-8 w-8 text-green-500 mb-2" />
-                    <span className="text-2xl font-bold text-green-500">{bulkResponse?.totalRequests || 0}</span>
+                    <span className="text-2xl font-bold text-green-500">{bulkResponse?.items.length || 0}</span>
                     <span className="text-sm text-green-600/80">Requests Submitted</span>
                   </div>
                   <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 flex flex-col items-center justify-center text-center">
                     <Loader2 className="h-8 w-8 text-blue-500 mb-2" />
-                    <span className="text-2xl font-bold text-blue-500">Processing</span>
+                    <span className="text-2xl font-bold text-blue-500">Submitted</span>
                     <span className="text-sm text-blue-600/80">Status</span>
                   </div>
                   <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 flex flex-col items-center justify-center text-center">
@@ -468,7 +478,7 @@ export default function BulkVerification() {
                 <div className="bg-muted/30 rounded-lg p-6 text-center space-y-4">
                     <h3 className="text-lg font-medium">Bulk Verification Initiated Successfully</h3>
                     <p className="text-muted-foreground max-w-lg mx-auto">
-                        Your batch of {bulkResponse?.totalRequests} requests has been submitted for processing. 
+                        Your batch of {bulkResponse?.items.length} requests has been submitted for processing. 
                         You can track the status of individual requests in the Verification Requests page.
                     </p>
                     <Button asChild>

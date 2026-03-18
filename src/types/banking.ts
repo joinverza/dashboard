@@ -56,15 +56,64 @@ export interface VerificationDetails {
 }
 
 export interface DocumentVerifyRequest {
-  documentImage: string; // Base64 or URL
   documentType: 'passport' | 'drivers_license' | 'national_id';
-  country: string;
+  documentImage: string;
+  documentBackImage?: string;
+  issuingCountry: string;
+  expectedData?: {
+    firstName?: string;
+    lastName?: string;
+    documentNumber?: string;
+    [key: string]: string | undefined;
+  };
+  useOcr?: boolean;
 }
 
 export interface DocumentVerifyResponse {
-  isValid: boolean;
-  issues: string[];
-  extractedData?: Record<string, string | number | boolean | null>;
+  authentic: boolean;
+  confidenceScore: number;
+  securityFeaturesDetected: Array<{
+    type: string;
+    status: string;
+    valid?: boolean;
+  }>;
+  fraudIndicators: {
+    forgery: string;
+    manipulation: string;
+    photoSubstitution: string;
+  };
+  qualityAssessment: {
+    imageQuality: string;
+    blur: string;
+    glare: string;
+    orientation: string;
+  };
+  expectedDataMatch?: {
+    checked: number;
+    matched: number;
+    matchRate: number;
+    details: Array<{
+      field: string;
+      expected: string;
+      matched: boolean;
+    }>;
+  };
+  mrz?: {
+    detected: boolean;
+    parsed?: Record<string, unknown>;
+    valid?: boolean;
+  };
+  signals?: {
+    imageSize?: {
+      width: number;
+      height: number;
+    };
+    textCoverage?: number;
+    blockCount?: number;
+    brightness?: number;
+    contrast?: number;
+    edgeDensity?: number;
+  };
 }
 
 export interface DocumentExtractRequest {
@@ -317,14 +366,36 @@ export interface VerificationRequestResponse {
 }
 
 export interface BulkVerificationRequest {
-  requests: IndividualKYCRequest[]; // Simplified for now
-  callbackUrl?: string;
+  items: BulkVerifyItem[];
 }
 
 export interface BulkVerificationResponse {
   batchId: string;
-  totalRequests: number;
-  status: 'processing' | 'completed' | 'failed';
+  items: Array<{
+    requestId: string;
+    verificationId: string;
+  }>;
+}
+
+export interface BulkVerifyItem {
+  requestId: string;
+  customerId: string;
+  personalInfo: {
+    firstName: string;
+    lastName: string;
+    country: string;
+  };
+  contactInfo: {
+    email: string;
+    address: {
+      country: string;
+    };
+  };
+  identityDocuments: Array<{
+    type: 'passport' | 'drivers_license' | 'national_id';
+    number: string;
+  }>;
+  callbackUrl?: string;
 }
 
 export interface CompanySettings {

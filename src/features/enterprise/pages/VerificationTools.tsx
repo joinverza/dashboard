@@ -20,7 +20,7 @@ const isObjectResult = (value: unknown): value is ToolResult => typeof value ===
 
 const getResultBadgeVariant = (value: ToolResult): 'default' | 'destructive' | 'secondary' => {
   const status = typeof value.status === 'string' ? value.status : '';
-  const isValid = value.isValid === true;
+  const isValid = value.isValid === true || value.authentic === true;
   const isLive = value.isLive === true;
   const match = value.match === true;
   const matchFound = value.matchFound === true;
@@ -37,7 +37,7 @@ const getResultBadgeLabel = (value: ToolResult): string => {
   if (typeof value.status === 'string') {
     return value.status;
   }
-  if (value.isValid === true) {
+  if (value.isValid === true || value.authentic === true) {
     return 'valid';
   }
   if (value.match === true) {
@@ -126,10 +126,15 @@ export default function VerificationTools() {
       setError("Please upload a document image");
       return;
     }
+    if (!docCountry.trim()) {
+      setError("Please provide issuing country");
+      return;
+    }
     executeRequest(() => bankingService.verifyDocument({
       documentImage: docImage,
       documentType: docType,
-      country: docCountry
+      issuingCountry: docCountry.trim().toUpperCase(),
+      useOcr: true,
     }));
   };
 
