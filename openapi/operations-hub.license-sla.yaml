@@ -1,0 +1,128 @@
+openapi: 3.1.0
+info:
+  title: Operations Hub License Usage & SLA API
+  version: 1.0.0
+servers:
+  - url: /api/v1/banking
+paths:
+  /license/usage:
+    get:
+      summary: Read live quota and SLA usage
+      security:
+        - bearerAuth: []
+      x-authorization-scopes:
+        - billing:read
+      responses:
+        '200':
+          description: Usage metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [planName, currentPeriodStart, currentPeriodEnd, monthlyQuota, usedQuota, slaUptime, anomalyAlerts]
+                properties:
+                  planName: { type: string }
+                  currentPeriodStart: { type: string, format: date-time }
+                  currentPeriodEnd: { type: string, format: date-time }
+                  monthlyQuota: { type: integer, minimum: 0 }
+                  usedQuota: { type: integer, minimum: 0 }
+                  slaUptime: { type: number, minimum: 0, maximum: 100 }
+                  anomalyAlerts:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, message, severity]
+                      properties:
+                        id: { type: string }
+                        message: { type: string }
+                        severity: { type: string, enum: [low, medium, high] }
+              examples:
+                usage:
+                  value:
+                    planName: Enterprise
+                    currentPeriodStart: 2026-03-01T00:00:00Z
+                    currentPeriodEnd: 2026-03-31T23:59:59Z
+                    monthlyQuota: 10000
+                    usedQuota: 4200
+                    slaUptime: 99.95
+                    anomalyAlerts:
+                      - id: al_001
+                        message: Volume spike above baseline in EU region
+                        severity: medium
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+  /license/plan/change:
+    post:
+      summary: Request downgrade or upgrade
+      security:
+        - bearerAuth: []
+      x-authorization-scopes:
+        - billing:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetPlan]
+              properties:
+                targetPlan:
+                  type: string
+                  enum: [starter, growth, enterprise]
+      responses:
+        '202':
+          description: Plan change accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, enum: [accepted, rejected] }
+              examples:
+                accepted:
+                  value:
+                    status: accepted
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    ErrorResponse:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message]
+                properties:
+                  code:
+                    type: string
+                    enum: [UNAUTHORIZED, FORBIDDEN, INVALID_PLAN, PLAN_CHANGE_CONFLICT, INTERNAL_ERROR]
+                  message: { type: string }
+          examples:
+            conflict:
+              value:
+                error:
+                  code: PLAN_CHANGE_CONFLICT
+                  message: Plan change already pending approval

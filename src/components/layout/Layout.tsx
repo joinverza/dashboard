@@ -8,7 +8,7 @@ import Header from "./Header";
 import PageTransition from "./PageTransition";
 import { useSidebarState } from "@/hooks/useSidebarState";
 import { useAuth } from "@/features/auth/AuthContext";
-import { userNavItems, verifierNavItems, enterpriseNavItems, adminNavItems } from "@/config/navigation";
+import { userNavItems, verifierNavItems, enterpriseNavItems, managerNavItems, adminNavItems } from "@/config/navigation";
 import { ChatModal } from "@/components/chat/ChatModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,14 +30,22 @@ export default function Layout({ children }: LayoutProps) {
 
   const roleNavItems = user?.role === "verifier" ? verifierNavItems :
                    user?.role === "enterprise" ? enterpriseNavItems :
+                   user?.role === "manager" ? managerNavItems :
                    user?.role === "admin" ? adminNavItems :
                    userNavItems;
   const permissionByPath: Record<string, string | undefined> = {
     "/enterprise/tools": "documents:write",
+    "/enterprise/verifications": "documents:write",
     "/enterprise/bulk": "kyc:write",
     "/enterprise/api": "webhooks:write",
     "/enterprise/analytics": "analytics:read",
     "/enterprise/audit": "audit:read",
+    "/manager/requests": "verification:read",
+    "/manager/verifications": "verification:read",
+    "/manager/tools": "documents:write",
+    "/manager/team": "users:manage",
+    "/manager/analytics": "analytics:read",
+    "/manager/compliance": "audit:read",
     "/verifier/jobs": "verification:read",
     "/verifier/active": "verification:write",
     "/verifier/profile": "verifier:profile:read",
@@ -46,6 +54,11 @@ export default function Layout({ children }: LayoutProps) {
     "/admin/enterprises": "enterprises:manage",
     "/admin/system": "system:manage",
     "/admin/audit": "audit:read",
+    "/admin/tools/verifications": "verification:read",
+    "/admin/tools/operations": "documents:write",
+    "/admin/tools/auditor": "audit:read",
+    "/admin/tools/support": "verification:read",
+    "/admin/tools/developer": "webhooks:write",
   };
   const navItems =
     permissions.length === 0

@@ -24,6 +24,35 @@ export default function BulkVerification() {
   const [processingProgress, setProcessingProgress] = useState(0);
   const [bulkResponse, setBulkResponse] = useState<BulkVerificationResponse | null>(null);
 
+  const downloadFile = (filename: string, content: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadTemplate = () => {
+    const template = [
+      'first_name,last_name,email,id_number,dob',
+      'Jane,Doe,jane.doe@example.com,US123456,1994-06-11',
+    ].join('\n');
+    downloadFile('bulk-verification-template.csv', template, 'text/csv;charset=utf-8;');
+  };
+
+  const downloadReport = () => {
+    if (!bulkResponse) return;
+    const rows = bulkResponse.items.map((item) =>
+      [bulkResponse.batchId, item.requestId, item.verificationId].join(','),
+    );
+    const content = ['batch_id,request_id,verification_id', ...rows].join('\n');
+    downloadFile(`bulk-verification-report-${bulkResponse.batchId}.csv`, content, 'text/csv;charset=utf-8;');
+  };
+
   // Mapping state
   const [fieldMapping, setFieldMapping] = useState({
     firstName: '',
@@ -155,7 +184,7 @@ export default function BulkVerification() {
             Upload and process multiple verification requests at once
           </p>
         </div>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={downloadTemplate}>
           <Download className="h-4 w-4" />
           Download Template
         </Button>
@@ -447,7 +476,7 @@ export default function BulkVerification() {
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={downloadReport} disabled={!bulkResponse}>
                       <Download className="h-4 w-4 mr-2" /> Download Report
                     </Button>
                     <Button onClick={() => setStep(1)}>

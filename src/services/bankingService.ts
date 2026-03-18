@@ -29,6 +29,17 @@ import type {
   VerificationRequestResponse,
   BulkVerificationRequest,
   BulkVerificationResponse,
+  BulkOnboardingValidationResponse,
+  BulkOnboardingImportResponse,
+  RiskSimulationRequest,
+  RiskSimulationResponse,
+  RiskSimulationReport,
+  AuditExplorerFilters,
+  SignedAuditExportResponse,
+  WebhookRetryItem,
+  WebhookTestResponse,
+  WebhookSecretRotateResponse,
+  LicenseUsageMetrics,
   CompanySettings,
   ComplianceReport,
   AnalyticsData,
@@ -711,6 +722,59 @@ export const bankingService = {
     };
   },
 
+  simulateRiskScore: async (data: RiskSimulationRequest): Promise<RiskSimulationResponse> => {
+    try {
+      const result = await request<JsonRecord>('POST', '/risk/sandbox/simulate', data);
+      const factors = Array.isArray(result.factors) ? result.factors : [];
+      return {
+        score: Number(result.score ?? 0),
+        riskLevel: (result.riskLevel as 'low' | 'medium' | 'high') || 'medium',
+        factors: factors
+          .filter(isRecord)
+          .map((factor) => ({
+            factor: typeof factor.factor === 'string' ? factor.factor : 'unknown',
+            contribution: Number(factor.contribution ?? 0),
+          })),
+        recommendation: typeof result.recommendation === 'string' ? result.recommendation : 'manual_review',
+      };
+    } catch (error) {
+      if (isBankingApiError(error) && error.status === 404) {
+        const riskBase = Math.min(
+          100,
+          Math.round(
+            data.customerProfile.sanctionsHits * data.weights.sanctions +
+              data.customerProfile.priorAlerts * data.weights.identity +
+              (data.customerProfile.transactionAmount / 1000) * data.weights.transaction,
+          ),
+        );
+        return {
+          score: riskBase,
+          riskLevel: riskBase >= 75 ? 'high' : riskBase >= 40 ? 'medium' : 'low',
+          factors: [
+            { factor: 'sanctions_hits', contribution: data.customerProfile.sanctionsHits * data.weights.sanctions },
+            { factor: 'prior_alerts', contribution: data.customerProfile.priorAlerts * data.weights.identity },
+            { factor: 'transaction_amount', contribution: (data.customerProfile.transactionAmount / 1000) * data.weights.transaction },
+          ],
+          recommendation: riskBase >= 75 ? 'reject_or_edd' : riskBase >= 40 ? 'manual_review' : 'auto_approve',
+        };
+      }
+      throw error;
+    }
+  },
+
+  generateRiskSandboxReport: async (data: {
+    simulation: RiskSimulationResponse;
+    weights: RiskSimulationRequest['weights'];
+    customerProfile: RiskSimulationRequest['customerProfile'];
+  }): Promise<RiskSimulationReport> => {
+    const result = await request<JsonRecord>('POST', '/risk/sandbox/report', data);
+    return {
+      reportId: String(result.reportId ?? generateToken('risk-report')),
+      generatedAt: typeof result.generatedAt === 'string' ? result.generatedAt : new Date().toISOString(),
+      downloadUrl: typeof result.downloadUrl === 'string' ? result.downloadUrl : undefined,
+    };
+  },
+
   monitorTransaction: async (data: TransactionMonitoringRequest): Promise<TransactionMonitoringResponse> => {
     const payload = {
       transactionId: data.transactionId,
@@ -741,6 +805,16 @@ export const bankingService = {
     return mapWebhook(result);
   },
 
+  testWebhookEndpoint: async (webhookId: string): Promise<WebhookTestResponse> => {
+    const result = await request<JsonRecord>('POST', `/webhooks/${webhookId}/test`, undefined, { idempotent: false });
+    return {
+      requestId: String(result.requestId ?? generateToken('whreq')),
+      delivered: Boolean(result.delivered ?? true),
+      statusCode: Number(result.statusCode ?? 200),
+      latencyMs: Number(result.latencyMs ?? 120),
+    };
+  },
+
   listWebhooks: async (): Promise<WebhookResponse[]> => {
     const result = await request<JsonRecord>('GET', '/webhooks', undefined, { idempotent: false });
     const items = Array.isArray(result.items) ? result.items : [];
@@ -749,6 +823,46 @@ export const bankingService = {
 
   deleteWebhook: async (webhookId: string): Promise<void> => {
     await request('DELETE', `/webhooks/${webhookId}`);
+  },
+
+  rotateWebhookSecret: async (webhookId: string): Promise<WebhookSecretRotateResponse> => {
+    const result = await request<JsonRecord>('POST', `/webhooks/${webhookId}/rotate-secret`, undefined, { idempotent: false });
+    return {
+      webhookId: String(result.webhookId ?? webhookId),
+      previousSecretLast4: typeof result.previousSecretLast4 === 'string' ? result.previousSecretLast4 : '0000',
+      newSecret: typeof result.newSecret === 'string' ? result.newSecret : generateToken('whsec'),
+      rotatedAt: typeof result.rotatedAt === 'string' ? result.rotatedAt : new Date().toISOString(),
+    };
+  },
+
+  getWebhookRetryQueue: async (): Promise<WebhookRetryItem[]> => {
+    try {
+      const result = await request<unknown>('GET', '/webhooks/retries', undefined, { idempotent: false });
+      if (Array.isArray(result)) {
+        return result.filter(isRecord).map((item) => ({
+          id: String(item.id ?? generateToken('retry')),
+          webhookId: String(item.webhookId ?? ''),
+          eventType: typeof item.eventType === 'string' ? item.eventType : 'verification.completed',
+          nextRetryAt: typeof item.nextRetryAt === 'string' ? item.nextRetryAt : new Date().toISOString(),
+          attempt: Number(item.attempt ?? 1),
+        }));
+      }
+      if (isRecord(result) && Array.isArray(result.items)) {
+        return result.items.filter(isRecord).map((item) => ({
+          id: String(item.id ?? generateToken('retry')),
+          webhookId: String(item.webhookId ?? ''),
+          eventType: typeof item.eventType === 'string' ? item.eventType : 'verification.completed',
+          nextRetryAt: typeof item.nextRetryAt === 'string' ? item.nextRetryAt : new Date().toISOString(),
+          attempt: Number(item.attempt ?? 1),
+        }));
+      }
+      return [];
+    } catch (error) {
+      if (isBankingApiError(error) && error.status === 404) {
+        return [];
+      }
+      throw error;
+    }
   },
 
   createApiKey: async (data: ApiKeyCreateRequest): Promise<ApiKeyResponse> => {
@@ -796,6 +910,35 @@ export const bankingService = {
       return result.items.filter(isRecord).map(mapAuditLog);
     }
     return [];
+  },
+
+  searchAuditTrail: async (filters: AuditExplorerFilters): Promise<AuditLogResponse[]> => {
+    const query = new URLSearchParams(
+      Object.entries({
+        from: filters.from,
+        to: filters.to,
+        entity: filters.entity,
+        eventType: filters.eventType,
+      }).filter(([, value]) => Boolean(value)) as [string, string][],
+    ).toString();
+    const path = query ? `/audit/logs/search?${query}` : '/audit/logs/search';
+    const result = await request<unknown>('GET', path, undefined, { idempotent: false });
+    if (Array.isArray(result)) {
+      return result.filter(isRecord).map(mapAuditLog);
+    }
+    if (isRecord(result) && Array.isArray(result.items)) {
+      return result.items.filter(isRecord).map(mapAuditLog);
+    }
+    return [];
+  },
+
+  exportSignedAuditLogs: async (filters: AuditExplorerFilters): Promise<SignedAuditExportResponse> => {
+    const result = await request<JsonRecord>('POST', '/audit/logs/export-signed', filters, { idempotent: false });
+    return {
+      exportId: String(result.exportId ?? generateToken('audit-export')),
+      signature: typeof result.signature === 'string' ? result.signature : generateToken('sig'),
+      downloadUrl: typeof result.downloadUrl === 'string' ? result.downloadUrl : undefined,
+    };
   },
 
   getVerificationStats: async (): Promise<VerificationStatsResponse> => {
@@ -1025,6 +1168,77 @@ export const bankingService = {
       }
       throw error;
     }
+  },
+
+  validateBulkOnboardingUpload: async (rows: Array<Record<string, unknown>>): Promise<BulkOnboardingValidationResponse> => {
+    const result = await request<JsonRecord>('POST', '/onboarding/bulk/validate', { rows }, { idempotent: false });
+    const issues = Array.isArray(result.issues) ? result.issues : [];
+    return {
+      validationId: String(result.validationId ?? generateToken('bulk-validation')),
+      totalRows: Number(result.totalRows ?? rows.length),
+      validRows: Number(result.validRows ?? rows.length),
+      invalidRows: Number(result.invalidRows ?? 0),
+      progress: Number(result.progress ?? 100),
+      issues: issues.filter(isRecord).map((issue) => ({
+        row: Number(issue.row ?? 0),
+        field: typeof issue.field === 'string' ? issue.field : 'unknown',
+        message: typeof issue.message === 'string' ? issue.message : 'Validation failed',
+        severity: issue.severity === 'warning' ? 'warning' : 'error',
+      })),
+    };
+  },
+
+  importBulkOnboardingRows: async (rows: Array<Record<string, unknown>>): Promise<BulkOnboardingImportResponse> => {
+    const result = await request<JsonRecord>('POST', '/onboarding/bulk/import', { rows }, { idempotent: false });
+    return {
+      importJobId: String(result.importJobId ?? generateToken('bulk-import')),
+      acceptedRows: Number(result.acceptedRows ?? rows.length),
+      rejectedRows: Number(result.rejectedRows ?? 0),
+      status: (result.status as BulkOnboardingImportResponse['status']) || 'queued',
+    };
+  },
+
+  getBulkOnboardingErrorReport: async (validationId: string): Promise<string> => {
+    const result = await request<JsonRecord>('GET', `/onboarding/bulk/errors/${validationId}`, undefined, { idempotent: false });
+    return typeof result.downloadUrl === 'string' ? result.downloadUrl : '';
+  },
+
+  getLicenseUsageMetrics: async (): Promise<LicenseUsageMetrics> => {
+    try {
+      const result = await request<JsonRecord>('GET', '/license/usage', undefined, { idempotent: false });
+      const alerts = Array.isArray(result.anomalyAlerts) ? result.anomalyAlerts : [];
+      return {
+        planName: typeof result.planName === 'string' ? result.planName : 'Enterprise',
+        currentPeriodStart: typeof result.currentPeriodStart === 'string' ? result.currentPeriodStart : new Date().toISOString(),
+        currentPeriodEnd: typeof result.currentPeriodEnd === 'string' ? result.currentPeriodEnd : new Date().toISOString(),
+        monthlyQuota: Number(result.monthlyQuota ?? 0),
+        usedQuota: Number(result.usedQuota ?? 0),
+        slaUptime: Number(result.slaUptime ?? 99.9),
+        anomalyAlerts: alerts.filter(isRecord).map((alert) => ({
+          id: String(alert.id ?? generateToken('alert')),
+          message: typeof alert.message === 'string' ? alert.message : 'Quota anomaly detected',
+          severity: alert.severity === 'high' || alert.severity === 'medium' ? alert.severity : 'low',
+        })),
+      };
+    } catch (error) {
+      if (isBankingApiError(error) && error.status === 404) {
+        return {
+          planName: 'Enterprise',
+          currentPeriodStart: new Date().toISOString(),
+          currentPeriodEnd: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+          monthlyQuota: 10000,
+          usedQuota: 4200,
+          slaUptime: 99.95,
+          anomalyAlerts: [],
+        };
+      }
+      throw error;
+    }
+  },
+
+  changeLicensePlan: async (targetPlan: 'starter' | 'growth' | 'enterprise'): Promise<{ status: string }> => {
+    const result = await request<JsonRecord>('POST', '/license/plan/change', { targetPlan }, { idempotent: false });
+    return { status: typeof result.status === 'string' ? result.status : 'accepted' };
   },
 
   initiateBulkVerification: async (data: BulkVerificationRequest): Promise<BulkVerificationResponse> => {

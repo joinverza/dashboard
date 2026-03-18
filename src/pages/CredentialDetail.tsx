@@ -50,6 +50,44 @@ export default function CredentialDetailPage() {
       confidence: "99.9%"
     }
   };
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/app/credentials/${credential.id}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Share link copied to clipboard");
+    } catch {
+      toast.error("Could not copy share link");
+    }
+  };
+
+  const handleDownload = () => {
+    const payload = {
+      credentialId: credential.id,
+      documentId: credential.documentId,
+      issuer: credential.issuer,
+      issueDate: credential.issueDate,
+      status: credential.status,
+      did: credential.did,
+      txHash: credential.txHash,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `credential-${credential.documentId}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    toast.success("Credential exported");
+  };
+
+  const handleMore = async () => {
+    try {
+      await navigator.clipboard.writeText(credential.documentId);
+      toast.success("Credential reference copied");
+    } catch {
+      toast.error("Could not copy credential reference");
+    }
+  };
 
   const timeline = [
     { id: 1, title: "Credential Issued", date: "May 20, 2023 10:00 AM", icon: FileText, color: "text-blue-400" },
@@ -102,16 +140,16 @@ export default function CredentialDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => toast.success("Share link copied to clipboard")}>
+          <Button variant="outline" className="gap-2" onClick={handleShare}>
             <Share2 className="w-4 h-4" /> Share
           </Button>
-          <Button variant="outline" className="gap-2" onClick={() => toast.success("Document downloaded successfully")}>
+          <Button variant="outline" className="gap-2" onClick={handleDownload}>
             <Download className="w-4 h-4" /> Download
           </Button>
           <Button className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow gap-2" onClick={() => toast.success("ZK Proof generated successfully")}>
             <Lock className="w-4 h-4" /> Generate ZK Proof
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => toast.info("More options coming soon")}>
+          <Button variant="ghost" size="icon" onClick={handleMore}>
             <MoreVertical className="w-4 h-4" />
           </Button>
         </div>

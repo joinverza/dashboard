@@ -1,0 +1,158 @@
+openapi: 3.1.0
+info:
+  title: Operations Hub Webhook Manager API
+  version: 1.0.0
+servers:
+  - url: /api/v1/banking
+paths:
+  /webhooks/{webhookId}/test:
+    post:
+      summary: Trigger webhook test delivery
+      security:
+        - bearerAuth: []
+      x-authorization-scopes:
+        - webhooks:write
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        '200':
+          description: Test delivery result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [requestId, delivered, statusCode, latencyMs]
+                properties:
+                  requestId: { type: string }
+                  delivered: { type: boolean }
+                  statusCode: { type: integer, minimum: 100, maximum: 599 }
+                  latencyMs: { type: integer, minimum: 0 }
+              examples:
+                tested:
+                  value:
+                    requestId: whreq_01JZ5EF4
+                    delivered: true
+                    statusCode: 200
+                    latencyMs: 124
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+  /webhooks/{webhookId}/rotate-secret:
+    post:
+      summary: Rotate webhook secret
+      security:
+        - bearerAuth: []
+      x-authorization-scopes:
+        - webhooks:write
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        '200':
+          description: Secret rotated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [webhookId, previousSecretLast4, newSecret, rotatedAt]
+                properties:
+                  webhookId: { type: string }
+                  previousSecretLast4: { type: string, minLength: 4, maxLength: 4 }
+                  newSecret: { type: string, minLength: 12 }
+                  rotatedAt: { type: string, format: date-time }
+              examples:
+                rotated:
+                  value:
+                    webhookId: wh_0021
+                    previousSecretLast4: c5d1
+                    newSecret: whsec_6f8f7b75bbf0df7b
+                    rotatedAt: 2026-03-18T10:04:00Z
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+  /webhooks/retries:
+    get:
+      summary: View webhook retry queue
+      security:
+        - bearerAuth: []
+      x-authorization-scopes:
+        - webhooks:read
+      responses:
+        '200':
+          description: Retry queue
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, webhookId, eventType, nextRetryAt, attempt]
+                      properties:
+                        id: { type: string }
+                        webhookId: { type: string }
+                        eventType: { type: string }
+                        nextRetryAt: { type: string, format: date-time }
+                        attempt: { type: integer, minimum: 1 }
+              examples:
+                queue:
+                  value:
+                    items:
+                      - id: retry_001
+                        webhookId: wh_0021
+                        eventType: verification.completed
+                        nextRetryAt: 2026-03-18T10:06:00Z
+                        attempt: 2
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    ErrorResponse:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message]
+                properties:
+                  code:
+                    type: string
+                    enum: [UNAUTHORIZED, FORBIDDEN, WEBHOOK_NOT_FOUND, INTERNAL_ERROR]
+                  message: { type: string }
+          examples:
+            notFound:
+              value:
+                error:
+                  code: WEBHOOK_NOT_FOUND
+                  message: Webhook wh_0021 does not exist

@@ -15,9 +15,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useLocation } from "wouter";
 
 export default function HelpCenterPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [, setLocation] = useLocation();
 
   const CATEGORIES = [
     { icon: User, title: "Account & Profile", description: "Manage your account settings" },
@@ -145,10 +147,10 @@ export default function HelpCenterPage() {
                 <CardDescription>Our support team is available 24/7</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button className="w-full bg-verza-emerald hover:bg-verza-kelly text-white h-12 text-base">
+                <Button className="w-full bg-verza-emerald hover:bg-verza-kelly text-white h-12 text-base" onClick={() => setLocation("/app/message")}>
                   <MessageCircle className="w-5 h-5 mr-2" /> Start Live Chat
                 </Button>
-                <Button variant="outline" className="w-full h-12 text-base">
+                <Button variant="outline" className="w-full h-12 text-base" onClick={() => window.open("mailto:support@verza.com?subject=Support%20Ticket", "_self")}>
                   Submit a Ticket
                 </Button>
                 <div className="text-center text-sm text-muted-foreground pt-2">
@@ -163,15 +165,15 @@ export default function HelpCenterPage() {
                 <CardTitle className="text-lg">Developer Resources</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <a href="#" className="flex items-center justify-between text-sm p-2 hover:bg-secondary rounded transition-colors">
+                <a href="https://docs.verza.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between text-sm p-2 hover:bg-secondary rounded transition-colors">
                   <span>API Documentation</span>
                   <ExternalLink className="w-4 h-4 text-muted-foreground" />
                 </a>
-                <a href="#" className="flex items-center justify-between text-sm p-2 hover:bg-secondary rounded transition-colors">
+                <a href="https://status.verza.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between text-sm p-2 hover:bg-secondary rounded transition-colors">
                   <span>System Status</span>
                   <ExternalLink className="w-4 h-4 text-muted-foreground" />
                 </a>
-                <a href="#" className="flex items-center justify-between text-sm p-2 hover:bg-secondary rounded transition-colors">
+                <a href="https://docs.verza.com/changelog" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between text-sm p-2 hover:bg-secondary rounded transition-colors">
                   <span>Changelog</span>
                   <ExternalLink className="w-4 h-4 text-muted-foreground" />
                 </a>

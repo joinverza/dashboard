@@ -1,520 +1,388 @@
-import { useState, type SVGProps } from 'react';
-import { 
-  Shield, User, FileText, ScanFace, Search, Upload, 
-  CheckCircle, AlertTriangle, Loader2, Code, 
-  RefreshCw
-} from 'lucide-react';
+import { useMemo, useState, type ChangeEvent } from 'react';
+import { AlertTriangle, BarChart3, Clock3, Download, FileSpreadsheet, Loader2, ShieldCheck, SlidersHorizontal, Upload, Webhook } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { bankingService } from '@/services/bankingService';
-import type { IndividualKYCRequest } from '@/types/banking';
+import type { AuditLogResponse, LicenseUsageMetrics, RiskSimulationResponse, WebhookResponse, WebhookRetryItem } from '@/types/banking';
+import { calculateQuotaPercent, parseCsvText, toCsvErrorReport } from './operationsHub.utils';
 
-type ToolResult = Record<string, unknown>;
-
-const isObjectResult = (value: unknown): value is ToolResult => typeof value === 'object' && value !== null;
-
-const getResultBadgeVariant = (value: ToolResult): 'default' | 'destructive' | 'secondary' => {
-  const status = typeof value.status === 'string' ? value.status : '';
-  const isValid = value.isValid === true || value.authentic === true;
-  const isLive = value.isLive === true;
-  const match = value.match === true;
-  const matchFound = value.matchFound === true;
-  if (status === 'verified' || status === 'completed' || isValid || isLive || match || (!matchFound && 'matchFound' in value)) {
-    return 'default';
-  }
-  if (status === 'rejected' || status === 'failed' || matchFound) {
-    return 'destructive';
-  }
-  return 'secondary';
-};
-
-const getResultBadgeLabel = (value: ToolResult): string => {
-  if (typeof value.status === 'string') {
-    return value.status;
-  }
-  if (value.isValid === true || value.authentic === true) {
-    return 'valid';
-  }
-  if (value.match === true) {
-    return 'matched';
-  }
-  if (value.isLive === true) {
-    return 'live';
-  }
-  return 'processed';
+const triggerFileDownload = (name: string, content: string, mime = 'text/plain'): void => {
+  const blob = new Blob([content], { type: mime });
+  const href = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = href;
+  anchor.download = name;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(href);
 };
 
 export default function VerificationTools() {
-  const [activeTab, setActiveTab] = useState("kyc");
+  const [activeTab, setActiveTab] = useState('bulk');
+  const [csvName, setCsvName] = useState('');
+  const [csvRows, setCsvRows] = useState<Array<Record<string, string>>>([]);
+  const [bulkProgress, setBulkProgress] = useState(0);
+  const [bulkIssues, setBulkIssues] = useState<Array<{ row: number; field: string; message: string; severity: string }>>([]);
+  const [riskWeights, setRiskWeights] = useState({ identity: 20, sanctions: 30, transaction: 20, geography: 15, device: 15 });
+  const [riskInput, setRiskInput] = useState({ customerType: 'retail' as 'retail' | 'business', country: 'US', transactionAmount: 1500, sanctionsHits: 0, priorAlerts: 1 });
+  const [riskResult, setRiskResult] = useState<RiskSimulationResponse | null>(null);
+  const [auditFilters, setAuditFilters] = useState({ from: '', to: '', entity: '', eventType: '' });
+  const [auditLogs, setAuditLogs] = useState<AuditLogResponse[]>([]);
+  const [webhookForm, setWebhookForm] = useState({ url: '', events: 'verification.completed,verification.failed' });
+  const [webhooks, setWebhooks] = useState<WebhookResponse[]>([]);
+  const [retryQueue, setRetryQueue] = useState<WebhookRetryItem[]>([]);
+  const [usage, setUsage] = useState<LicenseUsageMetrics | null>(null);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<ToolResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  // KYC State
-  const [kycData, setKycData] = useState<IndividualKYCRequest>({
-    firstName: '',
-    lastName: '',
-    dob: '',
-    email: '',
-    phone: '',
-    address: {
-      street: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: ''
-    },
-    idDocumentType: 'passport',
-    idDocumentNumber: ''
-  });
+  const quotaPercent = useMemo(() => {
+    if (!usage) return 0;
+    return calculateQuotaPercent(usage.usedQuota, usage.monthlyQuota);
+  }, [usage]);
 
-  // Document State
-  const [docType, setDocType] = useState<'passport' | 'drivers_license' | 'national_id'>('passport');
-  const [docCountry, setDocCountry] = useState('');
-  const [docImage, setDocImage] = useState<string>('');
-
-  // Biometric State
-  const [bioSelfie, setBioSelfie] = useState<string>('');
-  const [bioDoc, setBioDoc] = useState<string>('');
-
-  // Screening State
-  const [screenName, setScreenName] = useState('');
-  const [screenCountry, setScreenCountry] = useState('');
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string) => void) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setter(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleCsvUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setCsvName(file.name);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = typeof reader.result === 'string' ? reader.result : '';
+      const rows = parseCsvText(text);
+      setCsvRows(rows);
+    };
+    reader.readAsText(file);
   };
 
-  const executeRequest = async (fn: () => Promise<unknown>) => {
+  const validateBulk = async () => {
+    if (!csvRows.length) {
+      toast.error('Upload CSV rows before validation');
+      return;
+    }
     setLoading(true);
-    setResult(null);
-    setError(null);
+    setBulkProgress(10);
     try {
-      const res = await fn();
-      setResult(isObjectResult(res) ? res : { value: res });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'An error occurred';
-      setError(message);
-      console.error(err);
+      const result = await bankingService.validateBulkOnboardingUpload(csvRows);
+      setBulkProgress(result.progress);
+      setBulkIssues(result.issues);
+      toast.success(`Validation finished: ${result.validRows}/${result.totalRows} valid`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Validation failed');
+      setBulkProgress(0);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKycSubmit = () => {
-    executeRequest(() => bankingService.verifyIndividual(kycData));
-  };
-
-  const handleKycBasicSubmit = () => {
-    executeRequest(() => bankingService.verifyIndividualBasic(kycData));
-  };
-
-  const handleDocVerify = () => {
-    if (!docImage) {
-      setError("Please upload a document image");
-      return;
+  const importBulk = async () => {
+    if (!csvRows.length) return;
+    setLoading(true);
+    try {
+      const result = await bankingService.importBulkOnboardingRows(csvRows);
+      toast.success(`Import ${result.status}: ${result.acceptedRows} accepted`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Import failed');
+    } finally {
+      setLoading(false);
     }
-    if (!docCountry.trim()) {
-      setError("Please provide issuing country");
-      return;
+  };
+
+  const runRiskSimulation = async () => {
+    setLoading(true);
+    try {
+      const result = await bankingService.simulateRiskScore({
+        customerProfile: riskInput,
+        weights: riskWeights,
+      });
+      setRiskResult(result);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Simulation failed');
+    } finally {
+      setLoading(false);
     }
-    executeRequest(() => bankingService.verifyDocument({
-      documentImage: docImage,
-      documentType: docType,
-      issuingCountry: docCountry.trim().toUpperCase(),
-      useOcr: true,
-    }));
   };
 
-  const handleDocExtract = () => {
-    if (!docImage) {
-      setError("Please upload a document image");
-      return;
+  const exportRiskPdf = async () => {
+    if (!riskResult) return;
+    const report = await bankingService.generateRiskSandboxReport({
+      simulation: riskResult,
+      customerProfile: riskInput,
+      weights: riskWeights,
+    });
+    const content = [
+      `Risk Report ID: ${report.reportId}`,
+      `Generated At: ${report.generatedAt}`,
+      `Score: ${riskResult.score}`,
+      `Risk Level: ${riskResult.riskLevel}`,
+      `Recommendation: ${riskResult.recommendation}`,
+      `Weights: ${JSON.stringify(riskWeights)}`,
+      `Inputs: ${JSON.stringify(riskInput)}`
+    ].join('\n');
+    triggerFileDownload(`risk-sandbox-${report.reportId}.pdf`, content, 'application/pdf');
+  };
+
+  const searchAuditLogs = async () => {
+    setLoading(true);
+    try {
+      const result = await bankingService.searchAuditTrail({
+        from: auditFilters.from || undefined,
+        to: auditFilters.to || undefined,
+        entity: auditFilters.entity || undefined,
+        eventType: auditFilters.eventType || undefined,
+      });
+      setAuditLogs(result);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Audit search failed');
+    } finally {
+      setLoading(false);
     }
-    executeRequest(() => bankingService.extractDocumentData({
-      documentImage: docImage
-    }));
   };
 
-  const handleFaceMatch = () => {
-    if (!bioSelfie || !bioDoc) {
-      setError("Please upload both selfie and document images");
-      return;
+  const exportSignedLogs = async () => {
+    const result = await bankingService.exportSignedAuditLogs({
+      from: auditFilters.from || undefined,
+      to: auditFilters.to || undefined,
+      entity: auditFilters.entity || undefined,
+      eventType: auditFilters.eventType || undefined,
+    });
+    const content = JSON.stringify({ signature: result.signature, logs: auditLogs }, null, 2);
+    triggerFileDownload(`signed-audit-${result.exportId}.json`, content, 'application/json');
+  };
+
+  const loadWebhooks = async () => {
+    setLoading(true);
+    try {
+      const [items, retries] = await Promise.all([bankingService.listWebhooks(), bankingService.getWebhookRetryQueue()]);
+      setWebhooks(items);
+      setRetryQueue(retries);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to load webhooks');
+    } finally {
+      setLoading(false);
     }
-    executeRequest(() => bankingService.matchFace({
-      selfieImage: bioSelfie,
-      documentImage: bioDoc
-    }));
   };
 
-  const handleLiveness = () => {
-    // For demo, we'll simulate liveness check with just a button or maybe a short video upload if supported
-    // Since the API takes videoUrl or imageSequence, we'll mock a call or send empty for now if the backend supports it
-    // Or we can just send a dummy request
-    executeRequest(() => bankingService.checkLiveness({
-        videoUrl: "http://example.com/dummy-video.mp4"
-    }));
+  const registerWebhook = async () => {
+    if (!webhookForm.url.trim()) return;
+    await bankingService.registerWebhook({
+      url: webhookForm.url.trim(),
+      events: webhookForm.events.split(',').map((item) => item.trim()).filter(Boolean),
+      active: true,
+    });
+    await loadWebhooks();
+    toast.success('Webhook registered');
   };
 
-  const handleSanctionsCheck = () => {
-    executeRequest(() => bankingService.checkSanctions({
-      name: screenName,
-      country: screenCountry
-    }));
+  const rotateSecret = async (webhookId: string) => {
+    const result = await bankingService.rotateWebhookSecret(webhookId);
+    toast.success(`Secret rotated (${result.newSecret.slice(-4)})`);
   };
 
-  const handlePepCheck = () => {
-    executeRequest(() => bankingService.checkPEP({
-      name: screenName,
-      country: screenCountry
-    }));
+  const testWebhook = async (webhookId: string) => {
+    const result = await bankingService.testWebhookEndpoint(webhookId);
+    toast.success(`Test delivered=${result.delivered} status=${result.statusCode}`);
   };
 
-  const handleAmlRisk = () => {
-    // Uses KYC data structure for risk score
-    const amlData = {
-        firstName: screenName.split(' ')[0] || '',
-        lastName: screenName.split(' ').slice(1).join(' ') || '',
-        dob: '1990-01-01', // Dummy
-        email: 'test@example.com',
-        phone: '555-0123',
-        address: { street: '123 St', city: 'City', state: 'ST', zipCode: '00000', country: screenCountry },
-        idDocumentType: 'passport' as const,
-        idDocumentNumber: 'A1234567'
-    };
-    executeRequest(() => bankingService.calculateRiskScore({ customerData: amlData }));
+  const loadUsage = async () => {
+    setLoading(true);
+    try {
+      const result = await bankingService.getLicenseUsageMetrics();
+      setUsage(result);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to load SLA metrics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changePlan = async (targetPlan: 'starter' | 'growth' | 'enterprise') => {
+    await bankingService.changeLicensePlan(targetPlan);
+    toast.success(`Plan change request submitted: ${targetPlan}`);
+    await loadUsage();
   };
 
   return (
     <div className="space-y-6 pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-verza-primary to-verza-secondary bg-clip-text text-transparent">
-          Verification Tools
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Directly access and test verification APIs
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-verza-primary to-verza-secondary bg-clip-text text-transparent">Operations Hub</h1>
+        <p className="text-muted-foreground mt-1">Enterprise onboarding, risk, governance, webhook, and SLA tooling.</p>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="kyc">Individual KYC</TabsTrigger>
-              <TabsTrigger value="document">Documents</TabsTrigger>
-              <TabsTrigger value="biometrics">Biometrics</TabsTrigger>
-              <TabsTrigger value="screening">Screening</TabsTrigger>
-            </TabsList>
-
-            {/* Individual KYC Tab */}
-            <TabsContent value="kyc">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Individual KYC Verification
-                  </CardTitle>
-                  <CardDescription>
-                    Verify individual identity using personal details.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>First Name</Label>
-                      <Input value={kycData.firstName} onChange={e => setKycData({...kycData, firstName: e.target.value})} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Last Name</Label>
-                      <Input value={kycData.lastName} onChange={e => setKycData({...kycData, lastName: e.target.value})} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Date of Birth</Label>
-                      <Input type="date" value={kycData.dob} onChange={e => setKycData({...kycData, dob: e.target.value})} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Email</Label>
-                      <Input type="email" value={kycData.email} onChange={e => setKycData({...kycData, email: e.target.value})} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Phone</Label>
-                    <Input value={kycData.phone} onChange={e => setKycData({...kycData, phone: e.target.value})} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Address</Label>
-                    <Input placeholder="Street" value={kycData.address.street} onChange={e => setKycData({...kycData, address: {...kycData.address, street: e.target.value}})} className="mb-2" />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input placeholder="City" value={kycData.address.city} onChange={e => setKycData({...kycData, address: {...kycData.address, city: e.target.value}})} />
-                      <Input placeholder="State" value={kycData.address.state} onChange={e => setKycData({...kycData, address: {...kycData.address, state: e.target.value}})} />
-                      <Input placeholder="Zip Code" value={kycData.address.zipCode} onChange={e => setKycData({...kycData, address: {...kycData.address, zipCode: e.target.value}})} />
-                      <Input placeholder="Country" value={kycData.address.country} onChange={e => setKycData({...kycData, address: {...kycData.address, country: e.target.value}})} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>ID Type</Label>
-                      <Select value={kycData.idDocumentType} onValueChange={(v: 'passport' | 'drivers_license' | 'national_id') => setKycData({...kycData, idDocumentType: v})}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="passport">Passport</SelectItem>
-                          <SelectItem value="drivers_license">Driver's License</SelectItem>
-                          <SelectItem value="national_id">National ID</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>ID Number</Label>
-                      <Input value={kycData.idDocumentNumber} onChange={e => setKycData({...kycData, idDocumentNumber: e.target.value})} />
-                    </div>
-                  </div>
-                  <div className="flex gap-2 pt-4">
-                    <Button onClick={handleKycSubmit} disabled={loading} className="flex-1">
-                      {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shield className="mr-2 h-4 w-4" />}
-                      Full Verification
-                    </Button>
-                    <Button onClick={handleKycBasicSubmit} variant="outline" disabled={loading} className="flex-1">
-                      Basic Check
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Document Tab */}
-            <TabsContent value="document">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Document Verification
-                  </CardTitle>
-                  <CardDescription>
-                    Verify authenticity and extract data from ID documents.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Document Type</Label>
-                      <Select value={docType} onValueChange={(v: 'passport' | 'drivers_license' | 'national_id') => setDocType(v)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="passport">Passport</SelectItem>
-                          <SelectItem value="drivers_license">Driver's License</SelectItem>
-                          <SelectItem value="national_id">National ID</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Issuing Country</Label>
-                      <Input value={docCountry} onChange={e => setDocCountry(e.target.value)} placeholder="e.g. US" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Upload Document Image</Label>
-                    <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors">
-                      <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                      <Input type="file" className="hidden" id="doc-upload" onChange={e => handleFileChange(e, setDocImage)} accept="image/*" />
-                      <Label htmlFor="doc-upload" className="cursor-pointer">
-                        <span className="text-primary font-medium">Click to upload</span> or drag and drop
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 5MB</p>
-                    </div>
-                    {docImage && (
-                      <div className="mt-2 text-xs text-green-500 flex items-center">
-                        <CheckCircle className="h-3 w-3 mr-1" /> Image loaded
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2 pt-4">
-                    <Button onClick={handleDocVerify} disabled={loading} className="flex-1">
-                      {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shield className="mr-2 h-4 w-4" />}
-                      Verify Authenticity
-                    </Button>
-                    <Button onClick={handleDocExtract} variant="outline" disabled={loading} className="flex-1">
-                      <Code className="mr-2 h-4 w-4" />
-                      Extract Data
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Biometrics Tab */}
-            <TabsContent value="biometrics">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ScanFace className="h-5 w-5" />
-                    Biometric Verification
-                  </CardTitle>
-                  <CardDescription>
-                    Perform face matching and liveness detection.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Selfie Image</Label>
-                      <div className="border rounded-lg p-4 text-center">
-                        <Input type="file" id="bio-selfie" className="hidden" onChange={e => handleFileChange(e, setBioSelfie)} accept="image/*" />
-                        <Label htmlFor="bio-selfie" className="cursor-pointer block">
-                          {bioSelfie ? <img src={bioSelfie} className="h-24 w-auto mx-auto object-contain" /> : <div className="h-24 flex items-center justify-center text-muted-foreground">Upload Selfie</div>}
-                        </Label>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>ID Document Image</Label>
-                      <div className="border rounded-lg p-4 text-center">
-                        <Input type="file" id="bio-doc" className="hidden" onChange={e => handleFileChange(e, setBioDoc)} accept="image/*" />
-                        <Label htmlFor="bio-doc" className="cursor-pointer block">
-                          {bioDoc ? <img src={bioDoc} className="h-24 w-auto mx-auto object-contain" /> : <div className="h-24 flex items-center justify-center text-muted-foreground">Upload ID</div>}
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 pt-4">
-                    <Button onClick={handleFaceMatch} disabled={loading} className="flex-1">
-                      {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ScanFace className="mr-2 h-4 w-4" />}
-                      Match Face
-                    </Button>
-                    <Button onClick={handleLiveness} variant="outline" disabled={loading} className="flex-1">
-                      <Activity className="mr-2 h-4 w-4" />
-                      Check Liveness
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Screening Tab */}
-            <TabsContent value="screening">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Search className="h-5 w-5" />
-                    AML & Screening
-                  </CardTitle>
-                  <CardDescription>
-                    Screen against sanctions lists, PEPs, and calculate AML risk.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Full Name</Label>
-                    <Input value={screenName} onChange={e => setScreenName(e.target.value)} placeholder="John Doe" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Country</Label>
-                    <Input value={screenCountry} onChange={e => setScreenCountry(e.target.value)} placeholder="US" />
-                  </div>
-                  <div className="flex gap-2 pt-4 flex-wrap">
-                    <Button onClick={handleSanctionsCheck} disabled={loading} className="flex-1">
-                      Sanctions Check
-                    </Button>
-                    <Button onClick={handlePepCheck} disabled={loading} className="flex-1" variant="secondary">
-                      PEP Check
-                    </Button>
-                    <Button onClick={handleAmlRisk} disabled={loading} className="flex-1" variant="outline">
-                      Risk Score
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Results Panel */}
-        <div>
-          <Card className="h-full sticky top-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="bulk">Bulk KYC</TabsTrigger>
+          <TabsTrigger value="risk">Risk Sandbox</TabsTrigger>
+          <TabsTrigger value="audit">Audit Explorer</TabsTrigger>
+          <TabsTrigger value="webhooks">Webhook Manager</TabsTrigger>
+          <TabsTrigger value="sla">Usage & SLA</TabsTrigger>
+        </TabsList>
+        <TabsContent value="bulk">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Result</span>
-                {result && isObjectResult(result) && (
-                  <Badge variant={getResultBadgeVariant(result)}>
-                    {getResultBadgeLabel(result).toUpperCase()}
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription>
-                API response output
-              </CardDescription>
+              <CardTitle className="flex items-center gap-2"><FileSpreadsheet className="h-5 w-5" />Bulk-Customer KYC Upload Wizard</CardTitle>
+              <CardDescription>Upload CSV or Excel, validate rows, and download detailed error reports.</CardDescription>
             </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-                  <Loader2 className="h-10 w-10 animate-spin mb-4 text-primary" />
-                  <p>Processing request...</p>
-                </div>
-              ) : error ? (
-                <div className="bg-destructive/10 text-destructive p-4 rounded-lg flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium">Error</h4>
-                    <p className="text-sm opacity-90">{error}</p>
-                  </div>
-                </div>
-              ) : result ? (
-                <div className="space-y-4">
-                  <div className="bg-muted/50 p-4 rounded-lg overflow-auto max-h-[400px]">
-                    <pre className="text-xs font-mono whitespace-pre-wrap">
-                      {JSON.stringify(result, null, 2)}
-                    </pre>
-                  </div>
-                  <Button variant="outline" className="w-full" onClick={() => {setResult(null); setError(null);}}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Clear Result
-                  </Button>
-                </div>
-              ) : (
-                <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
-                  <Code className="h-10 w-10 mx-auto mb-4 opacity-20" />
-                  <p>Execute a request to see results here</p>
+            <CardContent className="space-y-4">
+              <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                <Input type="file" accept=".csv,.xlsx,.xls" onChange={handleCsvUpload} />
+                <p className="text-sm text-muted-foreground mt-2">{csvName || 'No file selected'}</p>
+              </div>
+              <div className="text-sm text-muted-foreground">Parsed rows: {csvRows.length}</div>
+              <Progress value={bulkProgress} />
+              <div className="flex gap-2">
+                <Button onClick={validateBulk} disabled={loading}><Upload className="mr-2 h-4 w-4" />Validate</Button>
+                <Button onClick={importBulk} variant="outline" disabled={loading || csvRows.length === 0}><ShieldCheck className="mr-2 h-4 w-4" />Import</Button>
+                <Button onClick={() => triggerFileDownload('bulk-errors.csv', toCsvErrorReport(bulkIssues), 'text/csv')} variant="secondary" disabled={bulkIssues.length === 0}><Download className="mr-2 h-4 w-4" />Error Report</Button>
+              </div>
+              {!!bulkIssues.length && (
+                <div className="space-y-2">
+                  {bulkIssues.slice(0, 6).map((issue, index) => (
+                    <div className="text-sm border rounded-md p-2 flex justify-between" key={`${issue.row}-${issue.field}-${index}`}>
+                      <span>Row {issue.row} · {issue.field}: {issue.message}</span>
+                      <span className={issue.severity === 'error' ? 'text-red-500' : 'text-yellow-500'}>{issue.severity}</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </TabsContent>
+        <TabsContent value="risk">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><SlidersHorizontal className="h-5 w-5" />Risk-Scoring Sandbox</CardTitle>
+              <CardDescription>Tune rule weights and run instant what-if simulations with exportable reports.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>Customer Type</Label><Select value={riskInput.customerType} onValueChange={(value: 'retail' | 'business') => setRiskInput({ ...riskInput, customerType: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="retail">Retail</SelectItem><SelectItem value="business">Business</SelectItem></SelectContent></Select></div>
+                <div className="space-y-2"><Label>Country</Label><Input value={riskInput.country} onChange={(event) => setRiskInput({ ...riskInput, country: event.target.value.toUpperCase() })} /></div>
+                <div className="space-y-2"><Label>Transaction Amount</Label><Input type="number" value={riskInput.transactionAmount} onChange={(event) => setRiskInput({ ...riskInput, transactionAmount: Number(event.target.value || 0) })} /></div>
+                <div className="space-y-2"><Label>Sanctions Hits</Label><Input type="number" value={riskInput.sanctionsHits} onChange={(event) => setRiskInput({ ...riskInput, sanctionsHits: Number(event.target.value || 0) })} /></div>
+                <div className="space-y-2"><Label>Prior Alerts</Label><Input type="number" value={riskInput.priorAlerts} onChange={(event) => setRiskInput({ ...riskInput, priorAlerts: Number(event.target.value || 0) })} /></div>
+              </div>
+              {Object.entries(riskWeights).map(([key, value]) => (
+                <div className="space-y-1" key={key}>
+                  <Label>{key} weight: {value}</Label>
+                  <Input type="range" min={0} max={60} value={value} onChange={(event) => setRiskWeights({ ...riskWeights, [key]: Number(event.target.value) })} />
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <Button onClick={runRiskSimulation} disabled={loading}><BarChart3 className="mr-2 h-4 w-4" />Run Simulation</Button>
+                <Button onClick={exportRiskPdf} variant="outline" disabled={!riskResult}><Download className="mr-2 h-4 w-4" />Export PDF</Button>
+              </div>
+              {riskResult && <div className="rounded-lg border p-4"><div className="text-2xl font-semibold">Score {riskResult.score}</div><div className="text-sm text-muted-foreground">Level: {riskResult.riskLevel} · {riskResult.recommendation}</div></div>}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="audit">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Clock3 className="h-5 w-5" />Audit-Trail Explorer</CardTitle>
+              <CardDescription>Filter by date, entity, and event type, then export signed logs.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>From</Label><Input type="date" value={auditFilters.from} onChange={(event) => setAuditFilters({ ...auditFilters, from: event.target.value })} /></div>
+                <div className="space-y-2"><Label>To</Label><Input type="date" value={auditFilters.to} onChange={(event) => setAuditFilters({ ...auditFilters, to: event.target.value })} /></div>
+                <div className="space-y-2"><Label>Entity</Label><Input value={auditFilters.entity} onChange={(event) => setAuditFilters({ ...auditFilters, entity: event.target.value })} /></div>
+                <div className="space-y-2"><Label>Event Type</Label><Input value={auditFilters.eventType} onChange={(event) => setAuditFilters({ ...auditFilters, eventType: event.target.value })} /></div>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={searchAuditLogs} disabled={loading}>Search</Button>
+                <Button onClick={exportSignedLogs} variant="outline" disabled={auditLogs.length === 0}><Download className="mr-2 h-4 w-4" />Export Signed</Button>
+              </div>
+              <div className="space-y-2 max-h-72 overflow-auto">
+                {auditLogs.map((log) => (
+                  <div className="border rounded-md p-2 text-sm" key={log.id}>
+                    <div className="font-medium">{log.action}</div>
+                    <div className="text-muted-foreground">{log.timestamp} · {log.actorId} · {log.status}</div>
+                  </div>
+                ))}
+                {!auditLogs.length && <div className="text-sm text-muted-foreground">No logs loaded</div>}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="webhooks">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Webhook className="h-5 w-5" />Webhook Endpoint Manager</CardTitle>
+              <CardDescription>Register endpoints, test delivery, rotate secrets, and inspect retries.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>Endpoint URL</Label><Input value={webhookForm.url} onChange={(event) => setWebhookForm({ ...webhookForm, url: event.target.value })} placeholder="https://acme-bank.com/webhooks/kyc" /></div>
+                <div className="space-y-2"><Label>Events (comma-separated)</Label><Input value={webhookForm.events} onChange={(event) => setWebhookForm({ ...webhookForm, events: event.target.value })} /></div>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={registerWebhook}>Register</Button>
+                <Button onClick={loadWebhooks} variant="outline">Refresh Queue</Button>
+              </div>
+              <div className="space-y-2">
+                {webhooks.map((webhook) => (
+                  <div className="border rounded-md p-3 flex justify-between items-center" key={webhook.id}>
+                    <div><div className="font-medium">{webhook.url}</div><div className="text-xs text-muted-foreground">{webhook.events.join(', ')}</div></div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => testWebhook(webhook.id)}>Test</Button>
+                      <Button size="sm" variant="outline" onClick={() => rotateSecret(webhook.id)}>Rotate Secret</Button>
+                    </div>
+                  </div>
+                ))}
+                {!webhooks.length && <div className="text-sm text-muted-foreground">No endpoints registered</div>}
+              </div>
+              <div className="rounded-md border p-3">
+                <div className="font-medium mb-2">Retry Queue</div>
+                {retryQueue.map((item) => <div className="text-sm text-muted-foreground" key={item.id}>{item.eventType} · webhook {item.webhookId} · attempt {item.attempt}</div>)}
+                {!retryQueue.length && <div className="text-sm text-muted-foreground">No retries pending</div>}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="sla">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5" />License-Usage & SLA Dashboard</CardTitle>
+              <CardDescription>Live quota consumption, anomaly alerts, and plan controls.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Button onClick={loadUsage}>Load Usage</Button>
+                <Button onClick={() => changePlan('starter')} variant="outline">Downgrade</Button>
+                <Button onClick={() => changePlan('growth')} variant="outline">Upgrade</Button>
+              </div>
+              {usage ? (
+                <div className="space-y-3">
+                  <div className="rounded-md border p-3">
+                    <div className="font-medium">{usage.planName}</div>
+                    <div className="text-sm text-muted-foreground">Period {usage.currentPeriodStart.slice(0, 10)} to {usage.currentPeriodEnd.slice(0, 10)}</div>
+                    <div className="mt-2 text-sm">Quota: {usage.usedQuota}/{usage.monthlyQuota}</div>
+                    <Progress value={quotaPercent} />
+                    <div className="text-sm mt-2">SLA Uptime: {usage.slaUptime}%</div>
+                  </div>
+                  <div className="space-y-2">
+                    {usage.anomalyAlerts.map((alert) => (
+                      <div className="rounded-md border p-2 text-sm flex items-center gap-2" key={alert.id}>
+                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                        <span>{alert.message}</span>
+                        <span className="ml-auto text-xs uppercase">{alert.severity}</span>
+                      </div>
+                    ))}
+                    {!usage.anomalyAlerts.length && <div className="text-sm text-muted-foreground">No anomaly alerts detected</div>}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">Load usage metrics to view live SLA data.</div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+      {loading && <div className="fixed bottom-6 right-6 bg-card border rounded-lg p-3 flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm">Processing...</span></div>}
     </div>
   );
-}
-
-function Activity(props: SVGProps<SVGSVGElement>) {
-    return (
-      <svg
-        {...props}
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-      </svg>
-    )
 }

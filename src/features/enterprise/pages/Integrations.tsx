@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { bankingService } from '@/services/bankingService';
 import type { WebhookResponse } from '@/types/banking';
 
@@ -68,7 +68,9 @@ const INTEGRATIONS = [
 ];
 
 export default function EnterpriseIntegrations() {
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
+  const [integrations, setIntegrations] = useState(INTEGRATIONS);
   const [webhooks, setWebhooks] = useState<WebhookResponse[]>([]);
   const [isLoadingWebhooks, setIsLoadingWebhooks] = useState(false);
   const [isAddingWebhook, setIsAddingWebhook] = useState(false);
@@ -103,7 +105,36 @@ export default function EnterpriseIntegrations() {
     }
   };
 
-  const filteredIntegrations = INTEGRATIONS.filter(integration => 
+  const handleDisconnect = (integrationId: string) => {
+    setIntegrations((current) =>
+      current.map((integration) =>
+        integration.id === integrationId
+          ? { ...integration, status: 'disconnected', lastSync: null }
+          : integration,
+      ),
+    );
+  };
+
+  const handleReconnect = (integrationId: string) => {
+    setIntegrations((current) =>
+      current.map((integration) =>
+        integration.id === integrationId
+          ? { ...integration, status: 'connected', lastSync: 'Just now' }
+          : integration,
+      ),
+    );
+  };
+
+  const handleDeleteWebhook = async (webhookId: string) => {
+    try {
+      await bankingService.deleteWebhook(webhookId);
+      setWebhooks((current) => current.filter((item) => item.id !== webhookId));
+    } catch (error) {
+      console.error('Failed to delete webhook', error);
+    }
+  };
+
+  const filteredIntegrations = integrations.filter(integration => 
     integration.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -120,11 +151,11 @@ export default function EnterpriseIntegrations() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <a href="#" target="_blank" rel="noopener noreferrer">
+            <Link href="/enterprise/api/docs">
               <ExternalLink className="mr-2 h-4 w-4" /> API Docs
-            </a>
+            </Link>
           </Button>
-          <Button>
+          <Button onClick={() => window.open('mailto:partnerships@verza.com?subject=New%20Integration%20Request', '_self')}>
             <Plus className="mr-2 h-4 w-4" /> Request Integration
           </Button>
         </div>
@@ -169,18 +200,17 @@ export default function EnterpriseIntegrations() {
               <CardFooter className="pt-2 border-t border-border/50 mt-auto">
                 {integration.status === 'connected' ? (
                   <div className="flex gap-2 w-full">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Settings className="mr-2 h-4 w-4" /> Configure
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => setLocation(`/enterprise/integrations/setup/${integration.id}`)}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Configure
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDisconnect(integration.id)}>
                       Disconnect
                     </Button>
                   </div>
                 ) : (
-                  <Button className="w-full" asChild>
-                    <Link href={`/enterprise/integrations/setup/${integration.id}`}>
-                      Connect
-                    </Link>
+                  <Button className="w-full" onClick={() => handleReconnect(integration.id)}>
+                    Connect
                   </Button>
                 )}
               </CardFooter>
@@ -267,7 +297,7 @@ export default function EnterpriseIntegrations() {
                     <span className={`h-2 w-2 rounded-full ${webhook.isActive ? 'bg-emerald-500' : 'bg-yellow-500'}`} />
                     <span className="text-sm text-muted-foreground capitalize">{webhook.isActive ? 'Active' : 'Inactive'}</span>
                   </div>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" onClick={() => handleDeleteWebhook(webhook.id)}>
                     <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                   </Button>
                 </div>

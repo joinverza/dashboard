@@ -377,6 +377,106 @@ export interface BulkVerificationResponse {
   }>;
 }
 
+export interface BulkOnboardingValidationIssue {
+  row: number;
+  field: string;
+  message: string;
+  severity: 'error' | 'warning';
+}
+
+export interface BulkOnboardingValidationResponse {
+  validationId: string;
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  progress: number;
+  issues: BulkOnboardingValidationIssue[];
+}
+
+export interface BulkOnboardingImportResponse {
+  importJobId: string;
+  acceptedRows: number;
+  rejectedRows: number;
+  status: 'queued' | 'processing' | 'completed' | 'failed';
+}
+
+export interface RiskRuleWeights {
+  identity: number;
+  sanctions: number;
+  transaction: number;
+  geography: number;
+  device: number;
+}
+
+export interface RiskSimulationRequest {
+  customerProfile: {
+    customerType: 'retail' | 'business';
+    country: string;
+    transactionAmount: number;
+    sanctionsHits: number;
+    priorAlerts: number;
+  };
+  weights: RiskRuleWeights;
+}
+
+export interface RiskSimulationResponse {
+  score: number;
+  riskLevel: 'low' | 'medium' | 'high';
+  factors: Array<{ factor: string; contribution: number }>;
+  recommendation: string;
+}
+
+export interface RiskSimulationReport {
+  reportId: string;
+  generatedAt: string;
+  downloadUrl?: string;
+}
+
+export interface AuditExplorerFilters {
+  from?: string;
+  to?: string;
+  entity?: string;
+  eventType?: string;
+}
+
+export interface SignedAuditExportResponse {
+  exportId: string;
+  signature: string;
+  downloadUrl?: string;
+}
+
+export interface WebhookRetryItem {
+  id: string;
+  webhookId: string;
+  eventType: string;
+  nextRetryAt: string;
+  attempt: number;
+}
+
+export interface WebhookTestResponse {
+  requestId: string;
+  delivered: boolean;
+  statusCode: number;
+  latencyMs: number;
+}
+
+export interface WebhookSecretRotateResponse {
+  webhookId: string;
+  previousSecretLast4: string;
+  newSecret: string;
+  rotatedAt: string;
+}
+
+export interface LicenseUsageMetrics {
+  planName: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  monthlyQuota: number;
+  usedQuota: number;
+  slaUptime: number;
+  anomalyAlerts: Array<{ id: string; message: string; severity: 'low' | 'medium' | 'high' }>;
+}
+
 export interface BulkVerifyItem {
   requestId: string;
   customerId: string;
@@ -422,7 +522,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'user' | 'verifier' | 'enterprise';
+  role: 'admin' | 'user' | 'verifier' | 'enterprise' | 'manager';
   status: 'active' | 'suspended' | 'banned' | 'pending';
   joinedAt: string;
   lastActive?: string;

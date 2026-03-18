@@ -125,6 +125,7 @@ const TRANSACTIONS = [
 
 export default function WalletPage() {
   const [, setLocation] = useLocation();
+  const explorerBase = (import.meta.env.VITE_ZK_EXPLORER_URL as string | undefined) || "https://explorer.verza.com/tx";
   const [activeTab, setActiveTab] = useState("all");
   const [isSwapOpen, setIsSwapOpen] = useState(false);
   const [isBuyOpen, setIsBuyOpen] = useState(false);
@@ -157,11 +158,11 @@ export default function WalletPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="glass-button gap-2">
+          <Button variant="outline" className="glass-button gap-2" onClick={() => toast.info("Wallet connection flow is managed by your browser wallet extension.")}>
             <Wallet className="w-4 h-4" />
             Connect Wallet
           </Button>
-          <Button className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow gap-2">
+          <Button className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow gap-2" onClick={() => setLocation("/app/wallet/deposit")}>
             <Plus className="w-4 h-4" /> Add Funds
           </Button>
         </div>
@@ -326,7 +327,8 @@ export default function WalletPage() {
                         variant="ghost" 
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
                         onClick={() => {
-                          window.open(`#`, '_blank');
+                          const url = `${explorerBase.replace(/\/$/, "")}/${encodeURIComponent(tx.hash)}`;
+                          window.open(url, '_blank', 'noopener,noreferrer');
                         }}
                       >
                         <ExternalLink className="w-3.5 h-3.5" />

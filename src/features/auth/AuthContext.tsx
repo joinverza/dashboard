@@ -26,7 +26,7 @@ import {
   verifyMfaEnrollRequest,
 } from "@/services/authService";
 
-export type UserRole = "user" | "verifier" | "enterprise" | "admin";
+export type UserRole = "user" | "verifier" | "enterprise" | "manager" | "admin";
 
 interface User {
   id: string;
@@ -147,6 +147,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (role === "enterprise") {
       setLocation("/enterprise");
+      return;
+    }
+    if (role === "manager") {
+      setLocation("/manager");
       return;
     }
     setLocation("/app");
