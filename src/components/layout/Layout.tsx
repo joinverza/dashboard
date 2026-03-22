@@ -8,9 +8,11 @@ import Header from "./Header";
 import PageTransition from "./PageTransition";
 import { useSidebarState } from "@/hooks/useSidebarState";
 import { useAuth } from "@/features/auth/AuthContext";
-import { userNavItems, verifierNavItems, enterpriseNavItems, adminNavItems } from "@/config/navigation";
+import { userNavItems, verifierNavItems, enterpriseNavItems, managerNavItems, adminNavItems } from "@/config/navigation";
 import { ChatModal } from "@/components/chat/ChatModal";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface LayoutProps {
   children: ReactNode;
@@ -22,12 +24,49 @@ export default function Layout({ children }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isSupportChatOpen, setIsSupportChatOpen] = useState(false);
-  const { user } = useAuth();
+  const [mfaEnrollmentCode, setMfaEnrollmentCode] = useState("");
+  const [isVerifyingMfaEnrollment, setIsVerifyingMfaEnrollment] = useState(false);
+  const { user, hasPermission, permissions, mfaEnrollment, verifyMfaEnrollment, mfaBackupCodes, dismissMfaBackupCodes } = useAuth();
 
-  const navItems = user?.role === "verifier" ? verifierNavItems :
+  const roleNavItems = user?.role === "verifier" ? verifierNavItems :
                    user?.role === "enterprise" ? enterpriseNavItems :
+                   user?.role === "manager" ? managerNavItems :
                    user?.role === "admin" ? adminNavItems :
                    userNavItems;
+  const permissionByPath: Record<string, string | undefined> = {
+    "/enterprise/tools": "documents:write",
+    "/enterprise/verifications": "documents:write",
+    "/enterprise/bulk": "kyc:write",
+    "/enterprise/api": "webhooks:write",
+    "/enterprise/analytics": "analytics:read",
+    "/enterprise/audit": "audit:read",
+    "/manager/requests": "verification:read",
+    "/manager/verifications": "verification:read",
+    "/manager/tools": "documents:write",
+    "/manager/team": "users:manage",
+    "/manager/analytics": "analytics:read",
+    "/manager/compliance": "audit:read",
+    "/verifier/jobs": "verification:read",
+    "/verifier/active": "verification:write",
+    "/verifier/profile": "verifier:profile:read",
+    "/admin/users": "users:manage",
+    "/admin/verifiers": "verifiers:manage",
+    "/admin/enterprises": "enterprises:manage",
+    "/admin/system": "system:manage",
+    "/admin/audit": "audit:read",
+    "/admin/tools/verifications": "verification:read",
+    "/admin/tools/operations": "documents:write",
+    "/admin/tools/auditor": "audit:read",
+    "/admin/tools/support": "verification:read",
+    "/admin/tools/developer": "webhooks:write",
+  };
+  const navItems =
+    permissions.length === 0
+      ? roleNavItems
+      : roleNavItems.filter((item) => {
+          const needed = permissionByPath[item.path];
+          return !needed || hasPermission(needed);
+        });
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -42,7 +81,24 @@ export default function Layout({ children }: LayoutProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const isAuthPage = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/onboarding'].includes(location);
+  useEffect(() => {
+    setMfaEnrollmentCode("");
+  }, [mfaEnrollment?.otpauthUri, mfaEnrollment?.qrCodeImageUrl]);
+
+  const handleVerifyMfaEnrollment = async () => {
+    if (mfaEnrollmentCode.trim().length !== 6) {
+      return;
+    }
+    setIsVerifyingMfaEnrollment(true);
+    try {
+      await verifyMfaEnrollment(mfaEnrollmentCode.trim());
+      setMfaEnrollmentCode("");
+    } finally {
+      setIsVerifyingMfaEnrollment(false);
+    }
+  };
+
+  const isAuthPage = ['/', '/login', '/signup', '/portal/login', '/portal/signup', '/admin/login', '/admin/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/onboarding'].includes(location);
 
   if (isAuthPage || !user) {
     return (
@@ -159,6 +215,54 @@ export default function Layout({ children }: LayoutProps) {
           </>
         )}
       </AnimatePresence>
+
+      <Dialog open={!!mfaEnrollment}>
+        <DialogContent className="sm:max-w-lg" onPointerDownOutside={(event) => event.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Set up authenticator app</DialogTitle>
+            <DialogDescription>Scan the QR code and enter your 6-digit code to complete MFA enrollment.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {mfaEnrollment?.qrCodeImageUrl ? (
+              <img src={mfaEnrollment.qrCodeImageUrl} alt="MFA QR code" className="mx-auto h-56 w-56 rounded-md border object-contain p-2" />
+            ) : mfaEnrollment?.otpauthUri ? (
+              <a href={mfaEnrollment.otpauthUri} className="text-sm text-primary underline break-all" target="_blank" rel="noreferrer">
+                Open authenticator setup link
+              </a>
+            ) : null}
+            {mfaEnrollment?.otpauthUri ? (
+              <p className="text-xs text-muted-foreground break-all">{mfaEnrollment.otpauthUri}</p>
+            ) : null}
+            <Input
+              value={mfaEnrollmentCode}
+              onChange={(event) => setMfaEnrollmentCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="Enter 6-digit code"
+              inputMode="numeric"
+              maxLength={6}
+            />
+            <Button onClick={handleVerifyMfaEnrollment} disabled={isVerifyingMfaEnrollment || mfaEnrollmentCode.trim().length !== 6} className="w-full">
+              {isVerifyingMfaEnrollment ? "Verifying..." : "Verify MFA Enrollment"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={mfaBackupCodes.length > 0}>
+        <DialogContent className="sm:max-w-lg" onPointerDownOutside={(event) => event.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Backup codes</DialogTitle>
+            <DialogDescription>Save these one-time backup codes now. You will not be shown this list again.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2 rounded-md border p-3">
+            {mfaBackupCodes.map((code) => (
+              <div key={code} className="font-mono text-sm">
+                {code}
+              </div>
+            ))}
+          </div>
+          <Button onClick={dismissMfaBackupCodes}>I have saved these codes</Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

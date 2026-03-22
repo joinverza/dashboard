@@ -1,17 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Plug, Plus, 
-  ExternalLink, Settings, Trash2, RefreshCw 
+  ExternalLink, Settings, Trash2, RefreshCw, Loader2, AlertTriangle
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
+import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
+import { getBankingErrorMessage } from '@/services/bankingService';
+import { webhooksService } from '@/services/apiManagementService';
+import type { WebhookResponse } from '@/types/banking';
 
 // Mock data for integrations
 const INTEGRATIONS = [
@@ -65,24 +71,122 @@ const INTEGRATIONS = [
   }
 ];
 
-const WEBHOOKS = [
-  { id: 1, url: 'https://api.acme.com/webhooks/verification-complete', events: ['verification.completed'], status: 'active' },
-  { id: 2, url: 'https://api.acme.com/webhooks/payment-failed', events: ['payment.failed'], status: 'inactive' }
-];
-
 export default function EnterpriseIntegrations() {
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
+  const [integrations, setIntegrations] = useState(INTEGRATIONS);
+  const [webhooks, setWebhooks] = useState<WebhookResponse[]>([]);
+  const [isLoadingWebhooks, setIsLoadingWebhooks] = useState(false);
+  const [isAddingWebhook, setIsAddingWebhook] = useState(false);
+  const [activeWebhookId, setActiveWebhookId] = useState<string | null>(null);
+  const [webhookError, setWebhookError] = useState('');
+  const [newWebhookUrl, setNewWebhookUrl] = useState('');
 
-  const filteredIntegrations = INTEGRATIONS.filter(integration => 
+  const loadWebhooks = async () => {
+    setIsLoadingWebhooks(true);
+    setWebhookError('');
+    try {
+      const data = await webhooksService.list();
+      setWebhooks(data);
+    } catch (error) {
+      const message = getBankingErrorMessage(error, 'Failed to fetch webhooks');
+      setWebhookError(message);
+      toast.error(message);
+    } finally {
+      setIsLoadingWebhooks(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadWebhooks();
+  }, []);
+
+  const isValidUrl = (value: string): boolean => {
+    try {
+      const parsed = new URL(value.trim());
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  const handleAddWebhook = async () => {
+    if (!isValidUrl(newWebhookUrl)) {
+      toast.error('Enter a valid webhook URL');
+      return;
+    }
+    setIsAddingWebhook(true);
+    try {
+      await webhooksService.register({ url: newWebhookUrl.trim(), events: ['verification.completed'] });
+      setNewWebhookUrl('');
+      await loadWebhooks();
+      toast.success('Webhook added');
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to add webhook'));
+    } finally {
+      setIsAddingWebhook(false);
+    }
+  };
+
+  const handleDisconnect = (integrationId: string) => {
+    setIntegrations((current) =>
+      current.map((integration) =>
+        integration.id === integrationId
+          ? { ...integration, status: 'disconnected', lastSync: null }
+          : integration,
+      ),
+    );
+  };
+
+  const handleReconnect = (integrationId: string) => {
+    setIntegrations((current) =>
+      current.map((integration) =>
+        integration.id === integrationId
+          ? { ...integration, status: 'connected', lastSync: 'Just now' }
+          : integration,
+      ),
+    );
+  };
+
+  const handleDeleteWebhook = async (webhookId: string) => {
+    setActiveWebhookId(webhookId);
+    try {
+      await webhooksService.delete(webhookId);
+      setWebhooks((current) => current.filter((item) => item.id !== webhookId));
+      toast.success('Webhook deleted');
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to delete webhook'));
+    } finally {
+      setActiveWebhookId(null);
+    }
+  };
+
+  const filteredIntegrations = integrations.filter(integration => 
     integration.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
+    <ApiErrorBoundary>
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8"
     >
+      {webhookError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Webhook loading failed</AlertTitle>
+          <AlertDescription>
+            <div className="flex items-center justify-between gap-2">
+              <span>{webhookError}</span>
+              <Button size="sm" variant="outline" onClick={loadWebhooks} disabled={isLoadingWebhooks}>
+                {isLoadingWebhooks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                Retry
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Integrations</h1>
@@ -90,11 +194,11 @@ export default function EnterpriseIntegrations() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <a href="#" target="_blank" rel="noopener noreferrer">
+            <Link href="/enterprise/api/docs">
               <ExternalLink className="mr-2 h-4 w-4" /> API Docs
-            </a>
+            </Link>
           </Button>
-          <Button>
+          <Button onClick={() => window.open('mailto:partnerships@verza.com?subject=New%20Integration%20Request', '_self')}>
             <Plus className="mr-2 h-4 w-4" /> Request Integration
           </Button>
         </div>
@@ -139,18 +243,17 @@ export default function EnterpriseIntegrations() {
               <CardFooter className="pt-2 border-t border-border/50 mt-auto">
                 {integration.status === 'connected' ? (
                   <div className="flex gap-2 w-full">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Settings className="mr-2 h-4 w-4" /> Configure
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => setLocation(`/enterprise/integrations/setup/${integration.id}`)}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Configure
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDisconnect(integration.id)}>
                       Disconnect
                     </Button>
                   </div>
                 ) : (
-                  <Button className="w-full" asChild>
-                    <Link href={`/enterprise/integrations/setup/${integration.id}`}>
-                      Connect
-                    </Link>
+                  <Button className="w-full" onClick={() => handleReconnect(integration.id)}>
+                    Connect
                   </Button>
                 )}
               </CardFooter>
@@ -178,7 +281,11 @@ export default function EnterpriseIntegrations() {
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label>Payload URL</Label>
-                  <Input placeholder="https://api.yoursite.com/webhooks" />
+                  <Input 
+                    placeholder="https://api.yoursite.com/webhooks" 
+                    value={newWebhookUrl}
+                    onChange={(e) => setNewWebhookUrl(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Secret Key</Label>
@@ -188,18 +295,17 @@ export default function EnterpriseIntegrations() {
                   <Label>Events</Label>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
-                      <Switch id="evt-verification" />
+                      <Switch id="evt-verification" defaultChecked />
                       <Label htmlFor="evt-verification">verification.completed</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="evt-payment" />
-                      <Label htmlFor="evt-payment">payment.received</Label>
                     </div>
                   </div>
                 </div>
               </div>
               <DialogFooter>
-                <Button>Add Webhook</Button>
+                <Button onClick={handleAddWebhook} disabled={isAddingWebhook || !newWebhookUrl}>
+                    {isAddingWebhook && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Add Webhook
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -207,8 +313,15 @@ export default function EnterpriseIntegrations() {
 
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardContent className="p-0">
-            {WEBHOOKS.map((webhook, index) => (
-              <div key={webhook.id} className={`flex items-center justify-between p-4 ${index !== WEBHOOKS.length - 1 ? 'border-b border-border/50' : ''}`}>
+            {isLoadingWebhooks ? (
+                <div className="p-8 flex justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : webhooks.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">No webhooks registered.</div>
+            ) : (
+                webhooks.map((webhook, index) => (
+              <div key={webhook.id} className={`flex items-center justify-between p-4 ${index !== webhooks.length - 1 ? 'border-b border-border/50' : ''}`}>
                 <div className="flex items-center gap-4">
                   <div className="bg-muted p-2 rounded-md">
                     <Plug className="h-5 w-5 text-muted-foreground" />
@@ -224,18 +337,19 @@ export default function EnterpriseIntegrations() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <span className={`h-2 w-2 rounded-full ${webhook.status === 'active' ? 'bg-emerald-500' : 'bg-yellow-500'}`} />
-                    <span className="text-sm text-muted-foreground capitalize">{webhook.status}</span>
+                    <span className={`h-2 w-2 rounded-full ${webhook.isActive ? 'bg-emerald-500' : 'bg-yellow-500'}`} />
+                    <span className="text-sm text-muted-foreground capitalize">{webhook.isActive ? 'Active' : 'Inactive'}</span>
                   </div>
-                  <Button variant="ghost" size="icon">
-                    <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                  <Button variant="ghost" size="icon" onClick={() => handleDeleteWebhook(webhook.id)} disabled={activeWebhookId === webhook.id}>
+                    {activeWebhookId === webhook.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />}
                   </Button>
                 </div>
               </div>
-            ))}
+            )))}
           </CardContent>
         </Card>
       </div>
     </motion.div>
+    </ApiErrorBoundary>
   );
 }

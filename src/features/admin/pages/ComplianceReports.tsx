@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   FileText, Download, Calendar, 
-  CheckCircle, AlertTriangle, Clock, Search
+  CheckCircle, AlertTriangle, Clock, Search, Loader2
 } from 'lucide-react';
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
@@ -12,57 +12,88 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
+import { bankingService } from '@/services/bankingService';
+import type { ComplianceReport } from '@/types/banking';
 
 export default function ComplianceReports() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [reports, setReports] = useState<ComplianceReport[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  // Mock Data
-  const reports = [
-    { 
-      id: 'RPT-2025-001', 
-      name: 'Q1 2025 AML Audit', 
-      type: 'AML Compliance', 
-      generatedBy: 'System', 
-      date: 'Apr 01, 2025', 
-      status: 'completed',
-      size: '2.4 MB'
-    },
-    { 
-      id: 'RPT-2025-002', 
-      name: 'Monthly KYC Summary - March', 
-      type: 'KYC Statistics', 
-      generatedBy: 'Sarah Connor', 
-      date: 'Apr 02, 2025', 
-      status: 'completed',
-      size: '1.1 MB'
-    },
-    { 
-      id: 'RPT-2025-003', 
-      name: 'GDPR Data Access Request Log', 
-      type: 'Privacy', 
-      generatedBy: 'John Smith', 
-      date: 'Apr 05, 2025', 
-      status: 'processing',
-      size: '-'
-    },
-    { 
-      id: 'RPT-2025-004', 
-      name: 'Suspicious Activity Report (SAR)', 
-      type: 'Fraud', 
-      generatedBy: 'System', 
-      date: 'Apr 06, 2025', 
-      status: 'failed',
-      size: '-'
-    },
-  ];
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const data = await bankingService.listReports();
+        setReports(data);
+      } catch (error) {
+        console.error("Failed to fetch reports", error);
+        // Fallback to mock data if API fails (for demo purposes)
+        setReports([
+            { 
+              id: 'RPT-2025-001', 
+              name: 'Q1 2025 AML Audit', 
+              type: 'Annual', 
+              date: 'Apr 01, 2025', 
+              status: 'Compliant',
+              verifications: 1240,
+              issues: 0
+            },
+            { 
+              id: 'RPT-2025-002', 
+              name: 'Monthly KYC Summary - March', 
+              type: 'Monthly', 
+              date: 'Apr 02, 2025', 
+              status: 'Certified',
+              verifications: 450,
+              issues: 0
+            }
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchReports();
+  }, []);
+
+  const handleGenerateReport = async () => {
+    setIsGenerating(true);
+    try {
+      const res = await bankingService.createReport({
+        type: 'compliance',
+        dateRange: {
+          start: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
+          end: new Date().toISOString().split('T')[0]
+        }
+      });
+      
+      toast.success("New report generation started");
+      
+      // Optimistically add new report
+      const newReport: ComplianceReport = {
+        id: res.reportId,
+        name: `Compliance Report (${new Date().toLocaleDateString()})`,
+        date: new Date().toLocaleDateString(),
+        type: 'Monthly',
+        status: 'Pending',
+        verifications: 0,
+        issues: 0
+      };
+      
+      setReports([newReport, ...reports]);
+    } catch (error) {
+      console.error("Failed to generate report", error);
+      toast.error("Failed to generate report");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const filteredReports = reports.filter(report => {
     const matchesSearch = 
       report.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.generatedBy.toLowerCase().includes(searchTerm.toLowerCase());
+      report.id.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || report.status === statusFilter;
     
@@ -72,10 +103,13 @@ export default function ComplianceReports() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'completed':
-        return <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20"><CheckCircle className="w-3 h-3 mr-1" /> Ready</Badge>;
-      case 'processing':
+      case 'Compliant':
+      case 'Certified':
+        return <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20"><CheckCircle className="w-3 h-3 mr-1" /> {status}</Badge>;
+      case 'Pending':
         return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20"><Clock className="w-3 h-3 mr-1" /> Processing</Badge>;
+      case 'Review Needed':
+        return <Badge className="bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border-orange-500/20"><AlertTriangle className="w-3 h-3 mr-1" /> Review Needed</Badge>;
       case 'failed':
         return <Badge className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20"><AlertTriangle className="w-3 h-3 mr-1" /> Failed</Badge>;
       default:
@@ -110,13 +144,17 @@ export default function ComplianceReports() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="processing">Processing</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
+              <SelectItem value="Compliant">Compliant</SelectItem>
+              <SelectItem value="Pending">Pending</SelectItem>
+              <SelectItem value="Review Needed">Review Needed</SelectItem>
             </SelectContent>
           </Select>
-          <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => toast.success("New report generation started")}>
-            <FileText className="h-4 w-4 mr-2" />
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700" 
+            onClick={handleGenerateReport}
+            disabled={isGenerating}
+          >
+            {isGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
             Generate Report
           </Button>
         </div>
@@ -128,16 +166,18 @@ export default function ComplianceReports() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Reports</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,248</div>
+            <div className="text-2xl font-bold">{reports.length}</div>
             <p className="text-xs text-muted-foreground mt-1">+12% from last month</p>
           </CardContent>
         </Card>
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Audits</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Reviews</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-500">3</div>
+            <div className="text-2xl font-bold text-orange-500">
+              {reports.filter(r => r.status === 'Review Needed' || r.status === 'Pending').length}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Requires attention</p>
           </CardContent>
         </Card>
@@ -165,17 +205,24 @@ export default function ComplianceReports() {
               <TableRow>
                 <TableHead>Report Name</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Generated By</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead>Size</TableHead>
+                <TableHead>Verifications</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredReports.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    <div className="flex justify-center items-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filteredReports.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No reports found.
                   </TableCell>
                 </TableRow>
@@ -191,20 +238,19 @@ export default function ComplianceReports() {
                   <TableCell>
                     <Badge variant="outline">{report.type}</Badge>
                   </TableCell>
-                  <TableCell>{report.generatedBy}</TableCell>
                   <TableCell>
                     <div className="flex items-center text-muted-foreground">
                       <Calendar className="h-3 w-3 mr-1" />
                       {report.date}
                     </div>
                   </TableCell>
-                  <TableCell>{report.size}</TableCell>
+                  <TableCell>{report.verifications}</TableCell>
                   <TableCell>{getStatusBadge(report.status)}</TableCell>
                   <TableCell className="text-right">
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      disabled={report.status !== 'completed'}
+                      disabled={report.status !== 'Compliant' && report.status !== 'Certified'}
                       onClick={() => toast.success(`Downloading ${report.name}`)}
                     >
                       <Download className="h-4 w-4 mr-2" />

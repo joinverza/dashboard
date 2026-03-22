@@ -352,14 +352,14 @@ export default function VerificationStatusPage() {
                 <Button 
                   variant="outline" 
                   className="w-full justify-start gap-2"
-                  onClick={() => toast.info("Opening Help Center...")}
+                  onClick={() => setLocation("/app/help")}
                 >
                   <HelpCircle className="w-4 h-4" /> Visit Help Center
                 </Button>
                 <Button 
                   variant="outline" 
                   className="w-full justify-start gap-2"
-                  onClick={() => toast.info("Report issue feature coming soon")}
+                  onClick={() => window.open(`mailto:support@verza.com?subject=Issue%20with%20Verification%20${encodeURIComponent(TRACKING_DATA.id)}`, "_self")}
                 >
                   <AlertCircle className="w-4 h-4" /> Report an Issue
                 </Button>
@@ -410,7 +410,14 @@ export default function VerificationStatusPage() {
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8"
-                    onClick={() => toast.info("Chat options coming soon")}
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(TRACKING_DATA.id);
+                        toast.success("Request ID copied");
+                      } catch {
+                        toast.error("Could not copy request ID");
+                      }
+                    }}
                   >
                     <MoreVertical className="w-4 h-4" />
                   </Button>

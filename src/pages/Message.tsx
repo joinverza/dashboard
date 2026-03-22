@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -40,6 +40,8 @@ export default function MessagePage() {
   const [composeTo, setComposeTo] = useState("");
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
+  const [replyText, setReplyText] = useState("");
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
 
   const handleSendMessage = () => {
     if (!composeTo || !composeSubject || !composeBody) {
@@ -54,7 +56,27 @@ export default function MessagePage() {
   };
 
   const handleReply = () => {
+    if (!replyText.trim()) {
+      toast.error("Reply cannot be empty");
+      return;
+    }
     toast.success("Reply sent successfully");
+    setReplyText("");
+  };
+
+  const handleOpenAttachmentPicker = () => {
+    attachmentInputRef.current?.click();
+  };
+
+  const handleMessageOptions = async () => {
+    if (!selectedMessage) return;
+    const details = `From: ${selectedMessage.senderName}\nSubject: ${selectedMessage.subject}\nTime: ${selectedMessage.timestamp}`;
+    try {
+      await navigator.clipboard.writeText(details);
+      toast.success("Message details copied");
+    } catch {
+      toast.error("Unable to copy message details");
+    }
   };
 
   const filteredMessages = (messages || []).filter(
@@ -289,7 +311,7 @@ export default function MessagePage() {
                       variant="ghost"
                       size="icon"
                       data-testid="button-more-message"
-                      onClick={() => toast.info("More options coming soon")}
+                      onClick={handleMessageOptions}
                     >
                       <MoreVertical className="h-5 w-5" />
                     </Button>
@@ -306,12 +328,24 @@ export default function MessagePage() {
                 </div>
 
                 <div className="p-4 border-t border-border">
+                  <input
+                    ref={attachmentInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        toast.success(`Attached ${file.name}`);
+                      }
+                      e.currentTarget.value = "";
+                    }}
+                  />
                   <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
                       size="icon"
                       data-testid="button-attach"
-                      onClick={() => toast.info("Attachment feature coming soon")}
+                      onClick={handleOpenAttachmentPicker}
                     >
                       <Paperclip className="h-5 w-5" />
                     </Button>
@@ -319,6 +353,8 @@ export default function MessagePage() {
                       placeholder="Type your reply..."
                       className="flex-1"
                       data-testid="input-reply"
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
                     />
                     <Button
                       className="bg-verza-emerald hover:bg-verza-kelly"

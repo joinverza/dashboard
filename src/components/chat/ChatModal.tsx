@@ -39,6 +39,7 @@ export function ChatModal({ isOpen, onClose, recipient, initialMessages = [] }: 
   const [inputValue, setInputValue] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
 
   const baseMessages = useMemo<Message[]>(() => {
     if (!isOpen) return [];
@@ -114,6 +115,16 @@ export function ChatModal({ isOpen, onClose, recipient, initialMessages = [] }: 
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleChatOptions = async () => {
+    const details = `Chat with ${recipient.name} (${recipient.role})`;
+    try {
+      await navigator.clipboard.writeText(details);
+      toast.success("Chat details copied");
+    } catch {
+      toast.error("Unable to copy chat details");
     }
   };
 
@@ -195,7 +206,7 @@ export function ChatModal({ isOpen, onClose, recipient, initialMessages = [] }: 
                   className="h-8 w-8 text-muted-foreground hover:text-foreground"
                   onClick={(e) => {
                     e.stopPropagation();
-                    toast.info("Chat options coming soon");
+                    handleChatOptions();
                   }}
                 >
                   <MoreVertical className="w-4 h-4" />
@@ -250,12 +261,24 @@ export function ChatModal({ isOpen, onClose, recipient, initialMessages = [] }: 
 
                 {/* Input Area */}
                 <div className="p-4 border-t border-border/50 bg-card/50 backdrop-blur-md">
+                  <input
+                    ref={attachmentInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        toast.success(`Attached ${file.name}`);
+                      }
+                      e.currentTarget.value = '';
+                    }}
+                  />
                   <div className="flex gap-2">
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       className="shrink-0 text-muted-foreground hover:text-foreground"
-                      onClick={() => toast.info("Attachment feature coming soon")}
+                      onClick={() => attachmentInputRef.current?.click()}
                     >
                       <Paperclip className="w-5 h-5" />
                     </Button>

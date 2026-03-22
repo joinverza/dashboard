@@ -33,6 +33,8 @@ const VerifierHelp = lazy(() => import("@/features/verifier/pages/Help"));
 const EnterpriseDashboard = lazy(() => import("@/features/enterprise/pages/Dashboard"));
 const EnterpriseBulkVerification = lazy(() => import("@/features/enterprise/pages/BulkVerification"));
 const EnterpriseVerificationRequests = lazy(() => import("@/features/enterprise/pages/VerificationRequests"));
+const EnterpriseVerificationTools = lazy(() => import("@/features/enterprise/pages/VerificationTools"));
+const EnterpriseVerifications = lazy(() => import("@/features/enterprise/pages/Verifications"));
 const EnterpriseVerificationDetail = lazy(() => import("@/features/enterprise/pages/VerificationDetail"));
 const EnterpriseApiManagement = lazy(() => import("@/features/enterprise/pages/ApiManagement"));
 const EnterpriseApiDocumentation = lazy(() => import("@/features/enterprise/pages/ApiDocumentation"));
@@ -109,9 +111,17 @@ const TermsOfServicePage = lazy(() => import("@/pages/TermsOfService"));
 const OnboardingPage = lazy(() => import("@/pages/Onboarding"));
 
 function Router() {
-  const { user, isLoading } = useAuth();
+  const { user, isBootstrapping } = useAuth();
+  const getDefaultRoute = () => {
+    if (!user) return "/login";
+    if (user.role === "admin") return "/admin";
+    if (user.role === "verifier") return "/verifier";
+    if (user.role === "manager") return "/manager";
+    if (user.role === "enterprise") return "/enterprise";
+    return "/app";
+  };
   
-  if (isLoading) {
+  if (isBootstrapping) {
     return <PageLoader />;
   }
   
@@ -121,12 +131,24 @@ function Router() {
         <Route path="/">
           <Redirect to="/login" />
         </Route>
-        <Route path="/login" component={LoginPage} />
-        <Route path="/signup" component={SignupPage} />
-        <Route path="/portal/login" component={EnterpriseLoginPage} />
-        <Route path="/portal/signup" component={EnterpriseSignupPage} />
-        <Route path="/admin/login" component={AdminLoginPage} />
-        <Route path="/admin/signup" component={AdminSignupPage} />
+        <Route path="/login">
+          {user ? <Redirect to={getDefaultRoute()} /> : <LoginPage />}
+        </Route>
+        <Route path="/signup">
+          {user ? <Redirect to={getDefaultRoute()} /> : <SignupPage />}
+        </Route>
+        <Route path="/portal/login">
+          {user ? <Redirect to={getDefaultRoute()} /> : <EnterpriseLoginPage />}
+        </Route>
+        <Route path="/portal/signup">
+          {user ? <Redirect to={getDefaultRoute()} /> : <EnterpriseSignupPage />}
+        </Route>
+        <Route path="/admin/login">
+          {user ? <Redirect to={getDefaultRoute()} /> : <AdminLoginPage />}
+        </Route>
+        <Route path="/admin/signup">
+          {user ? <Redirect to={getDefaultRoute()} /> : <AdminSignupPage />}
+        </Route>
         <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/reset-password" component={ResetPasswordPage} />
         <Route path="/privacy" component={PrivacyPolicyPage} />
@@ -173,11 +195,6 @@ function Router() {
           </>
         )}
 
-        {/* Redirect unauthenticated users trying to access app */}
-        <Route path="/app/:rest*">
-          <Redirect to="/login" />
-        </Route>
-
         {/* Verifier Routes */}
         {user?.role === 'verifier' && (
           <>
@@ -208,6 +225,8 @@ function Router() {
             <Route path="/enterprise" component={EnterpriseDashboard} />
             <Route path="/enterprise/bulk" component={EnterpriseBulkVerification} />
             <Route path="/enterprise/requests" component={EnterpriseVerificationRequests} />
+            <Route path="/enterprise/verifications" component={EnterpriseVerifications} />
+            <Route path="/enterprise/tools" component={EnterpriseVerificationTools} />
             <Route path="/enterprise/requests/:id" component={EnterpriseVerificationDetail} />
             <Route path="/enterprise/api" component={EnterpriseApiManagement} />
             <Route path="/enterprise/api/docs" component={EnterpriseApiDocumentation} />
@@ -222,8 +241,24 @@ function Router() {
             <Route path="/enterprise/pricing" component={EnterprisePricingPlans} />
             <Route path="/enterprise/integrations" component={EnterpriseIntegrations} />
             <Route path="/enterprise/integrations/setup" component={EnterpriseIntegrationSetup} />
+            <Route path="/enterprise/integrations/setup/:id" component={EnterpriseIntegrationSetup} />
             <Route path="/enterprise/settings" component={EnterpriseSettings} />
             <Route path="/enterprise/*" component={EnterpriseDashboard} />
+          </>
+        )}
+
+        {user?.role === 'manager' && (
+          <>
+            <Route path="/manager" component={EnterpriseDashboard} />
+            <Route path="/manager/requests" component={EnterpriseVerificationRequests} />
+            <Route path="/manager/verifications" component={EnterpriseVerifications} />
+            <Route path="/manager/tools" component={EnterpriseVerificationTools} />
+            <Route path="/manager/team" component={EnterpriseTeamManagement} />
+            <Route path="/manager/analytics" component={EnterpriseAnalytics} />
+            <Route path="/manager/compliance" component={EnterpriseComplianceReports} />
+            <Route path="/manager/audit" component={EnterpriseAuditTrail} />
+            <Route path="/manager/settings" component={EnterpriseSettings} />
+            <Route path="/manager/*" component={EnterpriseDashboard} />
           </>
         )}
         
@@ -234,6 +269,11 @@ function Router() {
             <Route path="/admin/users" component={AdminUserManagement} />
             <Route path="/admin/users/:id" component={AdminUserDetail} />
             <Route path="/admin/verifications" component={AdminVerificationRequests} />
+            <Route path="/admin/tools/verifications" component={EnterpriseVerifications} />
+            <Route path="/admin/tools/operations" component={EnterpriseVerificationTools} />
+            <Route path="/admin/tools/auditor" component={EnterpriseVerificationTools} />
+            <Route path="/admin/tools/support" component={EnterpriseVerifications} />
+            <Route path="/admin/tools/developer" component={EnterpriseVerificationTools} />
             <Route path="/admin/verifications/:id" component={AdminVerificationDetail} />
             <Route path="/admin/verifiers" component={AdminVerifierManagement} />
             <Route path="/admin/verifiers/:id" component={AdminVerifierDetail} />
@@ -260,6 +300,22 @@ function Router() {
             <Route path="/admin/*" component={AdminDashboard} />
           </>
         )}
+
+        <Route path="/app/:rest*">
+          {!user ? <Redirect to="/login" /> : user.role === "user" ? <Redirect to="/app" /> : <Redirect to={getDefaultRoute()} />}
+        </Route>
+        <Route path="/verifier/:rest*">
+          {!user ? <Redirect to="/login" /> : user.role === "verifier" ? <Redirect to="/verifier" /> : <Redirect to={getDefaultRoute()} />}
+        </Route>
+        <Route path="/enterprise/:rest*">
+          {!user ? <Redirect to="/portal/login" /> : user.role === "enterprise" ? <Redirect to="/enterprise" /> : <Redirect to={getDefaultRoute()} />}
+        </Route>
+        <Route path="/manager/:rest*">
+          {!user ? <Redirect to="/portal/login" /> : user.role === "manager" ? <Redirect to="/manager" /> : <Redirect to={getDefaultRoute()} />}
+        </Route>
+        <Route path="/admin/:rest*">
+          {!user ? <Redirect to="/admin/login" /> : user.role === "admin" ? <Redirect to="/admin" /> : <Redirect to={getDefaultRoute()} />}
+        </Route>
 
         <Route component={NotFound} />
       </Switch>

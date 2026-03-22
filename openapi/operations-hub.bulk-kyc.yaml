@@ -1,0 +1,160 @@
+openapi: 3.1.0
+info:
+  title: Operations Hub Bulk KYC API
+  version: 1.0.0
+servers:
+  - url: /api/v1/banking
+paths:
+  /onboarding/bulk/validate:
+    post:
+      summary: Validate bulk KYC rows
+      security:
+        - bearerAuth: []
+      x-authorization-scopes:
+        - kyc:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rows]
+              properties:
+                rows:
+                  type: array
+                  minItems: 1
+                  maxItems: 10000
+                  items:
+                    type: object
+                    required: [firstName, lastName, country, idDocumentType, idDocumentNumber]
+                    properties:
+                      firstName: { type: string, minLength: 1, maxLength: 120 }
+                      lastName: { type: string, minLength: 1, maxLength: 120 }
+                      country: { type: string, pattern: '^[A-Z]{2}$' }
+                      idDocumentType: { type: string, enum: [passport, drivers_license, national_id] }
+                      idDocumentNumber: { type: string, minLength: 4, maxLength: 64 }
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [validationId, totalRows, validRows, invalidRows, progress, issues]
+                properties:
+                  validationId: { type: string }
+                  totalRows: { type: integer, minimum: 1 }
+                  validRows: { type: integer, minimum: 0 }
+                  invalidRows: { type: integer, minimum: 0 }
+                  progress: { type: integer, minimum: 0, maximum: 100 }
+                  issues:
+                    type: array
+                    items:
+                      type: object
+                      required: [row, field, message, severity]
+                      properties:
+                        row: { type: integer, minimum: 1 }
+                        field: { type: string }
+                        message: { type: string }
+                        severity: { type: string, enum: [error, warning] }
+              examples:
+                ok:
+                  value:
+                    validationId: val_01JZ5E6W80
+                    totalRows: 500
+                    validRows: 482
+                    invalidRows: 18
+                    progress: 100
+                    issues:
+                      - row: 14
+                        field: country
+                        message: Invalid ISO country code
+                        severity: error
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+  /onboarding/bulk/import:
+    post:
+      summary: Import validated KYC rows
+      security:
+        - bearerAuth: []
+      x-authorization-scopes:
+        - kyc:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rows]
+              properties:
+                rows:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+      responses:
+        '202':
+          description: Import accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [importJobId, acceptedRows, rejectedRows, status]
+                properties:
+                  importJobId: { type: string }
+                  acceptedRows: { type: integer }
+                  rejectedRows: { type: integer }
+                  status: { type: string, enum: [queued, processing, completed, failed] }
+              examples:
+                accepted:
+                  value:
+                    importJobId: imp_01JZ5E78D7
+                    acceptedRows: 482
+                    rejectedRows: 18
+                    status: queued
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    ErrorResponse:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message]
+                properties:
+                  code:
+                    type: string
+                    enum: [INVALID_REQUEST, UNAUTHORIZED, FORBIDDEN, VALIDATION_FAILED, INTERNAL_ERROR]
+                  message: { type: string }
+                  details:
+                    type: array
+                    items: { type: object, additionalProperties: true }
+          examples:
+            validation:
+              value:
+                error:
+                  code: VALIDATION_FAILED
+                  message: Row 12 contains invalid country code

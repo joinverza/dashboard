@@ -22,12 +22,12 @@ const TRANSACTION = {
   id: "0x89210293849201923849021384091238409123",
   type: "sent", // sent, received, verification
   amount: 50.00,
-  asset: "ADA",
+  asset: "VZK",
   fiatValue: 17.50,
   status: "confirmed", // confirmed, pending, failed
   timestamp: "Oct 24, 2023, 10:30 AM",
-  from: "addr1q9...8291", // My wallet
-  to: "addr1x8...9201", // Recipient
+  from: "zk:verifier:8291", // My wallet
+  to: "zk:holder:9201", // Recipient
   fee: 0.17,
   block: 9281029,
   confirmations: 124,
@@ -37,6 +37,8 @@ const TRANSACTION = {
 export default function TransactionDetailPage() {
   const [, setLocation] = useLocation();
   useRoute("/app/wallet/transactions/:id");
+  const explorerBase = (import.meta.env.VITE_ZK_EXPLORER_URL as string | undefined) || "https://explorer.verza.com/tx";
+  const explorerUrl = `${explorerBase.replace(/\/$/, "")}/${encodeURIComponent(TRANSACTION.id)}`;
   
   // In a real app, use the ID to fetch transaction details
   // const id = params?.id;
@@ -72,7 +74,7 @@ export default function TransactionDetailPage() {
             
             <div className="space-y-1">
               <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                {isSent ? "Sent ADA" : "Received ADA"}
+                {isSent ? "Sent Proof" : "Received Proof"}
               </h2>
               <div className={cn("text-4xl font-bold flex items-center justify-center gap-1", colorClass)}>
                 <span>{sign}{TRANSACTION.amount.toFixed(2)}</span>
@@ -128,15 +130,12 @@ export default function TransactionDetailPage() {
               </div>
 
               <div className="flex justify-between items-center py-2 border-b border-border/50">
-                <span className="text-muted-foreground">Transaction Hash</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs truncate max-w-[150px]">{TRANSACTION.id}</span>
-                  <ExternalLink className="w-3 h-3 text-muted-foreground cursor-pointer hover:text-foreground" />
-                </div>
+                <span className="text-muted-foreground">Proof Hash</span>
+                <span className="font-mono text-xs">{TRANSACTION.id}</span>
               </div>
               
               <div className="flex justify-between items-center py-2">
-                <span className="text-muted-foreground">Block</span>
+                <span className="text-muted-foreground">Batch Proof #</span>
                 <span className="font-mono">{TRANSACTION.block}</span>
               </div>
             </div>
@@ -147,11 +146,11 @@ export default function TransactionDetailPage() {
             <Button 
               className="w-full bg-secondary hover:bg-secondary/80 text-foreground gap-2"
               onClick={() => {
-                window.open(`https://cardanoscan.io/transaction/${TRANSACTION.id}`, '_blank');
-                toast.info("Opening blockchain explorer");
+                window.open(explorerUrl, '_blank', 'noopener,noreferrer');
+                toast.info("Opening ZK explorer");
               }}
             >
-              <ExternalLink className="w-4 h-4" /> View on Explorer
+              <ExternalLink className="w-4 h-4" /> View on ZK Explorer
             </Button>
             <div className="grid grid-cols-2 gap-3">
               <Button variant="outline" className="gap-2" onClick={() => toast.success("Transaction link shared")}>

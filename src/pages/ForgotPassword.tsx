@@ -10,11 +10,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/features/auth/AuthContext";
 
 export default function ForgotPasswordPage() {
   const [, setLocation] = useLocation();
+  const { forgotPassword, isLoading } = useAuth();
   const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [countdown, setCountdown] = useState(30);
 
@@ -32,12 +33,12 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await forgotPassword(email);
       setIsSuccess(true);
-    }, 1500);
+    } catch {
+      return;
+    }
   };
 
   return (

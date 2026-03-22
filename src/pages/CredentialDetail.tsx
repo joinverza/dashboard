@@ -50,6 +50,44 @@ export default function CredentialDetailPage() {
       confidence: "99.9%"
     }
   };
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/app/credentials/${credential.id}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Share link copied to clipboard");
+    } catch {
+      toast.error("Could not copy share link");
+    }
+  };
+
+  const handleDownload = () => {
+    const payload = {
+      credentialId: credential.id,
+      documentId: credential.documentId,
+      issuer: credential.issuer,
+      issueDate: credential.issueDate,
+      status: credential.status,
+      did: credential.did,
+      txHash: credential.txHash,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `credential-${credential.documentId}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    toast.success("Credential exported");
+  };
+
+  const handleMore = async () => {
+    try {
+      await navigator.clipboard.writeText(credential.documentId);
+      toast.success("Credential reference copied");
+    } catch {
+      toast.error("Could not copy credential reference");
+    }
+  };
 
   const timeline = [
     { id: 1, title: "Credential Issued", date: "May 20, 2023 10:00 AM", icon: FileText, color: "text-blue-400" },
@@ -102,16 +140,16 @@ export default function CredentialDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => toast.success("Share link copied to clipboard")}>
+          <Button variant="outline" className="gap-2" onClick={handleShare}>
             <Share2 className="w-4 h-4" /> Share
           </Button>
-          <Button variant="outline" className="gap-2" onClick={() => toast.success("Document downloaded successfully")}>
+          <Button variant="outline" className="gap-2" onClick={handleDownload}>
             <Download className="w-4 h-4" /> Download
           </Button>
           <Button className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow gap-2" onClick={() => toast.success("ZK Proof generated successfully")}>
             <Lock className="w-4 h-4" /> Generate ZK Proof
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => toast.info("More options coming soon")}>
+          <Button variant="ghost" size="icon" onClick={handleMore}>
             <MoreVertical className="w-4 h-4" />
           </Button>
         </div>
@@ -254,22 +292,22 @@ export default function CredentialDetailPage() {
           {/* Blockchain Proof */}
           <Card className="border-border/50 bg-card/30">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Blockchain Proof</CardTitle>
+              <CardTitle className="text-lg">Zero-Knowledge Proof</CardTitle>
               <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
-                Anchored on Cardano
+                Secured by ZK Proofs
               </Badge>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center p-4 rounded-lg bg-secondary/20 border border-border/50">
                 <div className="space-y-1">
-                   <span className="text-xs text-muted-foreground">Transaction Hash</span>
+                   <span className="text-xs text-muted-foreground">Proof Hash</span>
                    <div className="flex items-center gap-2">
                      <span className="font-mono text-sm">{credential.txHash}</span>
                      <ExternalLink className="w-3 h-3 text-muted-foreground cursor-pointer hover:text-foreground" />
                    </div>
                 </div>
                 <div className="space-y-1 text-right">
-                   <span className="text-xs text-muted-foreground">Block Height</span>
+                   <span className="text-xs text-muted-foreground">Proof Batch</span>
                    <div className="font-mono text-sm">#8921029</div>
                 </div>
               </div>

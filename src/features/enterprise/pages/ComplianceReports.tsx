@@ -1,77 +1,83 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FileText, Download, Filter, Calendar, 
-  CheckCircle, AlertTriangle, ShieldCheck 
+  CheckCircle, AlertTriangle, ShieldCheck, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-// Mock data for reports
-const COMPLIANCE_REPORTS = [
-  { 
-    id: "REP-2023-10", 
-    name: "October 2023 Monthly Compliance Report", 
-    date: "Nov 01, 2023", 
-    type: "Monthly", 
-    status: "Compliant",
-    verifications: 1250,
-    issues: 0
-  },
-  { 
-    id: "REP-2023-09", 
-    name: "September 2023 Monthly Compliance Report", 
-    date: "Oct 01, 2023", 
-    type: "Monthly", 
-    status: "Compliant",
-    verifications: 1100,
-    issues: 0
-  },
-  { 
-    id: "REP-2023-Q3", 
-    name: "Q3 2023 Quarterly Audit", 
-    date: "Oct 15, 2023", 
-    type: "Quarterly", 
-    status: "Review Needed",
-    verifications: 3450,
-    issues: 2
-  },
-  { 
-    id: "REP-2023-08", 
-    name: "August 2023 Monthly Compliance Report", 
-    date: "Sep 01, 2023", 
-    type: "Monthly", 
-    status: "Compliant",
-    verifications: 980,
-    issues: 0
-  },
-  { 
-    id: "REP-2023-SOC2", 
-    name: "Annual SOC2 Compliance Certification", 
-    date: "Aug 15, 2023", 
-    type: "Annual", 
-    status: "Certified",
-    verifications: 12500,
-    issues: 0
-  }
-];
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { bankingService } from '@/services/bankingService';
+import type { ComplianceReport } from '@/types/banking';
 
 export default function ComplianceReports() {
   const [filterType, setFilterType] = useState('all');
+  const [reports, setReports] = useState<ComplianceReport[]>([]);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newReportType, setNewReportType] = useState<'compliance' | 'audit' | 'activity'>('compliance');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
+
+  useEffect(() => {
+    const fetchReports = async () => {
+        try {
+            const data = await bankingService.listReports();
+            setReports(data);
+        } catch (error) {
+            console.error("Failed to fetch reports", error);
+        }
+    };
+    fetchReports();
+  }, []);
 
   const filteredReports = filterType === 'all' 
-    ? COMPLIANCE_REPORTS 
-    : COMPLIANCE_REPORTS.filter(r => r.type.toLowerCase() === filterType);
+    ? reports 
+    : reports.filter(r => r.type.toLowerCase() === filterType);
+
+  const handleCreateReport = async () => {
+    setIsCreating(true);
+    try {
+      const res = await bankingService.createReport({
+        type: newReportType,
+        dateRange: { start: dateStart, end: dateEnd }
+      });
+      
+      const newReport: ComplianceReport = {
+        id: res.reportId,
+        name: `${newReportType.charAt(0).toUpperCase() + newReportType.slice(1)} Report (${dateStart} - ${dateEnd})`,
+        date: new Date().toLocaleDateString(),
+        type: newReportType === 'compliance' ? 'Monthly' : newReportType === 'audit' ? 'Annual' : 'Quarterly', // Map to allowed types
+        status: res.status === 'generating' ? 'Pending' : 'Compliant',
+        verifications: 0,
+        issues: 0
+      };
+      
+      setReports([newReport, ...reports]);
+      setIsCreateOpen(false);
+      // Reset form
+      setDateStart('');
+      setDateEnd('');
+    } catch (error) {
+      console.error("Failed to create report", error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Compliant':
       case 'Certified':
+      case 'Ready':
         return <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20">{status}</Badge>;
       case 'Review Needed':
+      case 'Pending':
         return <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/20">{status}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
@@ -93,9 +99,67 @@ export default function ComplianceReports() {
           <Button variant="outline">
             <Filter className="mr-2 h-4 w-4" /> Filter
           </Button>
-          <Button className="bg-verza-primary hover:bg-verza-primary/90 text-white shadow-glow">
-            <FileText className="mr-2 h-4 w-4" /> Generate New Report
-          </Button>
+          
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-verza-primary hover:bg-verza-primary/90 text-white shadow-glow">
+                <FileText className="mr-2 h-4 w-4" /> Generate New Report
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Generate New Report</DialogTitle>
+                <DialogDescription>
+                  Create a new compliance report based on your verification data.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="type">Report Type</Label>
+                  <Select 
+                    value={newReportType} 
+                    onValueChange={(val: 'compliance' | 'audit' | 'activity') => setNewReportType(val)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="compliance">Compliance</SelectItem>
+                      <SelectItem value="audit">Audit</SelectItem>
+                      <SelectItem value="activity">Activity</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="start">Start Date</Label>
+                    <Input 
+                      id="start" 
+                      type="date" 
+                      value={dateStart} 
+                      onChange={(e) => setDateStart(e.target.value)} 
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="end">End Date</Label>
+                    <Input 
+                      id="end" 
+                      type="date" 
+                      value={dateEnd} 
+                      onChange={(e) => setDateEnd(e.target.value)} 
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                <Button onClick={handleCreateReport} disabled={isCreating || !dateStart || !dateEnd}>
+                  {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Generate Report
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

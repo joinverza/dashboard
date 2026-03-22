@@ -12,7 +12,8 @@ import {
   Save, 
   Clock,
   AlertTriangle,
-  FileText
+  
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,44 +23,23 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-
-// Mock Data
-const JOB_DATA = {
-  id: "1",
-  type: "Identity Verification",
-  requester: "John D.",
-  documentType: "Passport",
-  documentUrl: "/placeholder-passport.png",
-  deadline: "1h 45m",
-  requirements: [
-    { id: "r1", label: "Photo matches requester profile" },
-    { id: "r2", label: "Document is not expired" },
-    { id: "r3", label: "Holograms are visible and valid" },
-    { id: "r4", label: "MRZ code matches data" },
-    { id: "r5", label: "No signs of tampering" }
-  ],
-  aiAnalysis: {
-    score: 98,
-    flags: [],
-    extractedData: {
-      name: "John Doe",
-      dob: "1985-04-12",
-      expiry: "2028-04-11",
-      docNumber: "A12345678"
-    }
-  }
-};
+import { bankingService } from "@/services/bankingService";
+import type { VerificationStatusResponse } from "@/types/banking";
+import { toast } from "sonner";
 
 export default function DocumentReview() {
   const [match, params] = useRoute("/verifier/workspace/:id");
   const id = match ? params.id : null;
   
+  const [job, setJob] = useState<VerificationStatusResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [notes, setNotes] = useState("");
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
+  const [confirmChecked, setConfirmChecked] = useState(false);
 
   // Timer effect
   useEffect(() => {
@@ -68,6 +48,34 @@ export default function DocumentReview() {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchJob = async () => {
+      setIsLoading(true);
+      try {
+        const data = await bankingService.getVerificationStatus(id);
+        setJob(data);
+        
+        // Initialize checklist
+        const initialChecklist = {
+            "r1": false,
+            "r2": false,
+            "r3": false,
+            "r4": false,
+            "r5": false
+        };
+        setChecklist(initialChecklist);
+      } catch (error) {
+        console.error("Failed to fetch job details", error);
+        toast.error("Failed to load job details");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchJob();
+  }, [id]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -83,14 +91,64 @@ export default function DocumentReview() {
     setChecklist(prev => ({ ...prev, [id]: checked }));
   };
 
-  const allChecked = JOB_DATA.requirements.every(req => checklist[req.id]);
+  const requirements = [
+    { id: "r1", label: "Photo matches requester profile" },
+    { id: "r2", label: "Document is not expired" },
+    { id: "r3", label: "Holograms are visible and valid" },
+    { id: "r4", label: "MRZ code matches data" },
+    { id: "r5", label: "No signs of tampering" }
+  ];
 
-  const handleApprove = () => {
-    // Submit logic
-    console.log("Approved");
-    setIsApproveDialogOpen(false);
-    window.location.href = "/verifier/completed";
+  const allChecked = requirements.every(req => checklist[req.id]);
+
+  const handleApprove = async () => {
+    if (!id) return;
+    try {
+      await bankingService.updateVerificationStatus(id, 'verified', notes);
+      toast.success("Verification approved successfully");
+      setIsApproveDialogOpen(false);
+      setTimeout(() => window.location.href = "/verifier/dashboard", 1500);
+    } catch (error) {
+      console.error("Failed to approve verification", error);
+      toast.error("Failed to approve verification");
+    }
   };
+
+  const handleReject = async () => {
+    if (!id) return;
+    try {
+      await bankingService.updateVerificationStatus(id, 'rejected', notes);
+      toast.success("Verification rejected");
+      setTimeout(() => window.location.href = "/verifier/dashboard", 1500);
+    } catch (error) {
+      console.error("Failed to reject verification", error);
+      toast.error("Failed to reject verification");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!job) {
+    return (
+      <div className="text-center py-10">
+        <h2 className="text-xl font-semibold">Job Not Found</h2>
+        <Button variant="link" onClick={() => window.history.back()}>
+          Return to Dashboard
+        </Button>
+      </div>
+    );
+  }
+
+  const details = job.details ?? {};
+  const documentUrl = typeof details.documentUrl === 'string' ? details.documentUrl : "/placeholder-passport.png";
+  const documentType = typeof details.documentType === 'string' ? details.documentType : "Identity Document";
+  const requesterName = details.firstName ? `${details.firstName} ${details.lastName}` : "Unknown Subject";
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col bg-background">
@@ -101,22 +159,22 @@ export default function DocumentReview() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-             <h1 className="text-lg font-semibold">{JOB_DATA.type} - #{id}</h1>
-             <p className="text-xs text-muted-foreground">Requester: {JOB_DATA.requester} • {JOB_DATA.documentType}</p>
+             <h1 className="text-lg font-semibold">{job.type ? job.type.replace('_', ' ').toUpperCase() : 'VERIFICATION'} - #{id?.substring(0, 8)}</h1>
+             <p className="text-xs text-muted-foreground">Requester: {requesterName} • {documentType}</p>
           </div>
         </div>
         
         <div className="flex items-center gap-6">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md border border-border">
-                <Clock className="h-4 w-4 text-verza-emerald" />
+                <Clock className="h-4 w-4 text-primary" />
                 <span className="font-mono font-medium">{formatTime(elapsedTime)}</span>
             </div>
             <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="text-red-500 hover:text-red-600 border-red-200 hover:bg-red-50" onClick={handleReject}>
+                    <XCircle className="h-4 w-4 mr-2" /> Reject
+                </Button>
                 <Button variant="outline" size="sm">
                     <Save className="h-4 w-4 mr-2" /> Save Draft
-                </Button>
-                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                    Exit
                 </Button>
             </div>
         </div>
@@ -155,12 +213,12 @@ export default function DocumentReview() {
                         transformOrigin: "center center"
                     }}
                 >
-                    {/* Placeholder Document */}
-                    <div className="w-[500px] h-[700px] bg-white rounded-lg flex flex-col items-center justify-center border-8 border-gray-200">
-                        <FileText className="h-32 w-32 text-gray-300 mb-4" />
-                        <p className="text-gray-400 font-medium">Document Preview</p>
-                        <p className="text-xs text-gray-300 mt-2">Scale: {Math.round(scale * 100)}%</p>
-                    </div>
+                    <img 
+                        src={documentUrl} 
+                        alt="Document to review" 
+                        className="max-w-full rounded-lg"
+                        style={{ maxHeight: 'calc(100vh - 12rem)' }}
+                    />
                 </motion.div>
             </div>
         </div>
@@ -179,7 +237,7 @@ export default function DocumentReview() {
                         <TabsContent value="checklist" className="mt-0 space-y-6">
                             <div className="space-y-4">
                                 <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Verification Requirements</h3>
-                                {JOB_DATA.requirements.map(req => (
+                                {requirements.map(req => (
                                     <div key={req.id} className="flex items-start space-x-3 p-3 rounded-lg border border-border/50 bg-card/50 hover:bg-card/80 transition-colors">
                                         <Checkbox 
                                             id={req.id} 
@@ -204,7 +262,7 @@ export default function DocumentReview() {
                                     <div>
                                         <h4 className="text-sm font-medium text-blue-500">Verifier Tip</h4>
                                         <p className="text-xs text-muted-foreground mt-1">
-                                            Pay close attention to the expiration date. The AI detected it might be close to expiring.
+                                            Pay close attention to the expiration date. Ensure it matches the extracted data.
                                         </p>
                                     </div>
                                 </div>
@@ -212,22 +270,22 @@ export default function DocumentReview() {
                         </TabsContent>
 
                         <TabsContent value="ai" className="mt-0 space-y-6">
-                            <Card className="border-verza-emerald/20 bg-verza-emerald/5">
+                            <Card className="border-primary/20 bg-primary/5">
                                 <CardHeader className="pb-3">
                                     <CardTitle className="text-lg flex items-center justify-between">
                                         AI Confidence
-                                        <span className="text-verza-emerald">{JOB_DATA.aiAnalysis.score}%</span>
+                                        <span className="text-primary">{job.details?.aiScore || 95}%</span>
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-2">
                                         <div className="flex justify-between text-sm">
                                             <span className="text-muted-foreground">Fraud Risk</span>
-                                            <span className="font-medium text-verza-emerald">Low</span>
+                                            <span className="font-medium text-primary">Low</span>
                                         </div>
                                         <div className="flex justify-between text-sm">
                                             <span className="text-muted-foreground">Data Extraction</span>
-                                            <span className="font-medium text-verza-emerald">High Accuracy</span>
+                                            <span className="font-medium text-primary">High Accuracy</span>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -236,12 +294,24 @@ export default function DocumentReview() {
                             <div className="space-y-4">
                                 <h3 className="text-sm font-medium text-muted-foreground">Extracted Data</h3>
                                 <div className="space-y-3">
-                                    {Object.entries(JOB_DATA.aiAnalysis.extractedData).map(([key, value]) => (
-                                        <div key={key} className="grid grid-cols-3 gap-2 text-sm border-b border-border/30 pb-2">
-                                            <span className="capitalize text-muted-foreground">{key}</span>
-                                            <span className="col-span-2 font-mono truncate">{value}</span>
-                                        </div>
-                                    ))}
+                                    <div className="grid grid-cols-3 gap-2 text-sm border-b border-border/30 pb-2">
+                                        <span className="capitalize text-muted-foreground">Name</span>
+                                        <span className="col-span-2 font-mono truncate">{job.details?.firstName} {job.details?.lastName}</span>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 text-sm border-b border-border/30 pb-2">
+                                        <span className="capitalize text-muted-foreground">DOB</span>
+                                        <span className="col-span-2 font-mono truncate">{job.details?.dob}</span>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 text-sm border-b border-border/30 pb-2">
+                                        <span className="capitalize text-muted-foreground">Doc Num</span>
+                                        <span className="col-span-2 font-mono truncate">{job.details?.idDocumentNumber}</span>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 text-sm border-b border-border/30 pb-2">
+                                        <span className="capitalize text-muted-foreground">Address</span>
+                                        <span className="col-span-2 font-mono truncate">
+                                          {job.details?.address ? `${job.details.address.city}, ${job.details.address.country}` : 'N/A'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </TabsContent>
@@ -265,37 +335,41 @@ export default function DocumentReview() {
                     <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
                         <DialogTrigger asChild>
                             <Button 
-                                className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow"
+                                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow"
                                 disabled={!allChecked}
                             >
                                 <CheckCircle className="mr-2 h-4 w-4" />
-                                Approve & Sign Credential
+                                Approve & Verify
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[425px]">
                             <DialogHeader>
                                 <DialogTitle>Confirm Verification</DialogTitle>
                                 <DialogDescription>
-                                    You are about to cryptographically sign this credential. This action cannot be undone and will be recorded on the blockchain.
+                                    You are about to verify this document. This action cannot be undone.
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="py-4 space-y-4">
                                 <div className="rounded-lg bg-muted p-4">
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="text-muted-foreground">Credential Type</span>
-                                        <span className="font-medium">{JOB_DATA.type}</span>
+                                        <span className="font-medium">{job.type}</span>
                                     </div>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="text-muted-foreground">Requester</span>
-                                        <span className="font-medium">{JOB_DATA.requester}</span>
+                                        <span className="font-medium">{requesterName}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Your Reward</span>
-                                        <span className="font-medium text-verza-emerald">$13.50</span>
+                                        <span className="text-muted-foreground">Estimated Reward</span>
+                                        <span className="font-medium text-primary">$15.00</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                    <Checkbox id="confirm" />
+                                    <Checkbox 
+                                      id="confirm" 
+                                      checked={confirmChecked}
+                                      onCheckedChange={(c) => setConfirmChecked(c as boolean)}
+                                    />
                                     <label htmlFor="confirm" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                         I certify that I have verified this document according to the protocol.
                                     </label>
@@ -303,15 +377,10 @@ export default function DocumentReview() {
                             </div>
                             <DialogFooter>
                                 <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)}>Cancel</Button>
-                                <Button className="bg-verza-emerald text-white" onClick={handleApprove}>Confirm & Sign</Button>
+                                <Button onClick={handleApprove} disabled={!confirmChecked}>Confirm Approval</Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
-
-                    <Button variant="destructive" className="w-full">
-                        <XCircle className="mr-2 h-4 w-4" />
-                        Reject Application
-                    </Button>
                 </div>
             </Tabs>
         </div>

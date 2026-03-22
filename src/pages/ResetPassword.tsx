@@ -12,13 +12,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/features/auth/AuthContext";
 
 export default function ResetPasswordPage() {
   const [, setLocation] = useLocation();
+  const { resetPassword, isLoading } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
   const requirements = [
@@ -33,14 +34,16 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!allValid) return;
-    
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token") || "";
+    if (!token) return;
+    try {
+      await resetPassword(token, password);
       setIsSuccess(true);
       setTimeout(() => setLocation("/login"), 3000);
-    }, 1500);
+    } catch {
+      return;
+    }
   };
 
   return (

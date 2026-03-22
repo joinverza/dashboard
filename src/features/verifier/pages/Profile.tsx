@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,9 +10,98 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Save, Plus, X, Calendar, DollarSign, MapPin, Globe, FileText } from "lucide-react";
+import { Upload, Save, Plus, X, Calendar, DollarSign, MapPin, Globe, FileText, Loader2 } from "lucide-react";
+import { bankingService } from "@/services/bankingService";
+import type { VerifierProfile as IVerifierProfile } from "@/types/banking";
+import { toast } from "sonner";
 
 export default function VerifierProfile() {
+  const [profile, setProfile] = useState<IVerifierProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await bankingService.getVerifierProfile();
+        setProfile(data);
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+        toast.error("Failed to load profile data");
+        // Fallback mock data for development if API fails
+        setProfile({
+          id: "v1",
+          name: "Verza Professional Services",
+          email: "verifier@verza.io",
+          role: "verifier",
+          status: "active",
+          joinedAt: "2024-01-01",
+          title: "Senior Identity Verifier",
+          languages: ["English", "Spanish"],
+          specializations: ["Corporate KYC", "Biometric Verification"],
+          certifications: [
+            {
+              name: "Certified AML Specialist (CAMS)",
+              issuer: "ACAMS",
+              date: "2023-01-15",
+              expiry: "2026-01-15"
+            }
+          ],
+          pricing: [
+            { type: "Identity Document", price: 5.00, expedited: 50 },
+            { type: "Academic Transcript", price: 12.00, expedited: 40 }
+          ],
+          availability: {
+            vacationMode: false,
+            schedule: [
+              { day: "Monday", active: true, start: "09:00", end: "17:00" },
+              { day: "Tuesday", active: true, start: "09:00", end: "17:00" },
+              { day: "Wednesday", active: true, start: "09:00", end: "17:00" },
+              { day: "Thursday", active: true, start: "09:00", end: "17:00" },
+              { day: "Friday", active: true, start: "09:00", end: "17:00" },
+              { day: "Saturday", active: false, start: "09:00", end: "17:00" },
+              { day: "Sunday", active: false, start: "09:00", end: "17:00" }
+            ],
+            timezone: "utc-5"
+          },
+          autoAccept: {
+            enabled: false,
+            minPrice: 15.00,
+            allowedTypes: []
+          }
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleSave = async () => {
+    if (!profile) return;
+    setIsSaving(true);
+    try {
+      await bankingService.updateVerifierProfile(profile);
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      toast.error("Failed to update profile");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-verza-emerald" />
+      </div>
+    );
+  }
+
+  if (!profile) return null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -25,8 +115,17 @@ export default function VerifierProfile() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline">View Public Profile</Button>
-          <Button className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow">
-            <Save className="mr-2 h-4 w-4" /> Save Changes
+          <Button 
+            className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow"
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Save Changes
           </Button>
         </div>
       </div>
@@ -51,7 +150,9 @@ export default function VerifierProfile() {
                 <div className="flex flex-col items-center gap-3">
                   <Avatar className="h-24 w-24 border-2 border-verza-emerald/50">
                     <AvatarImage src="/verifier-avatar.jpg" />
-                    <AvatarFallback className="bg-verza-emerald/10 text-verza-emerald text-2xl">VP</AvatarFallback>
+                    <AvatarFallback className="bg-verza-emerald/10 text-verza-emerald text-2xl">
+                      {profile.name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
                   </Avatar>
                   <Button variant="outline" size="sm" className="w-full">
                     <Upload className="mr-2 h-3 w-3" /> Change
@@ -62,11 +163,19 @@ export default function VerifierProfile() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="name">Display Name</Label>
-                      <Input id="name" defaultValue="Verza Professional Services" />
+                      <Input 
+                        id="name" 
+                        value={profile.name} 
+                        onChange={(e) => setProfile({...profile, name: e.target.value})}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="title">Professional Title</Label>
-                      <Input id="title" defaultValue="Senior Identity Verifier" />
+                      <Input 
+                        id="title" 
+                        value={profile.title || ""} 
+                        onChange={(e) => setProfile({...profile, title: e.target.value})}
+                      />
                     </div>
                   </div>
                   
@@ -90,46 +199,17 @@ export default function VerifierProfile() {
                     <div className="space-y-2">
                       <Label>Languages</Label>
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <div className="relative flex-1">
-                            <Globe className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input className="pl-9" defaultValue="English" />
+                        {profile.languages?.map((lang, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                              <Globe className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                              <Input className="pl-9" value={lang} readOnly />
+                            </div>
+                            <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-red-500">
+                              <X className="h-4 w-4" />
+                            </Button>
                           </div>
-                          <Select defaultValue="native">
-                            <SelectTrigger className="w-[140px]">
-                              <SelectValue placeholder="Proficiency" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="native">Native</SelectItem>
-                              <SelectItem value="fluent">Fluent</SelectItem>
-                              <SelectItem value="intermediate">Intermediate</SelectItem>
-                              <SelectItem value="basic">Basic</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-red-500">
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="relative flex-1">
-                            <Globe className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input className="pl-9" defaultValue="Spanish" />
-                          </div>
-                          <Select defaultValue="fluent">
-                            <SelectTrigger className="w-[140px]">
-                              <SelectValue placeholder="Proficiency" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="native">Native</SelectItem>
-                              <SelectItem value="fluent">Fluent</SelectItem>
-                              <SelectItem value="intermediate">Intermediate</SelectItem>
-                              <SelectItem value="basic">Basic</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-red-500">
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        ))}
                         <Button variant="outline" size="sm" className="w-full border-dashed border-border text-muted-foreground hover:text-verza-emerald hover:border-verza-emerald/50">
                           <Plus className="mr-2 h-3 w-3" /> Add Language
                         </Button>
@@ -145,7 +225,7 @@ export default function VerifierProfile() {
                   <Button variant="ghost" size="sm" className="text-verza-emerald"><Plus className="mr-1 h-3 w-3" /> Add</Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {["Corporate KYC", "Biometric Verification", "Document Analysis", "Financial Records"].map((skill) => (
+                  {profile.specializations?.map((skill) => (
                     <Badge key={skill} variant="secondary" className="pl-2 pr-1 py-1 gap-1">
                       {skill}
                       <Button variant="ghost" size="icon" className="h-3 w-3 ml-1 hover:bg-transparent text-muted-foreground hover:text-foreground">
@@ -162,30 +242,20 @@ export default function VerifierProfile() {
                   <Button variant="ghost" size="sm" className="text-verza-emerald"><Plus className="mr-1 h-3 w-3" /> Add Certificate</Button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-start gap-3 p-3 border border-border rounded-md bg-muted/10">
-                    <div className="h-10 w-10 bg-verza-emerald/10 rounded flex items-center justify-center text-verza-emerald shrink-0">
-                      <FileText className="h-5 w-5" />
+                  {profile.certifications?.map((cert, idx) => (
+                    <div key={idx} className="flex items-start gap-3 p-3 border border-border rounded-md bg-muted/10">
+                      <div className="h-10 w-10 bg-verza-emerald/10 rounded flex items-center justify-center text-verza-emerald shrink-0">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate">{cert.name}</h4>
+                        <p className="text-xs text-muted-foreground">Issued: {cert.date} • Expires: {cert.expiry || 'N/A'}</p>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500">
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm truncate">Certified AML Specialist (CAMS)</h4>
-                      <p className="text-xs text-muted-foreground">Issued: Jan 2023 • Expires: Jan 2026</p>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500">
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 border border-border rounded-md bg-muted/10">
-                    <div className="h-10 w-10 bg-verza-emerald/10 rounded flex items-center justify-center text-verza-emerald shrink-0">
-                      <FileText className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm truncate">Identity Management Professional</h4>
-                      <p className="text-xs text-muted-foreground">Issued: Mar 2025</p>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500">
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  ))}
                   <Button variant="outline" className="h-auto py-4 border-dashed border-border text-muted-foreground hover:text-verza-emerald hover:border-verza-emerald/50 flex flex-col gap-2">
                     <Upload className="h-6 w-6 opacity-50" />
                     <span>Upload Certificate</span>
@@ -212,24 +282,35 @@ export default function VerifierProfile() {
                   <div className="col-span-1"></div>
                 </div>
                 
-                {[
-                  { type: "Identity Document (Passport/ID)", price: "5.00", expedited: "50" },
-                  { type: "Academic Transcript", price: "12.00", expedited: "40" },
-                  { type: "Employment History", price: "25.00", expedited: "30" },
-                  { type: "Corporate Registration", price: "45.00", expedited: "25" },
-                ].map((item, i) => (
+                {profile.pricing?.map((item, i) => (
                   <div key={i} className="grid grid-cols-12 gap-4 items-center bg-muted/20 p-2 rounded-md border border-border/50">
                     <div className="col-span-5 font-medium">{item.type}</div>
                     <div className="col-span-3">
                       <div className="relative">
                         <DollarSign className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                        <Input className="pl-7 h-9" defaultValue={item.price} />
+                        <Input 
+                          className="pl-7 h-9" 
+                          value={item.price.toString()} 
+                          onChange={(e) => {
+                            const newPricing = [...profile.pricing!];
+                            newPricing[i] = { ...newPricing[i], price: parseFloat(e.target.value) || 0 };
+                            setProfile({ ...profile, pricing: newPricing });
+                          }}
+                        />
                       </div>
                     </div>
                     <div className="col-span-3">
                       <div className="relative">
                         <span className="absolute right-3 top-2.5 text-sm text-muted-foreground">%</span>
-                        <Input className="pr-7 h-9" defaultValue={item.expedited} />
+                        <Input 
+                          className="pr-7 h-9" 
+                          value={item.expedited.toString()} 
+                          onChange={(e) => {
+                            const newPricing = [...profile.pricing!];
+                            newPricing[i] = { ...newPricing[i], expedited: parseFloat(e.target.value) || 0 };
+                            setProfile({ ...profile, pricing: newPricing });
+                          }}
+                        />
                       </div>
                     </div>
                     <div className="col-span-1 text-right">
@@ -300,19 +381,61 @@ export default function VerifierProfile() {
                     <div className="text-sm text-muted-foreground">Pause all new requests temporarily</div>
                   </div>
                 </div>
-                <Switch />
+                <Switch 
+                  checked={profile.availability?.vacationMode}
+                  onCheckedChange={(checked) => setProfile({
+                    ...profile, 
+                    availability: { ...profile.availability!, vacationMode: checked }
+                  })}
+                />
               </div>
 
               <div className="space-y-4">
                 <h3 className="font-medium">Weekly Schedule</h3>
-                {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
-                  <div key={day} className="flex items-center gap-4">
-                    <div className="w-28 font-medium">{day}</div>
-                    <Switch defaultChecked={day !== "Sunday" && day !== "Saturday"} />
+                {profile.availability?.schedule.map((daySchedule, idx) => (
+                  <div key={daySchedule.day} className="flex items-center gap-4">
+                    <div className="w-28 font-medium">{daySchedule.day}</div>
+                    <Switch 
+                      checked={daySchedule.active} 
+                      onCheckedChange={(checked) => {
+                        const newSchedule = [...profile.availability!.schedule];
+                        newSchedule[idx] = { ...newSchedule[idx], active: checked };
+                        setProfile({
+                          ...profile,
+                          availability: { ...profile.availability!, schedule: newSchedule }
+                        });
+                      }}
+                    />
                     <div className="flex items-center gap-2 flex-1">
-                      <Input type="time" className="w-32" defaultValue="09:00" disabled={day === "Sunday" || day === "Saturday"} />
+                      <Input 
+                        type="time" 
+                        className="w-32" 
+                        value={daySchedule.start} 
+                        disabled={!daySchedule.active}
+                        onChange={(e) => {
+                          const newSchedule = [...profile.availability!.schedule];
+                          newSchedule[idx] = { ...newSchedule[idx], start: e.target.value };
+                          setProfile({
+                            ...profile,
+                            availability: { ...profile.availability!, schedule: newSchedule }
+                          });
+                        }}
+                      />
                       <span className="text-muted-foreground">to</span>
-                      <Input type="time" className="w-32" defaultValue="17:00" disabled={day === "Sunday" || day === "Saturday"} />
+                      <Input 
+                        type="time" 
+                        className="w-32" 
+                        value={daySchedule.end} 
+                        disabled={!daySchedule.active}
+                        onChange={(e) => {
+                          const newSchedule = [...profile.availability!.schedule];
+                          newSchedule[idx] = { ...newSchedule[idx], end: e.target.value };
+                          setProfile({
+                            ...profile,
+                            availability: { ...profile.availability!, schedule: newSchedule }
+                          });
+                        }}
+                      />
                     </div>
                   </div>
                 ))}
@@ -320,7 +443,13 @@ export default function VerifierProfile() {
 
               <div className="pt-4 border-t border-border/50">
                 <h3 className="font-medium mb-4">Time Zone</h3>
-                <Select defaultValue="utc-5">
+                <Select 
+                  value={profile.availability?.timezone} 
+                  onValueChange={(value) => setProfile({
+                    ...profile, 
+                    availability: { ...profile.availability!, timezone: value }
+                  })}
+                >
                   <SelectTrigger className="w-full md:w-[400px]">
                     <SelectValue placeholder="Select time zone" />
                   </SelectTrigger>
@@ -349,15 +478,28 @@ export default function VerifierProfile() {
                   <Label className="text-base">Enable Auto-Accept</Label>
                   <p className="text-sm text-muted-foreground">Automatically accept jobs matching criteria below</p>
                 </div>
-                <Switch />
+                <Switch 
+                  checked={profile.autoAccept?.enabled}
+                  onCheckedChange={(checked) => setProfile({
+                    ...profile,
+                    autoAccept: { ...profile.autoAccept!, enabled: checked }
+                  })}
+                />
               </div>
 
-              <div className="grid gap-6 opacity-50 pointer-events-none">
+              <div className={`grid gap-6 ${!profile.autoAccept?.enabled ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="space-y-3">
                   <Label>Minimum Price Threshold</Label>
                   <div className="relative w-full md:w-[300px]">
                     <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input className="pl-9" defaultValue="15.00" />
+                    <Input 
+                      className="pl-9" 
+                      value={profile.autoAccept?.minPrice.toString()} 
+                      onChange={(e) => setProfile({
+                        ...profile,
+                        autoAccept: { ...profile.autoAccept!, minPrice: parseFloat(e.target.value) || 0 }
+                      })}
+                    />
                   </div>
                   <p className="text-xs text-muted-foreground">Jobs offering less than this amount will require manual acceptance.</p>
                 </div>
@@ -367,25 +509,27 @@ export default function VerifierProfile() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {["Identity Documents", "Academic Records", "Employment History", "Financial Data", "Medical Records", "Legal Documents"].map((type) => (
                       <div key={type} className="flex items-center space-x-2 border border-border rounded-md p-3">
-                        <Switch id={`type-${type}`} />
+                        <Switch 
+                          id={`type-${type}`}
+                          checked={profile.autoAccept?.allowedTypes?.includes(type)}
+                          onCheckedChange={(checked) => {
+                            const currentTypes = profile.autoAccept?.allowedTypes || [];
+                            let newTypes;
+                            if (checked) {
+                              newTypes = [...currentTypes, type];
+                            } else {
+                              newTypes = currentTypes.filter(t => t !== type);
+                            }
+                            setProfile({
+                              ...profile,
+                              autoAccept: { ...profile.autoAccept!, allowedTypes: newTypes }
+                            });
+                          }}
+                        />
                         <Label htmlFor={`type-${type}`}>{type}</Label>
                       </div>
                     ))}
                   </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label>Urgency Level</Label>
-                  <Select defaultValue="any">
-                    <SelectTrigger className="w-full md:w-[300px]">
-                      <SelectValue placeholder="Select urgency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="any">Any Urgency</SelectItem>
-                      <SelectItem value="standard">Standard Only</SelectItem>
-                      <SelectItem value="high">Standard & High</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
             </CardContent>

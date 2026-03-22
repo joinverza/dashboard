@@ -20,6 +20,14 @@ export default function UserProfileDropdown() {
   const { user, logout } = useAuth();
 
   if (!user) return null;
+  const settingsPath =
+    user.role === "admin"
+      ? "/admin/settings"
+      : user.role === "enterprise"
+        ? "/enterprise/settings"
+        : user.role === "verifier"
+          ? "/verifier/settings"
+          : "/app/settings";
 
   return (
     <DropdownMenu>
@@ -57,7 +65,7 @@ export default function UserProfileDropdown() {
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
           </DropdownMenuItem>
-          <Link href="/app/settings">
+          <Link href={settingsPath}>
             <DropdownMenuItem className="cursor-pointer" data-testid="menu-item-settings">
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
@@ -76,7 +84,7 @@ export default function UserProfileDropdown() {
         <DropdownMenuItem 
           className="cursor-pointer text-red-500 focus:text-red-500" 
           data-testid="menu-item-logout"
-          onClick={logout}
+          onClick={() => void logout()}
         >
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>

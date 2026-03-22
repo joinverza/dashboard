@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import { useAuth } from "@/features/auth/AuthContext";
 import QuickActions from "@/components/dashboard/QuickActions";
@@ -8,44 +8,83 @@ import VerificationStatusTracker from "@/components/dashboard/VerificationStatus
 import RecommendedVerifiersCarousel from "@/components/dashboard/RecommendedVerifiersCarousel";
 import MetricCard from "@/components/dashboard/MetricCard";
 import { FileCheck, Clock, CreditCard } from "lucide-react";
+import { bankingService } from "@/services/bankingService";
+import { toast } from "sonner";
+import type { VerificationRequestResponse } from "@/types/banking";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const metricsRef = useRef<HTMLDivElement>(null);
+  const [verifications, setVerifications] = useState<VerificationRequestResponse[]>([]);
+  const [wallet, setWallet] = useState<{ totalSpent: number; currency: string }>({ totalSpent: 0, currency: "USD" });
+  const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
 
-  // Custom metrics for Page 6 requirements
-  const metrics = [
-    {
-      id: "1",
-      label: "Verified Credentials",
-      value: "12",
-      percentChange: 8.5,
-      isPositive: true,
-      icon: "check-circle", // Mapped in MetricCard
-      customIcon: FileCheck
-    },
-    {
-      id: "2",
-      label: "Pending Verifications",
-      value: "3",
-      percentChange: -2.1,
-      isPositive: true, // Lower might be better, or just neutral
-      icon: "clock",
-      customIcon: Clock
-    },
-    {
-      id: "3",
-      label: "Total Spent",
-      value: "450 ADA",
-      percentChange: 12.3,
-      isPositive: false, // Spending went up
-      icon: "credit-card",
-      customIcon: CreditCard
-    }
-  ];
+  const metrics = useMemo(() => {
+    const verifiedCount = verifications.filter((item) => item.status === "verified").length;
+    const pendingCount = verifications.filter((item) =>
+      item.status === "pending" || item.status === "in_progress" || item.status === "review_needed" || item.status === "requires_action"
+    ).length;
+    return [
+      {
+        id: "1",
+        label: "Verified Credentials",
+        value: String(verifiedCount),
+        percentChange: 0,
+        isPositive: true,
+        icon: "check-circle",
+        customIcon: FileCheck,
+      },
+      {
+        id: "2",
+        label: "Pending Verifications",
+        value: String(pendingCount),
+        percentChange: 0,
+        isPositive: true,
+        icon: "clock",
+        customIcon: Clock,
+      },
+      {
+        id: "3",
+        label: "Total Spent",
+        value: `${wallet.totalSpent.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${wallet.currency}`,
+        percentChange: 0,
+        isPositive: false,
+        icon: "credit-card",
+        customIcon: CreditCard,
+      },
+    ];
+  }, [verifications, wallet.currency, wallet.totalSpent]);
 
   useEffect(() => {
-    if (metricsRef.current) {
+    let isMounted = true;
+    const loadDashboardMetrics = async () => {
+      setIsLoadingMetrics(true);
+      try {
+        const [verificationData, walletData] = await Promise.all([
+          bankingService.getUserVerifications({ limit: 200 }),
+          bankingService.getUserWalletOverview(),
+        ]);
+        if (!isMounted) return;
+        setVerifications(verificationData);
+        setWallet({ totalSpent: walletData.totalSpent, currency: walletData.currency });
+      } catch {
+        if (isMounted) {
+          toast.error("Unable to load live dashboard metrics.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingMetrics(false);
+        }
+      }
+    };
+    void loadDashboardMetrics();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (metricsRef.current && !isLoadingMetrics) {
       const cards = metricsRef.current.querySelectorAll(
         '[data-testid^="metric-card"]'
       );
@@ -61,7 +100,7 @@ export default function Dashboard() {
         }
       );
     }
-  }, []);
+  }, [isLoadingMetrics]);
 
   return (
     <motion.div

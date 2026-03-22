@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'wouter';
 import { Upload, FileSpreadsheet, Download, CheckCircle, AlertCircle, ArrowRight, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,30 +8,76 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
+
+import { bankingService } from '@/services/bankingService';
+import type { BulkVerificationResponse } from '@/types/banking';
+
+type CsvRow = Record<string, string>;
 
 export default function BulkVerification() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [file, setFile] = useState<File | null>(null);
+  const [parsedData, setParsedData] = useState<CsvRow[]>([]);
+  const [headers, setHeaders] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [processingProgress, setProcessingProgress] = useState(0);
+  const [bulkResponse, setBulkResponse] = useState<BulkVerificationResponse | null>(null);
 
-  // Mock data for mapping preview
-  const previewData = [
-    { col1: "John Doe", col2: "john@example.com", col3: "D123456", col4: "University Degree" },
-    { col1: "Jane Smith", col2: "jane@example.com", col3: "D789012", col4: "Employment" },
-    { col1: "Robert Johnson", col2: "robert@example.com", col3: "D345678", col4: "Professional Cert" },
-  ];
+  const downloadFile = (filename: string, content: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
 
-  // Mock results data
-  const resultsData = [
-    { id: "REQ-2025-001", name: "John Doe", type: "University Degree", status: "success", message: "Verification initiated" },
-    { id: "REQ-2025-002", name: "Jane Smith", type: "Employment", status: "failed", message: "Invalid document ID" },
-    { id: "REQ-2025-003", name: "Robert Johnson", type: "Professional Cert", status: "success", message: "Verification initiated" },
-    { id: "REQ-2025-004", name: "Sarah Williams", type: "Identity", status: "success", message: "Verification initiated" },
-    { id: "REQ-2025-005", name: "Michael Brown", type: "Criminal Record", status: "warning", message: "Additional info needed" },
-  ];
+  const downloadTemplate = () => {
+    const template = [
+      'first_name,last_name,email,id_number,dob',
+      'Jane,Doe,jane.doe@example.com,US123456,1994-06-11',
+    ].join('\n');
+    downloadFile('bulk-verification-template.csv', template, 'text/csv;charset=utf-8;');
+  };
+
+  const downloadReport = () => {
+    if (!bulkResponse) return;
+    const rows = bulkResponse.items.map((item) =>
+      [bulkResponse.batchId, item.requestId, item.verificationId].join(','),
+    );
+    const content = ['batch_id,request_id,verification_id', ...rows].join('\n');
+    downloadFile(`bulk-verification-report-${bulkResponse.batchId}.csv`, content, 'text/csv;charset=utf-8;');
+  };
+
+  // Mapping state
+  const [fieldMapping, setFieldMapping] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    idNumber: '',
+    dob: ''
+  });
+
+  // Helper to parse CSV
+  const parseCSV = (text: string): { headers: string[]; data: CsvRow[] } => {
+    const lines = text.split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
+    const data: CsvRow[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const values = lines[i].split(',').map(v => v.trim());
+      const row: CsvRow = {};
+      headers.forEach((h, index) => {
+        row[h] = values[index];
+      });
+      data.push(row);
+    }
+    return { headers, data };
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -48,31 +95,82 @@ export default function BulkVerification() {
   const startUpload = () => {
     if (!file) return;
     setIsUploading(true);
-    // Simulate upload
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      setUploadProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-        setIsUploading(false);
-        setStep(2);
+    setUploadProgress(0);
+    
+    const reader = new FileReader();
+    
+    reader.onprogress = (event) => {
+      if (event.lengthComputable) {
+        setUploadProgress(Math.round((event.loaded / event.total) * 100));
       }
-    }, 200);
+    };
+
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const { headers, data } = parseCSV(text);
+      setHeaders(headers);
+      setParsedData(data);
+      
+      // Auto-guess mapping
+      const newMapping = { ...fieldMapping };
+      headers.forEach(h => {
+        const lower = h.toLowerCase();
+        if (lower.includes('first')) newMapping.firstName = h;
+        else if (lower.includes('last')) newMapping.lastName = h;
+        else if (lower.includes('email')) newMapping.email = h;
+        else if (lower.includes('id') || lower.includes('number')) newMapping.idNumber = h;
+        else if (lower.includes('dob') || lower.includes('birth')) newMapping.dob = h;
+      });
+      setFieldMapping(newMapping);
+      
+      setIsUploading(false);
+      setStep(2);
+    };
+    reader.readAsText(file);
   };
 
-  const startProcessing = () => {
+  const startProcessing = async () => {
     setStep(3);
-    // Simulate processing
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 5;
-      setProcessingProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-        setStep(4);
-      }
-    }, 100);
+    setProcessingProgress(10);
+    
+    try {
+        const items = parsedData.map((row, index) => ({
+            requestId: `req_${index + 1}`,
+            customerId: row[fieldMapping.email] || `customer_${index + 1}`,
+            personalInfo: {
+              firstName: row[fieldMapping.firstName] || '',
+              lastName: row[fieldMapping.lastName] || '',
+              country: 'US',
+            },
+            contactInfo: {
+              email: row[fieldMapping.email] || '',
+              address: {
+                country: 'US',
+              },
+            },
+            identityDocuments: [
+              {
+                type: 'national_id' as const,
+                number: row[fieldMapping.idNumber] || '',
+              },
+            ],
+        }));
+
+        setProcessingProgress(50);
+        
+        const response = await bankingService.initiateBulkVerification({ items });
+        setBulkResponse(response);
+        setProcessingProgress(100);
+        
+        setTimeout(() => {
+            setStep(4);
+        }, 1000);
+        
+    } catch (error) {
+        console.error("Bulk processing failed", error);
+        setProcessingProgress(0);
+        // Handle error state or show toast
+    }
   };
 
   return (
@@ -86,7 +184,7 @@ export default function BulkVerification() {
             Upload and process multiple verification requests at once
           </p>
         </div>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={downloadTemplate}>
           <Download className="h-4 w-4" />
           Download Template
         </Button>
@@ -219,30 +317,28 @@ export default function BulkVerification() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Full Name Column</Label>
-                      <Select defaultValue="col1">
+                      <Label>First Name Column</Label>
+                      <Select value={fieldMapping.firstName} onValueChange={(v) => setFieldMapping({...fieldMapping, firstName: v})}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select column" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="col1">Full Name (Column A)</SelectItem>
-                          <SelectItem value="col2">Email (Column B)</SelectItem>
-                          <SelectItem value="col3">Document ID (Column C)</SelectItem>
-                          <SelectItem value="col4">Type (Column D)</SelectItem>
+                          {headers.map(h => (
+                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
                       <Label>Email Column</Label>
-                      <Select defaultValue="col2">
+                      <Select value={fieldMapping.email} onValueChange={(v) => setFieldMapping({...fieldMapping, email: v})}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select column" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="col1">Full Name (Column A)</SelectItem>
-                          <SelectItem value="col2">Email (Column B)</SelectItem>
-                          <SelectItem value="col3">Document ID (Column C)</SelectItem>
-                          <SelectItem value="col4">Type (Column D)</SelectItem>
+                          {headers.map(h => (
+                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -250,29 +346,27 @@ export default function BulkVerification() {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label>Document ID Column</Label>
-                      <Select defaultValue="col3">
+                      <Select value={fieldMapping.idNumber} onValueChange={(v) => setFieldMapping({...fieldMapping, idNumber: v})}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select column" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="col1">Full Name (Column A)</SelectItem>
-                          <SelectItem value="col2">Email (Column B)</SelectItem>
-                          <SelectItem value="col3">Document ID (Column C)</SelectItem>
-                          <SelectItem value="col4">Type (Column D)</SelectItem>
+                          {headers.map(h => (
+                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Verification Type Column</Label>
-                      <Select defaultValue="col4">
+                      <Label>Last Name Column</Label>
+                      <Select value={fieldMapping.lastName} onValueChange={(v) => setFieldMapping({...fieldMapping, lastName: v})}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select column" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="col1">Full Name (Column A)</SelectItem>
-                          <SelectItem value="col2">Email (Column B)</SelectItem>
-                          <SelectItem value="col3">Document ID (Column C)</SelectItem>
-                          <SelectItem value="col4">Type (Column D)</SelectItem>
+                          {headers.map(h => (
+                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -286,16 +380,14 @@ export default function BulkVerification() {
                         <TableHead>Mapped Name</TableHead>
                         <TableHead>Mapped Email</TableHead>
                         <TableHead>Mapped ID</TableHead>
-                        <TableHead>Mapped Type</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {previewData.map((row, i) => (
+                      {parsedData.slice(0, 5).map((row, i) => (
                         <TableRow key={i}>
-                          <TableCell>{row.col1}</TableCell>
-                          <TableCell>{row.col2}</TableCell>
-                          <TableCell>{row.col3}</TableCell>
-                          <TableCell>{row.col4}</TableCell>
+                          <TableCell>{row[fieldMapping.firstName]} {row[fieldMapping.lastName]}</TableCell>
+                          <TableCell>{row[fieldMapping.email]}</TableCell>
+                          <TableCell>{row[fieldMapping.idNumber]}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -384,7 +476,7 @@ export default function BulkVerification() {
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={downloadReport} disabled={!bulkResponse}>
                       <Download className="h-4 w-4 mr-2" /> Download Report
                     </Button>
                     <Button onClick={() => setStep(1)}>
@@ -397,52 +489,30 @@ export default function BulkVerification() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 flex flex-col items-center justify-center text-center">
                     <CheckCircle className="h-8 w-8 text-green-500 mb-2" />
-                    <span className="text-2xl font-bold text-green-500">32</span>
-                    <span className="text-sm text-green-600/80">Successful</span>
+                    <span className="text-2xl font-bold text-green-500">{bulkResponse?.items.length || 0}</span>
+                    <span className="text-sm text-green-600/80">Requests Submitted</span>
                   </div>
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex flex-col items-center justify-center text-center">
-                    <X className="h-8 w-8 text-red-500 mb-2" />
-                    <span className="text-2xl font-bold text-red-500">3</span>
-                    <span className="text-sm text-red-600/80">Failed</span>
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 flex flex-col items-center justify-center text-center">
+                    <Loader2 className="h-8 w-8 text-blue-500 mb-2" />
+                    <span className="text-2xl font-bold text-blue-500">Submitted</span>
+                    <span className="text-sm text-blue-600/80">Status</span>
                   </div>
                   <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 flex flex-col items-center justify-center text-center">
-                    <AlertCircle className="h-8 w-8 text-yellow-500 mb-2" />
-                    <span className="text-2xl font-bold text-yellow-500">5</span>
-                    <span className="text-sm text-yellow-600/80">Warnings</span>
+                    <FileSpreadsheet className="h-8 w-8 text-yellow-500 mb-2" />
+                    <span className="text-sm font-mono text-yellow-600/80 break-all">{bulkResponse?.batchId}</span>
+                    <span className="text-sm text-yellow-600/80">Batch ID</span>
                   </div>
                 </div>
 
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Request ID</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Message</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {resultsData.map((row) => (
-                        <TableRow key={row.id}>
-                          <TableCell className="font-mono text-xs">{row.id}</TableCell>
-                          <TableCell>{row.name}</TableCell>
-                          <TableCell>{row.type}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={
-                              row.status === 'success' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                              row.status === 'failed' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                              'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                            }>
-                              {row.status.toUpperCase()}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">{row.message}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div className="bg-muted/30 rounded-lg p-6 text-center space-y-4">
+                    <h3 className="text-lg font-medium">Bulk Verification Initiated Successfully</h3>
+                    <p className="text-muted-foreground max-w-lg mx-auto">
+                        Your batch of {bulkResponse?.items.length} requests has been submitted for processing. 
+                        You can track the status of individual requests in the Verification Requests page.
+                    </p>
+                    <Button asChild>
+                        <Link href="/enterprise/requests">View Requests</Link>
+                    </Button>
                 </div>
               </CardContent>
             </Card>

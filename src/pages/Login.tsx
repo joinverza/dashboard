@@ -11,17 +11,51 @@ import {
 import versalogo from "@/assets/versalogoSVG.svg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAuth, type UserRole } from "@/features/auth/AuthContext";
 import { Separator } from "@/components/ui/separator";
+import { AuthApiError } from "@/services/authService";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function LoginPage() {
-  const { login, isLoading } = useAuth();
+  const { login, verifyMfa, verifyMfaRecoveryCode, mfaChallenge, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [authKey, setAuthKey] = useState("");
+  const [role, setRole] = useState<UserRole>("enterprise");
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaMethod, setMfaMethod] = useState<"totp" | "recovery_code">("totp");
+  const [mfaError, setMfaError] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email);
+    setMfaError("");
+    try {
+      if (mfaChallenge) {
+        if (mfaMethod === "recovery_code") {
+          await verifyMfaRecoveryCode(mfaCode.trim());
+          return;
+        }
+        await verifyMfa(mfaCode.trim());
+        return;
+      }
+      await login({
+        email,
+        password,
+        role: role === "admin" || role === "enterprise" || role === "verifier" ? role : "enterprise",
+        authKey,
+      });
+    } catch (error) {
+      if (error instanceof AuthApiError && error.status === 401 && error.code === "mfa_failed") {
+        setMfaError("Invalid or expired challenge, or invalid/reused recovery code.");
+      }
+      return;
+    }
   };
 
   return (
@@ -93,6 +127,20 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">Role</label>
+              <Select value={role} onValueChange={(v: UserRole) => setRole(v)}>
+                <SelectTrigger className="bg-zinc-900/50 border-zinc-800 focus:ring-verza-emerald/20 h-11 text-white">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="enterprise">Enterprise</SelectItem>
+                  <SelectItem value="verifier">Verifier</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-300">Email</label>
               <Input 
                 type="email" 
@@ -121,12 +169,55 @@ export default function LoginPage() {
               />
             </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">Auth Key</label>
+              <Input
+                type="text"
+                placeholder="Enter role auth key"
+                value={authKey}
+                onChange={(e) => setAuthKey(e.target.value)}
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors font-mono"
+              />
+            </div>
+
+            {mfaChallenge && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={mfaMethod === "totp" ? "default" : "outline"}
+                    onClick={() => setMfaMethod("totp")}
+                    className="h-9"
+                  >
+                    TOTP code
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={mfaMethod === "recovery_code" ? "default" : "outline"}
+                    onClick={() => setMfaMethod("recovery_code")}
+                    className="h-9"
+                  >
+                    Recovery code
+                  </Button>
+                </div>
+                <label className="text-sm font-medium text-zinc-300">{mfaMethod === "totp" ? "TOTP code" : "Recovery code"}</label>
+                <Input
+                  type="text"
+                  placeholder={mfaMethod === "totp" ? "123456" : "Enter recovery code"}
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value)}
+                  className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors font-mono"
+                />
+                {mfaError ? <p className="text-sm text-red-400">{mfaError}</p> : null}
+              </div>
+            )}
+
             <Button 
               type="submit" 
               className="w-full h-11 bg-white text-black hover:bg-zinc-200 font-medium transition-all"
               disabled={isLoading}
             >
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? "Signing in..." : mfaChallenge ? (mfaMethod === "totp" ? "Verify TOTP" : "Verify Recovery Code") : "Sign in"}
             </Button>
           </form>
 

@@ -1,9 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Key, Copy, RefreshCw, Trash2, Plus, Eye, EyeOff, CheckCircle, 
-  AlertTriangle, Server, Activity, Shield, Code, ExternalLink
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  Code,
+  Copy,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Key,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Server,
+  Shield,
+  Trash2
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,20 +28,156 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-
-// Mock data
-const apiKeys = [
-  { id: "key_prod_1", name: "Production Key 1", prefix: "vz_live_...", created: "2023-11-15", lastUsed: "2 mins ago", status: "active" },
-  { id: "key_prod_2", name: "Backend Service", prefix: "vz_live_...", created: "2025-01-20", lastUsed: "1 hour ago", status: "active" },
-  { id: "key_dev_1", name: "Development Key", prefix: "vz_test_...", created: "2025-02-10", lastUsed: "2 days ago", status: "active" },
-];
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
+import { getBankingErrorMessage } from '@/services/bankingService';
+import { apiKeysService, apiManagementEndpointMappings, webhooksService } from '@/services/apiManagementService';
+import type { ApiKeyResponse, WebhookResponse } from '@/types/banking';
 
 export default function ApiManagement() {
+  const [apiKeys, setApiKeys] = useState<ApiKeyResponse[]>([]);
+  const [webhooks, setWebhooks] = useState<WebhookResponse[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [pageError, setPageError] = useState('');
+  const [isCreatingKey, setIsCreatingKey] = useState(false);
+  const [isTestingWebhookId, setIsTestingWebhookId] = useState<string | null>(null);
+  const [isDeletingWebhookId, setIsDeletingWebhookId] = useState<string | null>(null);
+  const [isDeletingKeyId, setIsDeletingKeyId] = useState<string | null>(null);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [isCreatingWebhook, setIsCreatingWebhook] = useState(false);
+  const [newWebhookUrl, setNewWebhookUrl] = useState('');
+  const [newWebhookEvents, setNewWebhookEvents] = useState<string[]>([]);
+  const [sandboxMode, setSandboxMode] = useState(true);
   const [showSecret, setShowSecret] = useState(false);
-  const [sandboxMode, setSandboxMode] = useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setIsLoadingData(true);
+    setPageError('');
+    try {
+      const [keys, hooks] = await Promise.all([apiKeysService.list(), webhooksService.list()]);
+      setApiKeys(keys);
+      setWebhooks(hooks);
+    } catch (error) {
+      const message = getBankingErrorMessage(error, 'Failed to load API management data');
+      setPageError(message);
+      toast.error(message);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const isValidUrl = (value: string): boolean => {
+    try {
+      const parsed = new URL(value.trim());
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  const handleCreateKey = async () => {
+    const trimmedName = newKeyName.trim();
+    if (!trimmedName || trimmedName.length > 128) {
+      toast.error('Key name must be 1-128 characters');
+      return;
+    }
+    setIsCreatingKey(true);
+    try {
+      const created = await apiKeysService.create({
+        keyName: trimmedName,
+        permissions: ['api_keys:read', 'api_keys:write', 'webhooks:read', 'webhooks:write']
+      });
+      setNewKeyName('');
+      await loadData();
+      toast.success('API Key created successfully');
+      if (created.apiKey) {
+        void navigator.clipboard.writeText(created.apiKey);
+      }
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to create API key'));
+    } finally {
+      setIsCreatingKey(false);
+    }
+  };
+
+  const handleDeleteKey = async (id: string) => {
+    setIsDeletingKeyId(id);
+    try {
+      await apiKeysService.revoke(id);
+      setApiKeys((current) => current.filter((item) => item.id !== id));
+      toast.success('API Key revoked');
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to revoke API key'));
+    } finally {
+      setIsDeletingKeyId(null);
+    }
+  };
+
+  const handleCreateWebhook = async () => {
+    if (!isValidUrl(newWebhookUrl)) {
+      toast.error('Enter a valid webhook URL');
+      return;
+    }
+    setIsCreatingWebhook(true);
+    try {
+      await webhooksService.register({
+        url: newWebhookUrl.trim(),
+        events: newWebhookEvents.length ? newWebhookEvents : ['verification.completed'],
+      });
+      setNewWebhookUrl('');
+      setNewWebhookEvents([]);
+      await loadData();
+      toast.success('Webhook registered successfully');
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to register webhook'));
+    } finally {
+      setIsCreatingWebhook(false);
+    }
+  };
+
+  const handleDeleteWebhook = async (id: string) => {
+    setIsDeletingWebhookId(id);
+    try {
+      await webhooksService.delete(id);
+      setWebhooks((current) => current.filter((item) => item.id !== id));
+      toast.success('Webhook deleted');
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to delete webhook'));
+    } finally {
+      setIsDeletingWebhookId(null);
+    }
+  };
+
+  const handleTestWebhook = async (id: string) => {
+    setIsTestingWebhookId(id);
+    try {
+      const response = await webhooksService.test({
+        webhookId: id,
+        eventType: 'verification.completed',
+        payload: { source: 'api-management' }
+      });
+      toast.success(`Webhook test status: ${response.status}`);
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to test webhook'));
+    } finally {
+      setIsTestingWebhookId(null);
+    }
+  };
+
+  const copyText = async (value: string): Promise<void> => {
+    if (!value.trim()) return;
+    await navigator.clipboard.writeText(value);
+    toast.success('Copied to clipboard');
+  };
 
   return (
-    <div className="space-y-6 pb-10">
+    <ApiErrorBoundary>
+      <div className="space-y-6 pb-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-verza-primary to-verza-secondary bg-clip-text text-transparent">
@@ -56,14 +206,64 @@ export default function ApiManagement() {
               Sandbox
             </Button>
           </div>
-          <Button className="gap-2 bg-verza-primary hover:bg-verza-primary/90">
-            <Plus className="h-4 w-4" />
-            Create New Key
-          </Button>
+          
+          <Dialog>
+            <DialogTrigger asChild>
+                <Button className="gap-2 bg-verza-primary hover:bg-verza-primary/90">
+                    <Plus className="h-4 w-4" />
+                    Create New Key
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Create API Key</DialogTitle>
+                    <DialogDescription>
+                        Generate a new API key for your application.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="key-name">Key Name</Label>
+                        <Input 
+                            id="key-name" 
+                            placeholder="e.g. Backend Service" 
+                            value={newKeyName}
+                            onChange={(e) => setNewKeyName(e.target.value)}
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleCreateKey} disabled={!newKeyName || isCreatingKey}>
+                        {isCreatingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Key"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
+      {pageError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Unable to load API resources</AlertTitle>
+          <AlertDescription>
+            <div className="flex items-center justify-between gap-2">
+              <span>{pageError}</span>
+              <Button variant="outline" size="sm" onClick={loadData} disabled={isLoadingData}>
+                {isLoadingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                Retry
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+      {isLoadingData && (
+        <Card>
+          <CardContent className="py-8 flex justify-center">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Usage Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -150,24 +350,30 @@ export default function ApiManagement() {
                               {key.name}
                             </div>
                           </TableCell>
-                          <TableCell className="font-mono text-xs">{key.prefix}</TableCell>
-                          <TableCell>{key.created}</TableCell>
-                          <TableCell>{key.lastUsed}</TableCell>
+                          <TableCell className="font-mono text-xs">{key.keyPrefix}</TableCell>
+                          <TableCell>{new Date(key.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell>{key.lastUsed ? new Date(key.lastUsed).toLocaleDateString() : 'Never'}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-                              {key.status.toUpperCase()}
+                              ACTIVE
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyText(key.keyPrefix || '')}>
                                 <Copy className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={loadData} disabled={isLoadingData}>
                                 <RefreshCw className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                                <Trash2 className="h-4 w-4" />
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => handleDeleteKey(key.id)}
+                                disabled={isDeletingKeyId === key.id}
+                              >
+                                {isDeletingKeyId === key.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                               </Button>
                             </div>
                           </TableCell>
@@ -240,126 +446,199 @@ export default function ApiManagement() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-              <CardHeader>
-                <CardTitle>Webhook Configuration</CardTitle>
-                <CardDescription>
-                  Receive real-time updates when events happen in your account.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="webhook-url">Endpoint URL</Label>
-                      <Input id="webhook-url" placeholder="https://api.yourdomain.com/webhooks/verza" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="webhook-secret">Webhook Secret</Label>
-                      <div className="relative">
-                        <Input 
-                          id="webhook-secret" 
-                          type={showSecret ? "text" : "password"} 
-                          value="whsec_1234567890abcdef" 
-                          readOnly 
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowSecret(!showSecret)}
-                        >
-                          {showSecret ? (
-                            <EyeOff className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-muted-foreground" />
-                          )}
+            <div className="flex justify-end mb-4">
+                 <Dialog open={isCreatingWebhook} onOpenChange={setIsCreatingWebhook}>
+                    <DialogTrigger asChild>
+                        <Button className="gap-2 bg-verza-primary hover:bg-verza-primary/90">
+                            <Plus className="h-4 w-4" />
+                            Add Webhook
                         </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Use this secret to verify the signature of incoming webhook events.
-                      </p>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Register Webhook</DialogTitle>
+                            <DialogDescription>
+                                Receive real-time updates when events happen in your account.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-6 py-4">
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="webhook-url">Endpoint URL</Label>
+                                  <Input 
+                                    id="webhook-url" 
+                                    placeholder="https://api.yourdomain.com/webhooks/verza" 
+                                    value={newWebhookUrl}
+                                    onChange={(e) => setNewWebhookUrl(e.target.value)}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="webhook-secret">Webhook Secret (Auto-generated)</Label>
+                                  <div className="relative">
+                                    <Input 
+                                      id="webhook-secret" 
+                                      type={showSecret ? "text" : "password"} 
+                                      value="whsec_..." 
+                                      readOnly 
+                                      disabled
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                      onClick={() => setShowSecret(!showSecret)}
+                                    >
+                                      {showSecret ? (
+                                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                      ) : (
+                                        <Eye className="h-4 w-4 text-muted-foreground" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-4">
+                                <Label>Events to Subscribe</Label>
+                                <div className="space-y-2 border rounded-md p-4">
+                                  {["verification.completed", "verification.failed", "verification.created"].map(evt => (
+                                      <div key={evt} className="flex items-center space-x-2">
+                                        <Checkbox 
+                                            id={`evt-${evt}`} 
+                                            checked={newWebhookEvents.includes(evt)}
+                                            onCheckedChange={(checked) => {
+                                                if (checked) {
+                                                    setNewWebhookEvents([...newWebhookEvents, evt]);
+                                                } else {
+                                                    setNewWebhookEvents(newWebhookEvents.filter(e => e !== evt));
+                                                }
+                                            }}
+                                        />
+                                        <label
+                                          htmlFor={`evt-${evt}`}
+                                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                        >
+                                          {evt}
+                                        </label>
+                                      </div>
+                                  ))}
+                                </div>
+                              </div>
+                        </div>
+                        <DialogFooter>
+                            <Button onClick={handleCreateWebhook} disabled={!newWebhookUrl || isCreatingWebhook}>
+                                {isCreatingWebhook ? <Loader2 className="h-4 w-4 animate-spin" /> : "Register Webhook"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                 </Dialog>
+            </div>
+
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+                <CardHeader>
+                    <CardTitle>Registered Webhooks</CardTitle>
+                    <CardDescription>
+                        Your active webhook endpoints.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {webhooks.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                                No webhooks registered. Add one to start receiving events.
+                            </div>
+                        ) : (
+                            webhooks.map((hook) => (
+                                <div key={hook.id} className="flex items-start justify-between p-4 border rounded-lg bg-muted/20">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <div className="font-mono text-sm bg-muted px-2 py-0.5 rounded">{hook.url}</div>
+                                            <Badge variant={hook.isActive ? "default" : "secondary"} className="text-[10px] h-5">
+                                                {hook.isActive ? "ACTIVE" : "INACTIVE"}
+                                            </Badge>
+                                        </div>
+                                        <div className="flex gap-2 mt-2">
+                                            {hook.events.map(evt => (
+                                                <Badge key={evt} variant="outline" className="text-[10px]">{evt}</Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="ghost" size="sm" onClick={() => handleTestWebhook(hook.id)} disabled={isTestingWebhookId === hook.id}>
+                                          {isTestingWebhookId === hook.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Test'}
+                                        </Button>
+                                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteWebhook(hook.id)} disabled={isDeletingWebhookId === hook.id}>
+                                          {isDeletingWebhookId === hook.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <Label>Events to Subscribe</Label>
-                    <div className="space-y-2 border rounded-md p-4">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="evt-verification-completed" defaultChecked />
-                        <label
-                          htmlFor="evt-verification-completed"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          verification.completed
-                        </label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="evt-verification-failed" defaultChecked />
-                        <label
-                          htmlFor="evt-verification-failed"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          verification.failed
-                        </label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="evt-verification-created" />
-                        <label
-                          htmlFor="evt-verification-created"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          verification.created
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <Switch id="webhook-active" defaultChecked />
-                    <Label htmlFor="webhook-active">Webhooks Enabled</Label>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline">Test Endpoint</Button>
-                    <Button>Save Configuration</Button>
-                  </div>
-                </div>
-              </CardContent>
+                </CardContent>
             </Card>
           </motion.div>
         </TabsContent>
 
         <TabsContent value="settings">
-          <Card>
-            <CardHeader>
-              <CardTitle>API Settings</CardTitle>
-              <CardDescription>
-                Configure global settings for your API usage.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <h4 className="font-medium">IP Whitelist</h4>
-                  <p className="text-sm text-muted-foreground">Restrict API access to specific IP addresses.</p>
-                </div>
-                <Switch />
-              </div>
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <h4 className="font-medium">Rate Limiting Notifications</h4>
-                  <p className="text-sm text-muted-foreground">Receive emails when you approach your rate limits.</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>API Settings</CardTitle>
+                    <CardDescription>
+                        Configure global API behavior.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label>Regenerate Secret Key automatically</Label>
+                            <p className="text-sm text-muted-foreground">
+                                Automatically rotate secret keys every 90 days.
+                            </p>
+                        </div>
+                        <Switch />
+                    </div>
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label>IP Whitelist</Label>
+                            <p className="text-sm text-muted-foreground">
+                                Restrict API access to specific IP addresses.
+                            </p>
+                        </div>
+                        <Switch />
+                    </div>
+                    <Separator />
+                    <div className="space-y-3">
+                      <Label>Endpoint-to-Page Mapping</Label>
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Method</TableHead>
+                              <TableHead>Endpoint</TableHead>
+                              <TableHead>Pages</TableHead>
+                              <TableHead>Permission</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {apiManagementEndpointMappings.map((mapping) => (
+                              <TableRow key={`${mapping.method}-${mapping.endpoint}`}>
+                                <TableCell>{mapping.method}</TableCell>
+                                <TableCell className="font-mono text-xs">{mapping.endpoint}</TableCell>
+                                <TableCell>{mapping.pages.join(', ')}</TableCell>
+                                <TableCell>{mapping.permission}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                </CardContent>
+            </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </ApiErrorBoundary>
   );
 }

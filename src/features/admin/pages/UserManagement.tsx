@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Search, Filter, MoreHorizontal, User, 
+  Search, Filter, MoreHorizontal, User as UserIcon, 
   Shield, Building2, Ban, Trash2, Mail,
-  Download
+  Download,
 } from 'lucide-react';
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -21,70 +21,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  did: string;
-  type: 'regular' | 'verifier' | 'enterprise' | 'admin';
-  status: 'active' | 'suspended' | 'banned';
-  joinedDate: string;
-  lastActive: string;
-}
-
-const MOCK_USERS: UserData[] = [
-  {
-    id: '1',
-    name: 'Alice Johnson',
-    email: 'alice@example.com',
-    did: 'did:verza:123...456',
-    type: 'regular',
-    status: 'active',
-    joinedDate: '2023-01-15',
-    lastActive: '2 mins ago',
-  },
-  {
-    id: '2',
-    name: 'Bob Smith',
-    email: 'bob@verifier.com',
-    did: 'did:verza:789...012',
-    type: 'verifier',
-    status: 'active',
-    joinedDate: '2023-02-20',
-    lastActive: '1 hour ago',
-  },
-  {
-    id: '3',
-    name: 'Acme Corp',
-    email: 'admin@acme.com',
-    did: 'did:verza:enterprise:345...678',
-    type: 'enterprise',
-    status: 'active',
-    joinedDate: '2023-03-10',
-    lastActive: '1 day ago',
-  },
-  {
-    id: '4',
-    name: 'Charlie Brown',
-    email: 'charlie@example.com',
-    did: 'did:verza:901...234',
-    type: 'regular',
-    status: 'suspended',
-    joinedDate: '2023-04-05',
-    lastActive: '5 days ago',
-  },
-  {
-    id: '5',
-    name: 'Global Verify Ltd',
-    email: 'contact@globalverify.com',
-    did: 'did:verza:verifier:567...890',
-    type: 'verifier',
-    status: 'banned',
-    joinedDate: '2023-01-20',
-    lastActive: '1 month ago',
-  },
-];
+import { bankingService } from '@/services/bankingService';
+import type { User } from '@/types/banking';
 
 export default function UserManagement() {
   const [, setLocation] = useLocation();
@@ -92,14 +30,77 @@ export default function UserManagement() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
-  const filteredUsers = MOCK_USERS.filter(user => {
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await bankingService.getUsers();
+        setUsers(data);
+      } catch (error) {
+        console.error("Failed to fetch users", error);
+        // Fallback to mock data
+        setUsers([
+          {
+            id: '1',
+            name: 'Alice Johnson',
+            email: 'alice@example.com',
+            role: 'user',
+            status: 'active',
+            joinedAt: '2023-01-15',
+            lastActive: '2 mins ago',
+          },
+          {
+            id: '2',
+            name: 'Bob Smith',
+            email: 'bob@verifier.com',
+            role: 'verifier',
+            organizationName: 'VeriTech Solutions',
+            status: 'active',
+            joinedAt: '2023-02-20',
+            lastActive: '1 hour ago',
+          },
+          {
+            id: '3',
+            name: 'Acme Corp',
+            email: 'admin@acme.com',
+            role: 'enterprise',
+            organizationName: 'Acme Corp',
+            status: 'active',
+            joinedAt: '2023-03-10',
+            lastActive: '1 day ago',
+          },
+          {
+            id: '4',
+            name: 'Charlie Brown',
+            email: 'charlie@example.com',
+            role: 'user',
+            status: 'suspended',
+            joinedAt: '2023-04-05',
+            lastActive: '5 days ago',
+          },
+          {
+            id: '5',
+            name: 'Global Verify Ltd',
+            email: 'contact@globalverify.com',
+            role: 'verifier',
+            organizationName: 'Global Verify Ltd',
+            status: 'banned',
+            joinedAt: '2023-01-20',
+            lastActive: '1 month ago',
+          },
+        ]);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  const filteredUsers = users.filter(user => {
     const matchesSearch = 
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.did.includes(searchTerm);
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesType = typeFilter === 'all' || user.type === typeFilter;
+    const matchesType = typeFilter === 'all' || user.role === typeFilter;
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
 
     return matchesSearch && matchesType && matchesStatus;
@@ -126,7 +127,7 @@ export default function UserManagement() {
       case 'verifier': return <Shield className="h-4 w-4 text-purple-500" />;
       case 'enterprise': return <Building2 className="h-4 w-4 text-blue-500" />;
       case 'admin': return <Shield className="h-4 w-4 text-red-500" />;
-      default: return <User className="h-4 w-4 text-gray-500" />;
+      default: return <UserIcon className="h-4 w-4 text-gray-500" />;
     }
   };
 
@@ -264,12 +265,12 @@ export default function UserManagement() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {getTypeIcon(user.type)}
-                          <span className="capitalize">{user.type}</span>
+                          {getTypeIcon(user.role)}
+                          <span className="capitalize">{user.role}</span>
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(user.status)}</TableCell>
-                      <TableCell>{user.joinedDate}</TableCell>
+                      <TableCell>{user.joinedAt}</TableCell>
                       <TableCell>{user.lastActive}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -306,7 +307,7 @@ export default function UserManagement() {
           {/* Pagination (Mock) */}
           <div className="flex items-center justify-between space-x-2 py-4">
             <div className="text-sm text-muted-foreground">
-              Showing <strong>{filteredUsers.length}</strong> of <strong>{MOCK_USERS.length}</strong> users
+              Showing <strong>{filteredUsers.length}</strong> of <strong>{users.length}</strong> users
             </div>
             <div className="flex items-center space-x-2">
               <Button variant="outline" size="sm" disabled>Previous</Button>

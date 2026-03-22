@@ -1,0 +1,26 @@
+API_KEY=xhpPhctCKS8V6HD_VcvyUndghZkmuhgaPAquNnk5B38
+AUDIT_DB_PATH=./audit.db
+AUDIT_RETENTION_DAYS=30
+AUDIT_STORAGE_DIR=gs://audit_storage
+BANKING_DB_PATH=./banking.db
+BANKING_STORAGE_DIR=gs://banking_stora
+BANKING_WEBHOOKS_ENABLED=true
+BANKING_WORKER_ENABLED=true
+DATABASE_URL=postgresql://auditdatabase_user:9hXuuw82xsSlXdLo5IvzXXOoVdBEy9Do@dpg-d6e9sostgctc73df8n7g-a/auditdatabase
+GOOGLE_VISION_CREDENTIALS_JSON="{\n  \\\"type\\\": \\\"service_account\\\",\n  \\\"project_id\\\": \\\"project-b770d898-cda0-4244-96e\\\",\n  \\\"private_key_id\\\": \\\"f1a2bce25a91fe207452806cc5614fd8377347a2\\\",\n  \\\"private_key\\\": \\\"-----BEGIN PRIVATE KEY-----\\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDlYiDHh+/GXRMY\\\ncxbQy/4gVQB+xeheceqSIpCdijt9gbxNXqNaJFBi7HWvFS0xMHljoA4H0af/+jT5\\\neSGi+Hdbqc3/v2cijcImeUqWhB+yORGT48hrivrJDsRdtbGer9P0Nuj5HM6/oAot\\\nu+oHZY7bAX5GliB30yuow1NwOJ7UC1FDwqZP2po3GrYIUs8AASN78GvKKn7SEyN5\\\nQG7TwEi8IP3l7c9HXGM8BHZV9Pjz/MxQV0nr8fPOdwXHPBpGKRkPbNloh5NZtvXt\\\neg1aY/Knc+MzEkboRXum5GbpM8NhJ7dfzELLRLiqgCt82RU0K1ChJzbfsGTj8YBa\\\nFGqJyQ69AgMBAAECggEADkW5h+i9otBKPqB0mDfFH2JilkC+qVe5sm+Lo33FH1VJ\\\n7992VwbA6LLRTLxK1E9xkiEUlmh1ZVA+aRJgJSmEFbQ+UM4qPuRmoumzmiNs7HQw\\\nE41d/FEIsydj0Pfb7iV/EOg0vUFNXO96iqdxU5X+WkKgxogTS5lcU1MZ9zbSrRtL\\\n+i36rm5egd8rhzYsy/G1zQ6Eg91lDT7oWgGABitAaiqUT5RvzGf5e8fYh68hShQL\\\nh1jETOChpc3emmuItrKRn1IE+JnaMehXDAagFStHyZzi1yQXWB9Ncr5UkIMwBaUE\\\nsQr7RB1djtwMMSh7oQU3Bqz4BLsloGDeJ1YiIlnB2QKBgQD91v/YgtLhv55kQxEs\\\nwx8KKULQsOAlsKuVUzC4dlhZXgFz9JjHZeMZWDMHAFh0OLwenaQQqQqitPMKQ68v\\\nOvNfkgxsr3qRqNn1cCIqU1gwQXE4aAV2uDkancM2Jp6hj1F2EiZY51mcZOjRWCM/\\\nHWXPutvsENKvfY/j5YNnfyt+SQKBgQDnVdldwqsXzF5NIdwCMGvGb93M7AAh0A9s\\\nEJGSATpiEkUdKraFBrtrFZjx7hfh3ici2g9kCWLNjH7bJgAEMC9hIl5ZsWsgT6GJ\\\nY6PP5IKOmKGg20hsatUU1XnQ68gXZKELOv3dQ/qTJZUmzt0eTRXz6z0DajxHjK1i\\\nXwvfpoEc1QKBgFDchYHmIuFxFjbgOn9k5OVqwXMTdUPsZKxb5OBOKtTFIndayrRy\\\nW4a+Vvr6/DKBxEOIejQodU/hjq6NYygLgm3Ga5jPyZ7PCCesgeWzyRsOLdAHKv5n\\\nryEwcng0k0HqEswm+fpGMICmkJfnmMrJRZ6H6vjnXwYyXHz/pv14QFWpAoGAHlMr\\\nplXRddItfnD01TihuCaL7cP2FHigvOrDGl+c1qRMeRFTUcbbJKN1JCmw6cPkX3Y0\\\nVEnCsO08599oWyQx4crOkXVndJnbtBXisGrlDmpFrb9xE/1BJ3UAffmahi6DyeQW\\\nyT2TCF0B2098vu8d9JaerebsNfjj9aQ9+zhpbm0CgYEArwkV/Kr1n/837q+iZ/q4\\\n8dWIu8hAmpRT0tUJV9xexnOsFaCJO+H7VnZD0fDfhlE/PbgUqdAV7ouU9PUKx81v\\\nJWBCP0HTi31cYLM+41XZBvwC1FRBpJn9dGcHBwzYL+WKsDoLqOLS7CvSSHmM3AmV\\\nPNDF1ZijIOJegxp/aExZ2ho=\\\n-----END PRIVATE KEY-----\\\n\\\",\n  \\\"client_email\\\": \\\"255807463607-compute@developer.gserviceaccount.com\\\",\n  \\\"client_id\\\": \\\"111608889289571591373\\\",\n  \\\"auth_uri\\\": \\\"https://accounts.google.com/o/oauth2/auth\\\",\n  \\\"token_uri\\\": \\\"https://oauth2.googleapis.com/token\\\",\n  \\\"auth_provider_x509_cert_url\\\": \\\"https://www.googleapis.com/oauth2/v1/certs\\\",\n  \\\"client_x509_cert_url\\\": \\\"https://www.googleapis.com/robot/v1/metadata/x509/255807463607-compute%40developer.gserviceaccount.com\\\",\n  \\\"universe_domain\\\": \\\"googleapis.com\\\"\n}\n"
+GOOGLE_VISION_ENABLED=true
+INSIGHTFACE_DET_SIZE=640
+INSIGHTFACE_MODEL=buffalo_l
+INSIGHTFACE_PROVIDERS=
+OCR_PRECHECK_ALLOW_SKIP=true
+OCR_PRECHECK_BACK_ENABLED=false
+OCR_PRECHECK_ENABLED=true
+OCR_PRECHECK_TIMEOUT_SECONDS=2.0
+PEP_STUB_NAMES=
+PROXY_SHARED_SECRET=nCv-mlAdlTS0JyVmOh8nF60U46LSbhIpp0arFRwQrrM
+PYTHON_VERSION=3.12.2
+SANCTIONS_STUB_NAMES=
+TF_USE_LEGACY_KERAS=1
+VERIFICATION_FACE_BACKEND=tf
+VERIFICATION_VERIFY_THRESHOLD=0.85
+VERZA_ADMIN_TOKEN=ywGi3zeJbvufjeNjcDVydJiZa7QG6HRw89z07G-XHmQ

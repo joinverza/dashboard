@@ -1,0 +1,152 @@
+openapi: 3.1.0
+info:
+  title: Operations Hub Risk Sandbox API
+  version: 1.0.0
+servers:
+  - url: /api/v1/banking
+paths:
+  /risk/sandbox/simulate:
+    post:
+      summary: Run what-if risk simulation
+      security:
+        - bearerAuth: []
+      x-authorization-scopes:
+        - risk:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [customerProfile, weights]
+              properties:
+                customerProfile:
+                  type: object
+                  required: [customerType, country, transactionAmount, sanctionsHits, priorAlerts]
+                  properties:
+                    customerType: { type: string, enum: [retail, business] }
+                    country: { type: string, pattern: '^[A-Z]{2}$' }
+                    transactionAmount: { type: number, minimum: 0 }
+                    sanctionsHits: { type: integer, minimum: 0, maximum: 100 }
+                    priorAlerts: { type: integer, minimum: 0, maximum: 100 }
+                weights:
+                  type: object
+                  required: [identity, sanctions, transaction, geography, device]
+                  properties:
+                    identity: { type: number, minimum: 0, maximum: 100 }
+                    sanctions: { type: number, minimum: 0, maximum: 100 }
+                    transaction: { type: number, minimum: 0, maximum: 100 }
+                    geography: { type: number, minimum: 0, maximum: 100 }
+                    device: { type: number, minimum: 0, maximum: 100 }
+      responses:
+        '200':
+          description: Simulation score
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [score, riskLevel, factors, recommendation]
+                properties:
+                  score: { type: number, minimum: 0, maximum: 100 }
+                  riskLevel: { type: string, enum: [low, medium, high] }
+                  factors:
+                    type: array
+                    items:
+                      type: object
+                      required: [factor, contribution]
+                      properties:
+                        factor: { type: string }
+                        contribution: { type: number }
+                  recommendation: { type: string }
+              examples:
+                simulated:
+                  value:
+                    score: 62
+                    riskLevel: medium
+                    factors:
+                      - factor: sanctions_hits
+                        contribution: 30
+                      - factor: transaction_amount
+                        contribution: 18
+                    recommendation: manual_review
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+  /risk/sandbox/report:
+    post:
+      summary: Export simulation report PDF
+      security:
+        - bearerAuth: []
+      x-authorization-scopes:
+        - risk:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [simulation, customerProfile, weights]
+              properties:
+                simulation: { type: object, additionalProperties: true }
+                customerProfile: { type: object, additionalProperties: true }
+                weights: { type: object, additionalProperties: true }
+      responses:
+        '201':
+          description: Report created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [reportId, generatedAt]
+                properties:
+                  reportId: { type: string }
+                  generatedAt: { type: string, format: date-time }
+                  downloadUrl: { type: string, format: uri }
+              examples:
+                created:
+                  value:
+                    reportId: rpt_01JZ5E9Q2A
+                    generatedAt: 2026-03-18T10:00:00Z
+                    downloadUrl: https://cdn.example.com/reports/rpt_01JZ5E9Q2A.pdf
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    ErrorResponse:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message]
+                properties:
+                  code:
+                    type: string
+                    enum: [INVALID_REQUEST, UNAUTHORIZED, FORBIDDEN, RATE_LIMITED, INTERNAL_ERROR]
+                  message: { type: string }
+          examples:
+            forbidden:
+              value:
+                error:
+                  code: FORBIDDEN
+                  message: Missing required scope risk:write

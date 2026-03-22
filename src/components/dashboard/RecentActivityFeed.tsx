@@ -1,40 +1,60 @@
+import { useEffect, useMemo, useState } from "react";
 import { FileCheck, Upload, CreditCard, Clock } from "lucide-react";
 import { Link } from "wouter";
+import { bankingService } from "@/services/bankingService";
+import type { DashboardNotification } from "@/types/banking";
+
+const formatRelativeTime = (value: string): string => {
+  const time = new Date(value).getTime();
+  if (Number.isNaN(time)) return "Just now";
+  const diffMs = Date.now() - time;
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  if (diffMs < hour) return `${Math.max(1, Math.floor(diffMs / minute))} min ago`;
+  if (diffMs < day) return `${Math.floor(diffMs / hour)}h ago`;
+  return `${Math.floor(diffMs / day)}d ago`;
+};
 
 export default function RecentActivityFeed() {
-  // Mock data - replace with real data from context/API
-  const activities = [
-    {
-      id: 1,
-      type: "verification_request",
-      title: "Verification Requested",
-      description: "University Degree verification initiated",
-      time: "2 hours ago",
-      icon: FileCheck,
-      color: "text-blue-400",
-      bg: "bg-blue-400/10"
-    },
-    {
-      id: 2,
-      type: "upload",
-      title: "Credential Uploaded",
-      description: "Professional Certificate.pdf uploaded",
-      time: "5 hours ago",
-      icon: Upload,
-      color: "text-[#00FF87]",
-      bg: "bg-[#00FF87]/10"
-    },
-    {
-      id: 3,
-      type: "payment",
-      title: "Payment Successful",
-      description: "Sent 50 ADA to Verifier Inc.",
-      time: "1 day ago",
-      icon: CreditCard,
-      color: "text-purple-400",
-      bg: "bg-purple-400/10"
-    }
-  ];
+  const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadNotifications = async () => {
+      try {
+        const data = await bankingService.getNotifications({ limit: 6 });
+        if (isMounted) {
+          setNotifications(data);
+        }
+      } catch {
+        if (isMounted) {
+          setNotifications([]);
+        }
+      }
+    };
+    void loadNotifications();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const activities = useMemo(() => {
+    return notifications.map((item) => {
+      const iconConfig = item.type === "alert"
+        ? { icon: FileCheck, color: "text-blue-400", bg: "bg-blue-400/10" }
+        : item.type === "transaction"
+          ? { icon: CreditCard, color: "text-purple-400", bg: "bg-purple-400/10" }
+          : { icon: Upload, color: "text-[#00FF87]", bg: "bg-[#00FF87]/10" };
+      return {
+        id: item.id,
+        title: item.title,
+        description: item.message,
+        time: formatRelativeTime(item.createdAt),
+        ...iconConfig,
+      };
+    });
+  }, [notifications]);
 
   return (
     <div className="bg-[#1A1A1A]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6 h-full">
@@ -69,6 +89,9 @@ export default function RecentActivityFeed() {
             </div>
           </div>
         ))}
+        {activities.length === 0 && (
+          <div className="text-sm text-gray-500 text-center py-6">No recent activity yet.</div>
+        )}
       </div>
     </div>
   );

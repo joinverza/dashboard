@@ -1,10 +1,13 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { ChevronLeft, ChevronRight, Star, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { bankingService } from "@/services/bankingService";
+import type { MarketplaceVerifier } from "@/types/banking";
 
 export default function RecommendedVerifiersCarousel() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [verifiers, setVerifiers] = useState<MarketplaceVerifier[]>([]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -18,13 +21,25 @@ export default function RecommendedVerifiersCarousel() {
     }
   };
 
-  const verifiers = [
-    { id: 1, name: "Harvard University", category: "Education", rating: 4.9, verified: true, image: "https://logo.clearbit.com/harvard.edu" },
-    { id: 2, name: "Google Inc.", category: "Employment", rating: 4.8, verified: true, image: "https://logo.clearbit.com/google.com" },
-    { id: 3, name: "Department of State", category: "Government", rating: 5.0, verified: true, image: "https://logo.clearbit.com/state.gov" },
-    { id: 4, name: "Coursera", category: "Education", rating: 4.7, verified: true, image: "https://logo.clearbit.com/coursera.org" },
-    { id: 5, name: "Microsoft", category: "Employment", rating: 4.8, verified: true, image: "https://logo.clearbit.com/microsoft.com" },
-  ];
+  useEffect(() => {
+    let isMounted = true;
+    const loadVerifiers = async () => {
+      try {
+        const data = await bankingService.getMarketplaceVerifiers({ sort: "rating", limit: 12 });
+        if (isMounted) {
+          setVerifiers(data);
+        }
+      } catch {
+        if (isMounted) {
+          setVerifiers([]);
+        }
+      }
+    };
+    void loadVerifiers();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="bg-[#1A1A1A]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6">
@@ -51,7 +66,7 @@ export default function RecommendedVerifiersCarousel() {
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-lg bg-white/10 p-1 flex items-center justify-center overflow-hidden">
                    {/* Fallback for image if load fails or generic icon */}
-                   <img src={verifier.image} alt={verifier.name} className="w-full h-full object-contain" onError={(e) => {
+                   <img src={verifier.imageUrl} alt={verifier.name} className="w-full h-full object-contain" onError={(e) => {
                        (e.target as HTMLImageElement).style.display = 'none';
                        ((e.target as HTMLImageElement).nextSibling as HTMLElement).style.display = 'block';
                    }} />
@@ -78,6 +93,9 @@ export default function RecommendedVerifiersCarousel() {
             </div>
           </Link>
         ))}
+        {verifiers.length === 0 && (
+          <div className="text-sm text-gray-500 py-2">No verifiers available.</div>
+        )}
       </div>
     </div>
   );
