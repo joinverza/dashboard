@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Activity,
@@ -31,9 +31,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
-import { getBankingErrorMessage } from '@/services/bankingService';
+import { BANKING_REQUEST_DIAGNOSTIC_EVENT, getBankingErrorMessage } from '@/services/bankingService';
 import { apiKeysService, apiManagementEndpointMappings, webhooksService } from '@/services/apiManagementService';
-import type { ApiKeyResponse, WebhookResponse } from '@/types/banking';
+import type { ApiKeyResponse, BankingRequestDiagnosticEvent, WebhookResponse } from '@/types/banking';
+
+const REQUEST_HISTORY_STORAGE_KEY = 'verza:banking:requestHistory';
 
 export default function ApiManagement() {
   const [apiKeys, setApiKeys] = useState<ApiKeyResponse[]>([]);
@@ -41,7 +43,6 @@ export default function ApiManagement() {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [pageError, setPageError] = useState('');
   const [isCreatingKey, setIsCreatingKey] = useState(false);
-  const [isTestingWebhookId, setIsTestingWebhookId] = useState<string | null>(null);
   const [isDeletingWebhookId, setIsDeletingWebhookId] = useState<string | null>(null);
   const [isDeletingKeyId, setIsDeletingKeyId] = useState<string | null>(null);
   const [newKeyName, setNewKeyName] = useState('');
@@ -50,10 +51,52 @@ export default function ApiManagement() {
   const [newWebhookEvents, setNewWebhookEvents] = useState<string[]>([]);
   const [sandboxMode, setSandboxMode] = useState(true);
   const [showSecret, setShowSecret] = useState(false);
+  const [rawApiKey, setRawApiKey] = useState('');
+  const [rawApiKeyExpiresAt, setRawApiKeyExpiresAt] = useState<number | null>(null);
+  const [requestHistory, setRequestHistory] = useState<BankingRequestDiagnosticEvent[]>([]);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(REQUEST_HISTORY_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as BankingRequestDiagnosticEvent[];
+      if (Array.isArray(parsed)) {
+        setRequestHistory(parsed.slice(0, 80));
+      }
+    } catch {
+      setRequestHistory([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    const onDiagnosticEvent = (event: Event) => {
+      const detail = (event as CustomEvent<BankingRequestDiagnosticEvent>).detail;
+      if (!detail) return;
+      setRequestHistory((current) => {
+        const next = [detail, ...current].slice(0, 80);
+        window.localStorage.setItem(REQUEST_HISTORY_STORAGE_KEY, JSON.stringify(next));
+        return next;
+      });
+    };
+    window.addEventListener(BANKING_REQUEST_DIAGNOSTIC_EVENT, onDiagnosticEvent);
+    return () => {
+      window.removeEventListener(BANKING_REQUEST_DIAGNOSTIC_EVENT, onDiagnosticEvent);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!rawApiKey || !rawApiKeyExpiresAt) return;
+    const timeoutMs = Math.max(0, rawApiKeyExpiresAt - Date.now());
+    const timeoutId = window.setTimeout(() => {
+      setRawApiKey('');
+      setRawApiKeyExpiresAt(null);
+    }, timeoutMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [rawApiKey, rawApiKeyExpiresAt]);
 
   const loadData = async () => {
     setIsLoadingData(true);
@@ -96,6 +139,8 @@ export default function ApiManagement() {
       await loadData();
       toast.success('API Key created successfully');
       if (created.apiKey) {
+        setRawApiKey(created.apiKey);
+        setRawApiKeyExpiresAt(Date.now() + 30000);
         void navigator.clipboard.writeText(created.apiKey);
       }
     } catch (error) {
@@ -153,27 +198,18 @@ export default function ApiManagement() {
     }
   };
 
-  const handleTestWebhook = async (id: string) => {
-    setIsTestingWebhookId(id);
-    try {
-      const response = await webhooksService.test({
-        webhookId: id,
-        eventType: 'verification.completed',
-        payload: { source: 'api-management' }
-      });
-      toast.success(`Webhook test status: ${response.status}`);
-    } catch (error) {
-      toast.error(getBankingErrorMessage(error, 'Failed to test webhook'));
-    } finally {
-      setIsTestingWebhookId(null);
-    }
-  };
-
   const copyText = async (value: string): Promise<void> => {
     if (!value.trim()) return;
     await navigator.clipboard.writeText(value);
     toast.success('Copied to clipboard');
   };
+
+  const clearRequestHistory = () => {
+    setRequestHistory([]);
+    window.localStorage.removeItem(REQUEST_HISTORY_STORAGE_KEY);
+  };
+
+  const requestHistoryRows = useMemo(() => requestHistory.slice(0, 20), [requestHistory]);
 
   return (
     <ApiErrorBoundary>
@@ -256,6 +292,24 @@ export default function ApiManagement() {
           </AlertDescription>
         </Alert>
       )}
+      {rawApiKey && (
+        <Alert>
+          <Key className="h-4 w-4" />
+          <AlertTitle>New API key</AlertTitle>
+          <AlertDescription>
+            <div className="flex flex-col gap-2">
+              <div className="font-mono text-xs break-all">{rawApiKey}</div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-muted-foreground">This value clears automatically after 30 seconds.</span>
+                <Button size="sm" variant="outline" onClick={() => copyText(rawApiKey)} className="h-7 px-2">
+                  <Copy className="mr-1 h-3 w-3" />
+                  Copy
+                </Button>
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
       {isLoadingData && (
         <Card>
           <CardContent className="py-8 flex justify-center">
@@ -308,6 +362,69 @@ export default function ApiManagement() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle>Request Diagnostics</CardTitle>
+            <CardDescription>Persistent history of request IDs, retries, and outcomes</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={clearRequestHistory} disabled={requestHistory.length === 0}>
+            Clear History
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {requestHistoryRows.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-3">
+              No request diagnostics yet. Run API actions to populate this panel.
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Stage</TableHead>
+                    <TableHead>Method</TableHead>
+                    <TableHead>Path</TableHead>
+                    <TableHead>Request ID</TableHead>
+                    <TableHead>Retry</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {requestHistoryRows.map((item) => (
+                    <TableRow key={`${item.requestId}-${item.stage}-${item.occurredAt}-${item.attempt || 0}`}>
+                      <TableCell className="text-xs">{new Date(item.occurredAt).toLocaleTimeString()}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            item.stage === 'failed' ? 'destructive' : item.stage === 'retrying' ? 'secondary' : 'outline'
+                          }
+                          className="uppercase text-[10px]"
+                        >
+                          {item.stage}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{item.method}</TableCell>
+                      <TableCell className="font-mono text-xs">{item.path}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        <button onClick={() => copyText(item.requestId)} className="hover:underline">
+                          {item.requestId}
+                        </button>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {item.attempt ? `#${item.attempt}${item.retryInMs ? ` · ${Math.round(item.retryInMs / 1000)}s` : ''}` : '-'}
+                      </TableCell>
+                      <TableCell>{item.status ?? '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="keys" className="space-y-6">
         <TabsList>
@@ -564,9 +681,6 @@ export default function ApiManagement() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="sm" onClick={() => handleTestWebhook(hook.id)} disabled={isTestingWebhookId === hook.id}>
-                                          {isTestingWebhookId === hook.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Test'}
-                                        </Button>
                                         <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteWebhook(hook.id)} disabled={isDeletingWebhookId === hook.id}>
                                           {isDeletingWebhookId === hook.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
                                         </Button>

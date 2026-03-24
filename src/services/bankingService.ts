@@ -53,17 +53,30 @@ import type {
   MarketplaceVerifier,
   UserWalletOverview,
   SystemHealthService,
-  GeoDistributionItem
+  GeoDistributionItem,
+  ApiErrorShape,
+  BankingRetryEventDetail,
+  BankingRequestDiagnosticEvent,
+  IndividualKYCVerifyApiData,
+  DocumentExtractApiData,
+  BiometricFaceMatchApiData,
+  BiometricLivenessApiData,
+  SanctionsCheckApiData,
+  PEPCheckApiData,
+  AMLRiskScoreApiData,
+  TransactionMonitoringApiData
 } from '../types/banking';
 import { z } from 'zod';
 
 const API_PATH = '/api/v1/banking';
 const API_KEY_STORAGE_KEY = 'verza:banking:apiKey';
 const ADMIN_TOKEN_STORAGE_KEY = 'verza:banking:adminToken';
+export const BANKING_RETRY_EVENT = 'verza:banking:retry';
+export const BANKING_REQUEST_DIAGNOSTIC_EVENT = 'verza:banking:request-diagnostic';
 const DEFAULT_IMAGE_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEmgJ3H2jyxQAAAABJRU5ErkJggg==';
 const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
-const RETRY_ATTEMPTS = 3;
-const RETRY_BASE_DELAY_MS = 300;
+const RETRY_DELAYS_MS = [5000, 15000, 30000, 60000];
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 const sanitizeUrlString = (value: string): string =>
   value
@@ -104,6 +117,14 @@ const parseWithSchema = <T>(schema: z.ZodType<T>, value: unknown, context: strin
     throw new Error(`${context} schema validation failed: ${reason}`);
   }
   return result.data;
+};
+
+const generateUuid = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  const raw = `${Date.now()}_${Math.random().toString(16).slice(2).padEnd(16, '0').slice(0, 16)}`;
+  return `${raw.slice(0, 8)}-${raw.slice(8, 12)}-4${raw.slice(13, 16)}-a${raw.slice(17, 20)}-${raw.slice(20).padEnd(12, '0').slice(0, 12)}`;
 };
 
 const countryCodeSchema = z.string().regex(/^[A-Z]{2}$/);
@@ -195,10 +216,7 @@ const bulkVerificationResponseSchema = z.object({
 }).strict();
 
 const generateToken = (prefix: string): string => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return `${prefix}_${crypto.randomUUID()}`;
-  }
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}_${generateUuid()}`;
 };
 
 const safeParseJson = (value: string): unknown => {
@@ -261,10 +279,17 @@ class BankingApiError extends Error {
 const isBankingApiError = (error: unknown): error is BankingApiError => error instanceof BankingApiError;
 
 const toErrorMessage = (status: number, payload: unknown): string => {
+  const isInlineUploadDisallowed = (value: string): boolean => value.toLowerCase().includes('inline_upload_disallowed');
   if (isRecord(payload)) {
-    if (typeof payload.detail === 'string') return payload.detail;
-    if (isRecord(payload.error) && typeof payload.error.message === 'string') {
-      return payload.error.message;
+    if (typeof payload.detail === 'string') {
+      if (isInlineUploadDisallowed(payload.detail)) return 'Please provide a URL instead';
+      return payload.detail;
+    }
+    if (isRecord(payload.error)) {
+      const code = typeof payload.error.code === 'string' ? payload.error.code : '';
+      const message = typeof payload.error.message === 'string' ? payload.error.message : '';
+      if (isInlineUploadDisallowed(code) || isInlineUploadDisallowed(message)) return 'Please provide a URL instead';
+      if (message) return message;
     }
   }
   return `Request failed with status ${status}`;
@@ -285,16 +310,57 @@ const delay = (durationMs: number): Promise<void> =>
 
 const isRetryableMethod = (method: string): boolean => method === 'GET' || method === 'POST' || method === 'DELETE';
 
-const nextRetryDelayMs = (attempt: number): number => RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+const emitRetryEvent = (detail: BankingRetryEventDetail): void => {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent<BankingRetryEventDetail>(BANKING_RETRY_EVENT, { detail }));
+};
 
-const unwrapEnvelope = <T>(payload: unknown): T => {
+const emitDiagnosticEvent = (detail: BankingRequestDiagnosticEvent): void => {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent<BankingRequestDiagnosticEvent>(BANKING_REQUEST_DIAGNOSTIC_EVENT, { detail }));
+};
+
+const getRetryDelayMs = (status: number, retryAttempt: number): number =>
+  status === 429
+    ? RETRY_DELAYS_MS[Math.min(retryAttempt - 1, RETRY_DELAYS_MS.length - 1)]
+    : Math.min(1000 * Math.pow(2, retryAttempt - 1), 5000);
+
+const shouldRetry = (method: string, status: number, retryAttempt: number): boolean => {
+  if (!isRetryableMethod(method) || !RETRYABLE_STATUSES.has(status)) return false;
+  if (status === 429) return retryAttempt <= RETRY_DELAYS_MS.length;
+  return retryAttempt <= 3;
+};
+
+const unwrapEnvelope = <T>(status: number, payload: unknown): { value: T; envelopeError: ApiErrorShape | null } => {
   if (isRecord(payload) && typeof payload.success === 'boolean') {
     if (!payload.success) {
-      throw new Error(toErrorMessage(400, payload));
+      return { value: payload as T, envelopeError: payload as ApiErrorShape };
     }
-    return (payload as ApiEnvelope<T>).data;
+    if (isRecord(payload.data) && payload.data.status === 'not_found') {
+      return { value: payload.data as T, envelopeError: null };
+    }
+    return { value: (payload as ApiEnvelope<T>).data, envelopeError: null };
   }
-  return payload as T;
+  if (isRecord(payload) && payload.status === 'not_found' && status === 200) {
+    return { value: payload as T, envelopeError: null };
+  }
+  return { value: payload as T, envelopeError: null };
+};
+
+const estimateDataUrlBytes = (value: string): number => {
+  const [, base64] = value.split(',');
+  if (!base64) return 0;
+  const normalized = base64.replace(/\s+/g, '');
+  const padding = normalized.endsWith('==') ? 2 : normalized.endsWith('=') ? 1 : 0;
+  return Math.max(0, Math.floor((normalized.length * 3) / 4) - padding);
+};
+
+const assertImagePayloadLimit = (value: string | undefined, field: string): void => {
+  if (!value || !value.startsWith('data:image/')) return;
+  const bytes = estimateDataUrlBytes(value);
+  if (bytes > MAX_IMAGE_BYTES) {
+    throw new Error(`${field} exceeds 10MB limit`);
+  }
 };
 
 const request = async <T>(
@@ -304,9 +370,10 @@ const request = async <T>(
   options?: { allowBootstrapAdminToken?: boolean; idempotent?: boolean }
 ): Promise<T> => {
   const normalizedPath = normalizeEndpointPath(path);
+  const requestId = generateUuid();
   const headers: Record<string, string> = {
     Accept: 'application/json',
-    'X-Request-Id': generateToken('req'),
+    'X-Request-Id': requestId,
   };
 
   if (body !== undefined) {
@@ -315,27 +382,31 @@ const request = async <T>(
 
   const accessToken = getAuthAccessToken();
   const apiKey = getBankingApiKey();
+  const adminToken = options?.allowBootstrapAdminToken ? getAdminToken() : '';
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
   } else if (apiKey) {
     headers.Authorization = `Bearer ${apiKey}`;
   }
 
-  if (!headers.Authorization && options?.allowBootstrapAdminToken) {
-    const adminToken = getAdminToken();
-    if (adminToken) {
-      headers['x-verza-admin-token'] = adminToken;
-    }
+  if (adminToken) {
+    headers['x-verza-admin-token'] = adminToken;
   }
 
-  if ((method === 'POST' || method === 'DELETE') && options?.idempotent !== false) {
-    headers['Idempotency-Key'] = generateToken('idem');
+  if (method === 'POST' || method === 'DELETE') {
+    headers['Idempotency-Key'] = generateUuid();
   }
 
-  const attemptLimit = isRetryableMethod(method) ? RETRY_ATTEMPTS : 1;
-  let attempt = 0;
-  while (attempt < attemptLimit) {
-    attempt += 1;
+  emitDiagnosticEvent({
+    requestId,
+    path: normalizedPath,
+    method,
+    stage: 'started',
+    occurredAt: new Date().toISOString(),
+  });
+
+  let retryAttempt = 0;
+  while (true) {
     try {
       const res = await fetch(`${BASE_URL}${normalizedPath}`, {
         method,
@@ -346,33 +417,119 @@ const request = async <T>(
       const text = await res.text();
       const payload = text ? safeParseJson(text) : {};
       if (!res.ok) {
-        const retryable = RETRYABLE_STATUSES.has(res.status);
-        if (retryable && attempt < attemptLimit) {
-          await delay(nextRetryDelayMs(attempt));
+        retryAttempt += 1;
+        const retryable = shouldRetry(method, res.status, retryAttempt);
+        if (retryable) {
+          const retryInMs = getRetryDelayMs(res.status, retryAttempt);
+          emitRetryEvent({ requestId, path: normalizedPath, status: res.status, attempt: retryAttempt, retryInMs });
+          emitDiagnosticEvent({
+            requestId,
+            path: normalizedPath,
+            method,
+            stage: 'retrying',
+            status: res.status,
+            attempt: retryAttempt,
+            retryInMs,
+            message: `Retrying after status ${res.status}`,
+            occurredAt: new Date().toISOString(),
+          });
+          await delay(retryInMs);
           continue;
         }
+        emitDiagnosticEvent({
+          requestId,
+          path: normalizedPath,
+          method,
+          stage: 'failed',
+          status: res.status,
+          attempt: retryAttempt,
+          message: toErrorMessage(res.status, payload),
+          occurredAt: new Date().toISOString(),
+        });
         throw new BankingApiError(
           res.status,
           normalizedPath,
           toErrorMessage(res.status, payload),
-          res.headers.get('x-request-id') || undefined,
+          res.headers.get('x-request-id') || requestId,
           retryable,
         );
       }
-      return unwrapEnvelope<T>(payload);
+      const { value, envelopeError } = unwrapEnvelope<T>(res.status, payload);
+      if (envelopeError) {
+        emitDiagnosticEvent({
+          requestId,
+          path: normalizedPath,
+          method,
+          stage: 'failed',
+          status: res.status,
+          attempt: retryAttempt,
+          message: toErrorMessage(res.status, envelopeError),
+          occurredAt: new Date().toISOString(),
+        });
+        throw new BankingApiError(
+          res.status,
+          normalizedPath,
+          toErrorMessage(res.status, envelopeError),
+          res.headers.get('x-request-id') || requestId,
+          false,
+        );
+      }
+      emitDiagnosticEvent({
+        requestId,
+        path: normalizedPath,
+        method,
+        stage: 'succeeded',
+        status: res.status,
+        attempt: retryAttempt,
+        occurredAt: new Date().toISOString(),
+      });
+      return value;
     } catch (error) {
       if (isBankingApiError(error)) throw error;
-      if (attempt < attemptLimit) {
-        await delay(nextRetryDelayMs(attempt));
+      retryAttempt += 1;
+      if (shouldRetry(method, 429, retryAttempt)) {
+        const retryInMs = getRetryDelayMs(429, retryAttempt);
+        emitRetryEvent({ requestId, path: normalizedPath, status: 429, attempt: retryAttempt, retryInMs });
+        emitDiagnosticEvent({
+          requestId,
+          path: normalizedPath,
+          method,
+          stage: 'retrying',
+          status: 429,
+          attempt: retryAttempt,
+          retryInMs,
+          message: error instanceof Error ? error.message : 'Transient network error',
+          occurredAt: new Date().toISOString(),
+        });
+        await delay(retryInMs);
         continue;
       }
       if (error instanceof Error) {
-        throw new BankingApiError(0, normalizedPath, error.message, undefined, true);
+        emitDiagnosticEvent({
+          requestId,
+          path: normalizedPath,
+          method,
+          stage: 'failed',
+          status: 0,
+          attempt: retryAttempt,
+          message: error.message,
+          occurredAt: new Date().toISOString(),
+        });
+        throw new BankingApiError(0, normalizedPath, error.message, requestId, true);
       }
-      throw new BankingApiError(0, normalizedPath, 'Network request failed', undefined, true);
+      emitDiagnosticEvent({
+        requestId,
+        path: normalizedPath,
+        method,
+        stage: 'failed',
+        status: 0,
+        attempt: retryAttempt,
+        message: 'Network request failed',
+        occurredAt: new Date().toISOString(),
+      });
+      throw new BankingApiError(0, normalizedPath, 'Network request failed', requestId, true);
     }
   }
-  throw new BankingApiError(0, normalizedPath, 'Request failed', undefined, true);
 };
 
 const toIsoNow = (): string => new Date().toISOString();
@@ -648,18 +805,50 @@ export const bankingService = {
       ],
       priority: 'standard',
     };
-    const result = await request<JsonRecord>('POST', '/kyc/individual/verify', payload);
+    assertImagePayloadLimit((payload.identityDocuments[0] as { documentImage?: string }).documentImage, 'documentImage');
+    const result = await request<IndividualKYCVerifyApiData>('POST', '/kyc/individual/verify', payload);
+    const normalizedStatus = normalizeVerificationStatus(typeof result.status === 'string' ? result.status : 'pending', typeof result.overallResult === 'string' ? result.overallResult : undefined);
     return {
-      verificationId: String(result.verificationId ?? ''),
-      status: 'pending',
+      verificationId: String(result.verificationId ?? result.id ?? ''),
+      status: normalizedStatus === 'not_found' ? 'pending' : normalizedStatus,
       riskScore: 'low',
-      createdAt: toIsoNow(),
+      createdAt: typeof result.createdAt === 'string' ? result.createdAt : toIsoNow(),
     };
   },
 
   getVerificationStatus: async (verificationId: string): Promise<VerificationStatusResponse> => {
-    const result = await request<JsonRecord>('GET', `/kyc/individual/${verificationId}`, undefined, { idempotent: false });
-    return mapVerificationStatusResponse(result);
+    const result = await request<IndividualKYCVerifyApiData>('GET', `/kyc/individual/${verificationId}`, undefined, { idempotent: false });
+    return mapVerificationStatusResponse(result as JsonRecord);
+  },
+
+  pollVerificationStatus: async (
+    verificationId: string,
+    options?: {
+      intervalMs?: number;
+      maxAttempts?: number;
+      onProgress?: (progress: {
+        attempt: number;
+        maxAttempts: number;
+        status: VerificationStatusResponse['status'];
+        timedOut: boolean;
+      }) => void;
+    }
+  ): Promise<VerificationStatusResponse> => {
+    const intervalMs = options?.intervalMs ?? 3000;
+    const maxAttempts = options?.maxAttempts ?? 20;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const status = await bankingService.getVerificationStatus(verificationId);
+      options?.onProgress?.({ attempt, maxAttempts, status: status.status, timedOut: false });
+      if (status.status === 'not_found') return status;
+      if (status.status !== 'pending' && status.status !== 'in_progress' && status.status !== 'review_needed') {
+        return status;
+      }
+      if (attempt < maxAttempts) {
+        await delay(intervalMs);
+      }
+    }
+    options?.onProgress?.({ attempt: maxAttempts, maxAttempts, status: 'pending', timedOut: true });
+    throw new Error(`Verification polling timed out after ${maxAttempts} attempts`);
   },
 
   verifyIndividualBasic: async (data: Partial<IndividualKYCRequest>): Promise<IndividualKYCResponse> => {
@@ -683,12 +872,14 @@ export const bankingService = {
         },
       ],
     };
-    const result = await request<JsonRecord>('POST', '/kyc/individual/basic', payload);
+    assertImagePayloadLimit((payload.identityDocuments[0] as { documentImage?: string }).documentImage, 'documentImage');
+    const result = await request<IndividualKYCVerifyApiData>('POST', '/kyc/individual/basic', payload);
+    const normalizedStatus = normalizeVerificationStatus(typeof result.status === 'string' ? result.status : 'pending', typeof result.overallResult === 'string' ? result.overallResult : undefined);
     return {
-      verificationId: String(result.verificationId ?? ''),
-      status: 'pending',
+      verificationId: String(result.verificationId ?? result.id ?? ''),
+      status: normalizedStatus === 'not_found' ? 'pending' : normalizedStatus,
       riskScore: 'low',
-      createdAt: toIsoNow(),
+      createdAt: typeof result.createdAt === 'string' ? result.createdAt : toIsoNow(),
     };
   },
 
@@ -705,12 +896,15 @@ export const bankingService = {
       },
       'verifyDocument request',
     );
+    assertImagePayloadLimit(payload.documentImage, 'documentImage');
+    assertImagePayloadLimit(payload.documentBackImage, 'documentBackImage');
     const result = await request<unknown>('POST', '/documents/verify', payload);
     return parseWithSchema(documentVerifyResponseSchema, result, 'verifyDocument response');
   },
 
   extractDocumentData: async (data: DocumentExtractRequest): Promise<DocumentExtractResponse> => {
-    const result = await request<JsonRecord>('POST', '/documents/extract', data);
+    assertImagePayloadLimit(data.documentImage, 'documentImage');
+    const result = await request<DocumentExtractApiData>('POST', '/documents/extract', data);
     const extractedData = isRecord(result.extractedData) ? result.extractedData : {};
     const confidenceRecord = isRecord(result.confidence) ? result.confidence : {};
     const overall = typeof confidenceRecord.overall === 'number' ? confidenceRecord.overall : 0;
@@ -722,7 +916,9 @@ export const bankingService = {
   },
 
   matchFace: async (data: BiometricFaceMatchRequest): Promise<BiometricFaceMatchResponse> => {
-    const result = await request<JsonRecord>('POST', '/biometrics/face-match', {
+    assertImagePayloadLimit(data.selfieImage, 'selfieImage');
+    assertImagePayloadLimit(data.idPhotoImage || data.documentImage, 'idPhotoImage');
+    const result = await request<BiometricFaceMatchApiData>('POST', '/biometrics/face-match', {
       selfieImage: data.selfieImage,
       idPhotoImage: data.idPhotoImage || data.documentImage || '',
       threshold: data.threshold,
@@ -736,7 +932,13 @@ export const bankingService = {
   checkLiveness: async (data: BiometricLivenessRequest): Promise<BiometricLivenessResponse> => {
     const isActive = data.livenessType === 'active' || Array.isArray(data.imageSequence);
     const selfieImage = data.selfieImage ?? (isActive ? data.imageSequence : DEFAULT_IMAGE_DATA_URL);
-    const result = await request<JsonRecord>('POST', '/biometrics/liveness', {
+    if (typeof selfieImage === 'string') {
+      assertImagePayloadLimit(selfieImage, 'selfieImage');
+    }
+    if (Array.isArray(selfieImage)) {
+      selfieImage.forEach((item, index) => assertImagePayloadLimit(item, `selfieImage[${index}]`));
+    }
+    const result = await request<BiometricLivenessApiData>('POST', '/biometrics/liveness', {
       livenessType: isActive ? 'active' : 'passive',
       selfieImage,
       videoUrl: data.videoUrl,
@@ -750,7 +952,7 @@ export const bankingService = {
 
   checkSanctions: async (data: SanctionsCheckRequest): Promise<SanctionsCheckResponse> => {
     const fromName = splitName(data.name);
-    const result = await request<JsonRecord>('POST', '/screening/sanctions/check', {
+    const result = await request<SanctionsCheckApiData>('POST', '/screening/sanctions/check', {
       firstName: data.firstName || fromName.firstName,
       lastName: data.lastName || fromName.lastName,
       dateOfBirth: data.dateOfBirth || data.dob,
@@ -767,7 +969,7 @@ export const bankingService = {
 
   checkPEP: async (data: PEPCheckRequest): Promise<PEPCheckResponse> => {
     const fromName = splitName(data.name);
-    const result = await request<JsonRecord>('POST', '/screening/pep/check', {
+    const result = await request<PEPCheckApiData>('POST', '/screening/pep/check', {
       firstName: data.firstName || fromName.firstName,
       lastName: data.lastName || fromName.lastName,
       dateOfBirth: data.dateOfBirth,
@@ -793,11 +995,11 @@ export const bankingService = {
       transactionProfile: data.transactionProfile,
       relationshipFactors: data.relationshipFactors,
     };
-    const result = await request<JsonRecord>('POST', '/aml/risk-score', payload);
+    const result = await request<AMLRiskScoreApiData>('POST', '/aml/risk-score', payload);
     const factors = Array.isArray(result.riskFactors) ? result.riskFactors : [];
     return {
       score: typeof result.overallRiskScore === 'number' ? result.overallRiskScore : 0,
-      riskLevel: (result.riskLevel as 'low' | 'medium' | 'high') || 'low',
+      riskLevel: (result.riskLevel as AMLRiskScoreResponse['riskLevel']) || 'low',
       factors: factors.map((factor) => (isRecord(factor) && typeof factor.factor === 'string' ? factor.factor : 'unknown')),
     };
   },
@@ -866,12 +1068,16 @@ export const bankingService = {
         riskLevel: 'medium',
       },
     };
-    const result = await request<JsonRecord>('POST', '/aml/transaction-monitoring', payload);
+    const result = await request<TransactionMonitoringApiData>('POST', '/aml/transaction-monitoring', payload);
     const decision = typeof result.decision === 'string' ? result.decision : 'approve';
+    const action: TransactionMonitoringResponse['action'] =
+      decision === 'manual_review' ? 'manual_review' :
+      decision === 'block' ? 'block' :
+      'approve';
     return {
       isSuspicious: decision !== 'approve',
       riskScore: typeof result.transactionRiskScore === 'number' ? result.transactionRiskScore : 0,
-      action: (decision === 'flag' || decision === 'block' ? decision : 'approve') as 'approve' | 'flag' | 'block',
+      action,
     };
   },
 
@@ -1053,39 +1259,35 @@ export const bankingService = {
     };
   },
 
-  getVerificationStats: async (): Promise<VerificationStatsResponse> => {
-    try {
-      const result = await request<JsonRecord>('GET', '/analytics/verification-stats', undefined, { idempotent: false });
-      return {
-        totalVerifications: Number(result.totalVerifications || 0),
-        approved: Number(result.approved || 0),
-        rejected: Number(result.rejected || 0),
-        pending: Number(result.pending || 0),
-        manualReview: Number(result.manualReview || 0),
-        averageTime: typeof result.averageTime === 'number' ? result.averageTime : 0,
-        averageProcessingTime: typeof result.averageProcessingTime === 'number' ? result.averageProcessingTime : undefined,
-        successful: typeof result.successful === 'number' ? result.successful : 0,
-        failed: typeof result.failed === 'number' ? result.failed : 0,
-        successRate: typeof result.successRate === 'number' ? result.successRate : undefined,
-        dailyBreakdown: Array.isArray(result.dailyBreakdown) ? result.dailyBreakdown as VerificationStatsResponse['dailyBreakdown'] : [],
-        breakdown: Array.isArray(result.breakdown) ? result.breakdown as VerificationStatsResponse['breakdown'] : undefined,
-      };
-    } catch (error) {
-      if (isBankingApiError(error) && (error.status === 401 || error.status === 403 || error.status === 404)) {
-        return {
-          totalVerifications: 0,
-          approved: 0,
-          rejected: 0,
-          pending: 0,
-          manualReview: 0,
-          averageTime: 0,
-          successful: 0,
-          failed: 0,
-          dailyBreakdown: [],
-        };
-      }
-      throw error;
-    }
+  getVerificationStats: async (params?: { startDate?: string; endDate?: string; groupBy?: 'day' | 'week' | 'month' }): Promise<VerificationStatsResponse> => {
+    const query = new URLSearchParams(
+      Object.entries({
+        startDate: params?.startDate,
+        endDate: params?.endDate,
+        groupBy: params?.groupBy,
+      }).filter(([, value]) => value !== undefined) as [string, string][],
+    ).toString();
+    const path = query ? `/analytics/verification-stats?${query}` : '/analytics/verification-stats';
+    const result = await request<JsonRecord>('GET', path, undefined, { idempotent: false });
+    return {
+      totalVerifications: Number(result.totalVerifications || 0),
+      approved: Number(result.approved || 0),
+      rejected: Number(result.rejected || 0),
+      pending: Number(result.pending || 0),
+      manualReview: Number(result.manualReview || 0),
+      averageTime:
+        typeof result.averageTime === 'number'
+          ? result.averageTime
+          : typeof result.averageProcessingTime === 'number'
+            ? result.averageProcessingTime
+            : 0,
+      averageProcessingTime: typeof result.averageProcessingTime === 'number' ? result.averageProcessingTime : undefined,
+      successful: typeof result.successful === 'number' ? result.successful : Number(result.approved || 0),
+      failed: typeof result.failed === 'number' ? result.failed : Number(result.rejected || 0),
+      successRate: typeof result.successRate === 'number' ? result.successRate : undefined,
+      dailyBreakdown: Array.isArray(result.dailyBreakdown) ? result.dailyBreakdown as VerificationStatsResponse['dailyBreakdown'] : [],
+      breakdown: Array.isArray(result.breakdown) ? result.breakdown as VerificationStatsResponse['breakdown'] : undefined,
+    };
   },
 
   createReport: async (data: ReportCreateRequest): Promise<ReportResponse> => {

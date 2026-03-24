@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { bankingService } from '@/services/bankingService';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 import type { IndividualKYCRequest } from '@/types/banking';
 
 type ToolResult = Record<string, unknown>;
@@ -37,6 +37,17 @@ const getResultBadgeLabel = (value: ToolResult): string => {
   return 'processed';
 };
 
+const validateSelectedFile = (file: File, acceptedKind: 'image' | 'video'): string | null => {
+  if (acceptedKind === 'image') {
+    if (!file.type.startsWith('image/')) return 'Only image files are allowed';
+    if (file.size > 10 * 1024 * 1024) return 'Image file must be 10MB or smaller';
+  } else {
+    if (!file.type.startsWith('video/')) return 'Only video files are allowed';
+    if (file.size > 25 * 1024 * 1024) return 'Video file must be 25MB or smaller';
+  }
+  return null;
+};
+
 export default function VerificationsPage() {
   const [activeTab, setActiveTab] = useState("kyc");
   const [loading, setLoading] = useState(false);
@@ -58,14 +69,39 @@ export default function VerificationsPage() {
   const [bioSelfie, setBioSelfie] = useState<string>('');
   const [bioDoc, setBioDoc] = useState<string>('');
   const [bioVideoUrl, setBioVideoUrl] = useState('');
+  const [bioVideoInline, setBioVideoInline] = useState('');
+  const [bioVideoFileName, setBioVideoFileName] = useState('');
   const [screenName, setScreenName] = useState('');
   const [screenCountry, setScreenCountry] = useState('');
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, setter: (val: string) => void) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, setter: (val: string) => void, acceptedKind: 'image' | 'video') => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const validationError = validateSelectedFile(file, acceptedKind);
+    if (validationError) {
+      setError(validationError);
+      e.target.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onloadend = () => setter(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleVideoFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const validationError = validateSelectedFile(file, 'video');
+    if (validationError) {
+      setError(validationError);
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setBioVideoInline(reader.result as string);
+      setBioVideoFileName(file.name);
+    };
     reader.readAsDataURL(file);
   };
 
@@ -77,7 +113,7 @@ export default function VerificationsPage() {
       const res = await fn();
       setResult(isObjectResult(res) ? res : { value: res });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(getBankingErrorMessage(err, 'An error occurred'));
     } finally {
       setLoading(false);
     }
@@ -139,7 +175,7 @@ export default function VerificationsPage() {
                     <Label>Upload Document Image</Label>
                     <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center">
                       <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                      <Input type="file" className="hidden" id="doc-upload" onChange={e => handleFileChange(e, setDocImage)} accept="image/*" />
+                      <Input type="file" className="hidden" id="doc-upload" onChange={e => handleFileChange(e, setDocImage, 'image')} accept="image/*" />
                       <Label htmlFor="doc-upload" className="cursor-pointer"><span className="text-primary font-medium">Click to upload</span> or drag and drop</Label>
                     </div>
                     {docImage && <div className="mt-2 text-xs text-green-500 flex items-center"><CheckCircle className="h-3 w-3 mr-1" />Image loaded</div>}
@@ -159,13 +195,19 @@ export default function VerificationsPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label>Selfie Image</Label><Input type="file" onChange={e => handleFileChange(e, setBioSelfie)} accept="image/*" /></div>
-                    <div className="space-y-2"><Label>ID Document Image</Label><Input type="file" onChange={e => handleFileChange(e, setBioDoc)} accept="image/*" /></div>
+                    <div className="space-y-2"><Label>Selfie Image</Label><Input type="file" onChange={e => handleFileChange(e, setBioSelfie, 'image')} accept="image/*" /></div>
+                    <div className="space-y-2"><Label>ID Document Image</Label><Input type="file" onChange={e => handleFileChange(e, setBioDoc, 'image')} accept="image/*" /></div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Liveness Video Upload</Label>
+                    <Input type="file" accept="video/*" onChange={handleVideoFileChange} />
+                    <p className="text-xs text-muted-foreground">Video files must be 25MB or smaller.</p>
+                    {bioVideoInline && <div className="text-xs text-green-500 flex items-center"><CheckCircle className="h-3 w-3 mr-1" />{bioVideoFileName || 'Video loaded'}</div>}
                   </div>
                   <div className="space-y-2"><Label>Liveness Video URL</Label><Input value={bioVideoUrl} onChange={e => setBioVideoUrl(e.target.value)} placeholder="https://cdn.example.com/liveness.mp4" /></div>
                   <div className="flex gap-2 pt-4">
                     <Button onClick={() => executeRequest(() => bankingService.matchFace({ selfieImage: bioSelfie, documentImage: bioDoc }))} disabled={loading} className="flex-1">Match Face</Button>
-                    <Button onClick={() => executeRequest(() => bankingService.checkLiveness({ selfieImage: bioSelfie || undefined, videoUrl: bioVideoUrl.trim() || undefined }))} variant="outline" disabled={loading} className="flex-1"><Activity className="mr-2 h-4 w-4" />Check Liveness</Button>
+                    <Button onClick={() => executeRequest(() => bankingService.checkLiveness({ selfieImage: bioSelfie || undefined, videoUrl: bioVideoUrl.trim() || bioVideoInline || undefined }))} variant="outline" disabled={loading} className="flex-1"><Activity className="mr-2 h-4 w-4" />Check Liveness</Button>
                   </div>
                 </CardContent>
               </Card>

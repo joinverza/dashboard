@@ -16,7 +16,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { bankingService } from '@/services/bankingService';
+import { Progress } from '@/components/ui/progress';
+import { toast } from 'sonner';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 import type { VerificationStatsResponse, IndividualKYCRequest, VerificationRequestResponse } from '@/types/banking';
 
 export default function VerificationRequests() {
@@ -27,6 +29,14 @@ export default function VerificationRequests() {
   const [isLoading, setIsLoading] = useState(true);
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pollingProgress, setPollingProgress] = useState<{
+    verificationId: string;
+    attempt: number;
+    maxAttempts: number;
+    status: VerificationRequestResponse['status'];
+    timedOut: boolean;
+    active: boolean;
+  } | null>(null);
   
   // Form states for new request
   const [requestType, setRequestType] = useState('kyc_individual');
@@ -144,15 +154,50 @@ export default function VerificationRequests() {
   };
 
   const checkStatus = async (id: string) => {
+    setPollingProgress({
+      verificationId: id,
+      attempt: 0,
+      maxAttempts: 20,
+      status: 'pending',
+      timedOut: false,
+      active: true,
+    });
     try {
-      const status = await bankingService.getVerificationStatus(id);
+      const status = await bankingService.pollVerificationStatus(id, {
+        intervalMs: 3000,
+        maxAttempts: 20,
+        onProgress: (progress) => {
+          setPollingProgress({
+            verificationId: id,
+            attempt: progress.attempt,
+            maxAttempts: progress.maxAttempts,
+            status: progress.status,
+            timedOut: progress.timedOut,
+            active: !progress.timedOut,
+          });
+        },
+      });
       setRequests(prev => prev.map(req => 
         req.verificationId === id 
           ? { ...req, status: status.status, updatedAt: status.updatedAt } 
           : req
       ));
+      if (status.status === 'not_found') {
+        toast.info('Verification not found yet. It may still be propagating.');
+      }
+      setPollingProgress((current) =>
+        current && current.verificationId === id
+          ? { ...current, status: status.status, active: false }
+          : current,
+      );
     } catch (error) {
       console.error("Failed to check status", error);
+      setPollingProgress((current) =>
+        current && current.verificationId === id
+          ? { ...current, timedOut: true, active: false }
+          : current,
+      );
+      toast.error(getBankingErrorMessage(error, 'Verification status polling timed out'));
     }
   };
 
@@ -339,6 +384,22 @@ export default function VerificationRequests() {
           </div>
         </CardHeader>
         <CardContent>
+          {pollingProgress && (
+            <div className="mb-4 rounded-md border bg-muted/30 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm font-medium">Polling {pollingProgress.verificationId}</div>
+                <Badge variant={pollingProgress.timedOut ? 'destructive' : pollingProgress.active ? 'secondary' : 'outline'}>
+                  {pollingProgress.timedOut ? 'TIMEOUT' : pollingProgress.active ? 'IN PROGRESS' : 'COMPLETED'}
+                </Badge>
+              </div>
+              <div className="mt-2">
+                <Progress value={(pollingProgress.attempt / pollingProgress.maxAttempts) * 100} />
+              </div>
+              <div className="mt-2 text-xs text-muted-foreground">
+                Attempt {pollingProgress.attempt}/{pollingProgress.maxAttempts} · Status {pollingProgress.status}
+              </div>
+            </div>
+          )}
           <div className="rounded-md border">
             <Table>
               <TableHeader>

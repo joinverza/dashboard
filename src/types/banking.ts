@@ -200,7 +200,7 @@ export interface AMLRiskScoreRequest {
 
 export interface AMLRiskScoreResponse {
   score: number; // 0-100
-  riskLevel: 'low' | 'medium' | 'high';
+  riskLevel: 'low' | 'medium' | 'high' | 'very_high';
   factors: string[];
 }
 
@@ -226,7 +226,7 @@ export interface TransactionMonitoringRequest {
 export interface TransactionMonitoringResponse {
   isSuspicious: boolean;
   riskScore: number;
-  action: 'approve' | 'flag' | 'block';
+  action: 'approve' | 'manual_review' | 'block';
 }
 
 export interface WebhookRegisterRequest {
@@ -259,6 +259,89 @@ export interface ApiErrorEnvelope {
   success: false;
   error: ApiValidationError;
   timestamp: string;
+}
+
+export interface ApiErrorShape {
+  success?: false;
+  error?: {
+    code?: string;
+    message?: string;
+  };
+  detail?: string;
+}
+
+export interface BankingRetryEventDetail {
+  requestId: string;
+  path: string;
+  status: number;
+  attempt: number;
+  retryInMs: number;
+}
+
+export interface BankingRequestDiagnosticEvent {
+  requestId: string;
+  path: string;
+  method: string;
+  stage: 'started' | 'retrying' | 'failed' | 'succeeded';
+  status?: number;
+  attempt?: number;
+  retryInMs?: number;
+  message?: string;
+  occurredAt: string;
+}
+
+export interface IndividualKYCVerifyApiData {
+  verificationId?: string;
+  id?: string;
+  status?: string;
+  overallResult?: string;
+  verificationType?: string;
+  type?: string;
+  result?: VerificationDetails;
+  details?: VerificationDetails;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DocumentExtractApiData {
+  extractedData?: {
+    fields?: Record<string, unknown>;
+  };
+  confidence?: {
+    overall?: number;
+  };
+}
+
+export interface BiometricFaceMatchApiData {
+  match?: boolean;
+  matchScore?: number;
+}
+
+export interface BiometricLivenessApiData {
+  live?: boolean;
+  livenessScore?: number;
+}
+
+export interface SanctionsCheckApiData {
+  status?: string;
+  matches?: SanctionsHit[];
+}
+
+export interface PEPCheckApiData {
+  status?: string;
+  totalMatches?: number;
+  [key: string]: unknown;
+}
+
+export interface AMLRiskScoreApiData {
+  overallRiskScore?: number;
+  riskLevel?: 'low' | 'medium' | 'high';
+  riskFactors?: Array<{ factor?: string }>;
+}
+
+export interface TransactionMonitoringApiData {
+  decision?: 'approve' | 'manual_review' | 'block' | string;
+  transactionRiskScore?: number;
 }
 
 export interface WebhookResponse {

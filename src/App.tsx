@@ -1,14 +1,16 @@
 import { Switch, Route, Redirect } from "wouter";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { MockDataProvider } from "@/contexts/MockDataContext";
 import { AuthProvider, useAuth } from "@/features/auth/AuthContext";
 import Layout from "@/components/layout/Layout";
 import { PageLoader } from "@/components/shared/loaders/PageLoader";
+import { BANKING_RETRY_EVENT } from "@/services/bankingService";
+import type { BankingRetryEventDetail } from "@/types/banking";
 
 // Lazy load pages for code splitting
 const UserDashboard = lazy(() => import("@/features/user/pages/Dashboard"));
@@ -324,6 +326,18 @@ function Router() {
 }
 
 function App() {
+  useEffect(() => {
+    const onRetry = (event: Event) => {
+      const detail = (event as CustomEvent<BankingRetryEventDetail>).detail;
+      if (!detail) return;
+      toast.warning(`Rate limited. Retrying in ${Math.round(detail.retryInMs / 1000)}s (requestId: ${detail.requestId})`);
+    };
+    window.addEventListener(BANKING_RETRY_EVENT, onRetry);
+    return () => {
+      window.removeEventListener(BANKING_RETRY_EVENT, onRetry);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

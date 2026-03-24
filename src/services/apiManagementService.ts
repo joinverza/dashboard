@@ -27,7 +27,6 @@ export const apiManagementEndpointMappings: DashboardEndpointMapping[] = [
   { method: 'POST', endpoint: '/api/v1/banking/webhooks/register', pages: ['ApiManagement', 'Integrations', 'VerificationTools'], permission: 'webhooks:write' },
   { method: 'GET', endpoint: '/api/v1/banking/webhooks', pages: ['ApiManagement', 'Integrations', 'VerificationTools'], permission: 'webhooks:read' },
   { method: 'DELETE', endpoint: '/api/v1/banking/webhooks/{webhookId}', pages: ['ApiManagement', 'Integrations'], permission: 'webhooks:write' },
-  { method: 'POST', endpoint: '/api/v1/banking/webhooks/test', pages: ['ApiManagement', 'VerificationTools'], permission: 'webhooks:write' },
 ];
 
 const toApiKeyCreateResult = (result: ApiKeyResponse): ApiKeyCreateResult => ({
