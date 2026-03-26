@@ -47,7 +47,7 @@ export default function LoginPage() {
       await login({
         email,
         password,
-        role: role === "admin" || role === "enterprise" || role === "verifier" ? role : "enterprise",
+        role: role,
         authKey,
       });
     } catch (error) {
@@ -133,8 +133,10 @@ export default function LoginPage() {
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="user">User</SelectItem>
                   <SelectItem value="enterprise">Enterprise</SelectItem>
                   <SelectItem value="verifier">Verifier</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>

@@ -3,7 +3,7 @@ import type { UserRole } from "@/features/auth/AuthContext";
 const AUTH_PATH = "/auth";
 const AUTH_STORAGE_KEY = "verza:auth:session";
 
-type BackendRole = Exclude<UserRole, "user">;
+type BackendRole = UserRole;
 type MfaMethod = "totp" | "webauthn" | "recovery_code";
 
 type ApiSuccess<T> = {
