@@ -1,6 +1,5 @@
 import type { UserRole } from "@/features/auth/AuthContext";
 
-const AUTH_PATH = "/auth";
 const AUTH_STORAGE_KEY = "verza:auth:session";
 
 type BackendRole = UserRole;
@@ -159,20 +158,55 @@ const normalizeEndpointPath = (value: string): string => {
   return clean.startsWith("/") ? clean : `/${clean}`;
 };
 
-const normalizeAuthBaseUrl = (value: string): string => {
+const getAuthPathForRole = (role?: BackendRole): string => {
+  switch (role) {
+    case "admin":
+      return "/admin/auth";
+    case "enterprise":
+    case "manager":
+      return "/enterprise/auth";
+    case "verifier":
+      return "/verifier/auth";
+    case "user":
+    default:
+      return "/user/auth";
+  }
+};
+
+const normalizeAuthBaseUrl = (value: string, role?: BackendRole): string => {
   const cleaned = sanitizeUrlString(value);
-  if (!cleaned) return AUTH_PATH;
+  const authPath = getAuthPathForRole(role);
+  
+  if (!cleaned) return authPath;
+  
   const withoutBankingPath = cleaned.endsWith("/api/v1/banking")
     ? cleaned.slice(0, -"/api/v1/banking".length)
     : cleaned;
-  if (withoutBankingPath.endsWith(AUTH_PATH)) return withoutBankingPath;
-  return `${withoutBankingPath}${AUTH_PATH}`;
+    
+  // If it already ends with one of our auth paths, return it
+  if (
+    withoutBankingPath.endsWith("/admin/auth") ||
+    withoutBankingPath.endsWith("/enterprise/auth") ||
+    withoutBankingPath.endsWith("/verifier/auth") ||
+    withoutBankingPath.endsWith("/user/auth") ||
+    withoutBankingPath.endsWith("/auth")
+  ) {
+    return withoutBankingPath;
+  }
+  
+  return `${withoutBankingPath}${authPath}`;
 };
 
-const AUTH_BASE_URL = normalizeAuthBaseUrl(import.meta.env.VITE_BANKING_API_BASE_URL || "");
-
-const request = async <T>(method: string, path: string, body?: unknown, accessToken?: string): Promise<{ status: number; payload: ApiSuccess<T> | ApiFailure | null }> => {
+const request = async <T>(
+  method: string, 
+  path: string, 
+  body?: unknown, 
+  accessToken?: string,
+  role?: BackendRole
+): Promise<{ status: number; payload: ApiSuccess<T> | ApiFailure | null }> => {
   const normalizedPath = normalizeEndpointPath(path);
+  const authBaseUrl = normalizeAuthBaseUrl(import.meta.env.VITE_BANKING_API_BASE_URL || "", role);
+  
   const headers: Record<string, string> = {
     Accept: "application/json",
     "X-Request-Id": generateRequestId(),
@@ -183,7 +217,7 @@ const request = async <T>(method: string, path: string, body?: unknown, accessTo
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
   }
-  const response = await fetch(`${AUTH_BASE_URL}${normalizedPath}`, {
+  const response = await fetch(`${authBaseUrl}${normalizedPath}`, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -305,7 +339,7 @@ export const verifyMfaEnrollRequest = async (accessToken: string, code: string):
 };
 
 export const signupRequest = async (payload: SignupPayload): Promise<SignupResponse> => {
-  const { status, payload: response } = await request<SignupResponse>("POST", "/signup", payload);
+  const { status, payload: response } = await request<SignupResponse>("POST", "/signup", payload, undefined, payload.role);
   if (status !== 201) {
     throw toAuthApiError(status, response);
   }
