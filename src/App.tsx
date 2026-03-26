@@ -84,6 +84,7 @@ const MessagePage = lazy(() => import("@/pages/Message"));
 const NotificationsPage = lazy(() => import("@/pages/Notifications"));
 const SettingsPage = lazy(() => import("@/pages/Settings"));
 const HelpCenterPage = lazy(() => import("@/pages/HelpCenter"));
+const GettingStartedPage = lazy(() => import("@/features/user/pages/GettingStarted"));
 const PlaceholderPage = lazy(() => import("@/pages/PlaceholderPage"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const LoginPage = lazy(() => import("@/pages/Login"));
@@ -161,6 +162,7 @@ function Router() {
         {user?.role === 'user' && (
           <>
             <Route path="/app" component={UserDashboard} />
+            <Route path="/app/getting-started" component={GettingStartedPage} />
             <Route path="/app/credentials" component={CredentialsPage} />
             <Route path="/app/credentials/:id" component={CredentialDetailPage} />
             <Route path="/app/payment/confirm" component={PaymentConfirmationPage} />

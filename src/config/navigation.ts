@@ -30,6 +30,7 @@ export interface NavItem {
 
 export const userNavItems: NavItem[] = [
   { path: "/app", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/app/getting-started", label: "Getting Started", icon: FileText },
   { path: "/app/credentials", label: "Credentials", icon: FileBadge },
   { path: "/app/marketplace", label: "Marketplace", icon: Store },
   { path: "/app/wallet", label: "Wallet", icon: Wallet },
