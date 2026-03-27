@@ -220,8 +220,16 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center text-sm text-zinc-400">
-            Need verifier access?{" "}
+            Don&apos;t have a user account?{" "}
             <Link href="/signup">
+              <span className="text-verza-emerald hover:text-verza-kelly font-medium cursor-pointer transition-colors">
+                User signup
+              </span>
+            </Link>
+          </p>
+          <p className="text-center text-sm text-zinc-500">
+            Need verifier access?{" "}
+            <Link href="/verifier/signup">
               <span className="text-verza-emerald hover:text-verza-kelly font-medium cursor-pointer transition-colors">
                 Verifier signup
               </span>

@@ -98,7 +98,7 @@ export default function Layout({ children }: LayoutProps) {
     }
   };
 
-  const isAuthPage = ['/', '/login', '/signup', '/portal/login', '/portal/signup', '/verifier/login', '/verifier/signup', '/admin/login', '/admin/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/onboarding'].includes(location);
+  const isAuthPage = ['/', '/login', '/signup', '/user/signup', '/portal/login', '/portal/signup', '/verifier/login', '/verifier/signup', '/admin/login', '/admin/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/onboarding'].includes(location);
 
   if (isAuthPage || !user) {
     return (

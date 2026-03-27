@@ -72,6 +72,13 @@ export type MfaEnrollment = {
 
 export type SignupPayload =
   | {
+      role: "user";
+      fullName: string;
+      email: string;
+      password: string;
+      consentAccepted: boolean;
+    }
+  | {
       role: "enterprise";
       organizationName: string;
       contactName: string;

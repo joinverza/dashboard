@@ -88,6 +88,7 @@ const GettingStartedPage = lazy(() => import("@/features/user/pages/GettingStart
 const PlaceholderPage = lazy(() => import("@/pages/PlaceholderPage"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const LoginPage = lazy(() => import("@/pages/Login"));
+const UserSignupPage = lazy(() => import("@/pages/UserSignup"));
 const SignupPage = lazy(() => import("@/pages/Signup"));
 const EnterpriseLoginPage = lazy(() => import("@/pages/EnterpriseLogin"));
 const EnterpriseSignupPage = lazy(() => import("@/pages/EnterpriseSignup"));
@@ -139,7 +140,10 @@ function Router() {
           {user ? <Redirect to={getDefaultRoute()} /> : <LoginPage />}
         </Route>
         <Route path="/signup">
-          {user ? <Redirect to={getDefaultRoute()} /> : <SignupPage />}
+          {user ? <Redirect to={getDefaultRoute()} /> : <UserSignupPage />}
+        </Route>
+        <Route path="/user/signup">
+          {user ? <Redirect to={getDefaultRoute()} /> : <UserSignupPage />}
         </Route>
         <Route path="/portal/login">
           {user ? <Redirect to={getDefaultRoute()} /> : <EnterpriseLoginPage />}
