@@ -91,6 +91,7 @@ const LoginPage = lazy(() => import("@/pages/Login"));
 const SignupPage = lazy(() => import("@/pages/Signup"));
 const EnterpriseLoginPage = lazy(() => import("@/pages/EnterpriseLogin"));
 const EnterpriseSignupPage = lazy(() => import("@/pages/EnterpriseSignup"));
+const VerifierLoginPage = lazy(() => import("@/pages/VerifierLogin"));
 const AdminLoginPage = lazy(() => import("@/pages/AdminLogin"));
 const AdminSignupPage = lazy(() => import("@/pages/AdminSignup"));
 const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPassword"));
@@ -145,6 +146,12 @@ function Router() {
         </Route>
         <Route path="/portal/signup">
           {user ? <Redirect to={getDefaultRoute()} /> : <EnterpriseSignupPage />}
+        </Route>
+        <Route path="/verifier/login">
+          {user ? <Redirect to={getDefaultRoute()} /> : <VerifierLoginPage />}
+        </Route>
+        <Route path="/verifier/signup">
+          {user ? <Redirect to={getDefaultRoute()} /> : <SignupPage />}
         </Route>
         <Route path="/admin/login">
           {user ? <Redirect to={getDefaultRoute()} /> : <AdminLoginPage />}
@@ -309,7 +316,7 @@ function Router() {
           {!user ? <Redirect to="/login" /> : user.role === "user" ? <Redirect to="/app" /> : <Redirect to={getDefaultRoute()} />}
         </Route>
         <Route path="/verifier/:rest*">
-          {!user ? <Redirect to="/login" /> : user.role === "verifier" ? <Redirect to="/verifier" /> : <Redirect to={getDefaultRoute()} />}
+          {!user ? <Redirect to="/verifier/login" /> : user.role === "verifier" ? <Redirect to="/verifier" /> : <Redirect to={getDefaultRoute()} />}
         </Route>
         <Route path="/enterprise/:rest*">
           {!user ? <Redirect to="/portal/login" /> : user.role === "enterprise" ? <Redirect to="/enterprise" /> : <Redirect to={getDefaultRoute()} />}

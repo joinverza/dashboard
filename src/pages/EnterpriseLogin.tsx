@@ -10,23 +10,15 @@ import {
 import versalogo from "@/assets/versalogoSVG.svg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth, type UserRole } from "@/features/auth/AuthContext";
+import { useAuth } from "@/features/auth/AuthContext";
 import { Separator } from "@/components/ui/separator";
 import { AuthApiError } from "@/services/authService";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export default function EnterpriseLoginPage() {
   const { login, verifyMfa, verifyMfaRecoveryCode, mfaChallenge, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authKey, setAuthKey] = useState("");
-  const [role, setRole] = useState<UserRole>("enterprise");
   const [mfaCode, setMfaCode] = useState("");
   const [mfaMethod, setMfaMethod] = useState<"totp" | "recovery_code">("totp");
   const [mfaError, setMfaError] = useState("");
@@ -46,7 +38,7 @@ export default function EnterpriseLoginPage() {
       await login({
         email,
         password,
-        role: role === "admin" || role === "enterprise" || role === "verifier" ? role : "enterprise",
+        role: "enterprise",
         authKey,
       });
     } catch (error) {
@@ -121,24 +113,10 @@ export default function EnterpriseLoginPage() {
 
           <div className="space-y-2 text-center lg:text-left">
             <h2 className="text-3xl font-semibold tracking-tight text-white">Portal Access</h2>
-            <p className="text-zinc-400">Enter your credentials and auth key to continue</p>
+            <p className="text-zinc-400">Enterprise sign in for your organization workspace</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">Role</label>
-              <Select value={role} onValueChange={(v: UserRole) => setRole(v)}>
-                <SelectTrigger className="bg-zinc-900/50 border-zinc-800 focus:ring-blue-500/20 h-11 text-white">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="enterprise">Enterprise Partner</SelectItem>
-                  <SelectItem value="verifier">Verifier Node</SelectItem>
-                  <SelectItem value="admin">System Administrator</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-300">Email</label>
               <Input 
@@ -230,6 +208,14 @@ export default function EnterpriseLoginPage() {
             <Link href="/portal/signup">
               <span className="text-blue-500 hover:text-blue-400 font-medium cursor-pointer transition-colors">
                 Apply for access
+              </span>
+            </Link>
+          </p>
+          <p className="text-center text-sm text-zinc-500">
+            Verifier login:{" "}
+            <Link href="/verifier/login">
+              <span className="text-blue-500 hover:text-blue-400 font-medium cursor-pointer transition-colors">
+                Open verifier portal
               </span>
             </Link>
           </p>

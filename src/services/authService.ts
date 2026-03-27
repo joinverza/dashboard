@@ -282,7 +282,7 @@ export const toSession = (tokens: AuthTokenResponse): AuthSession => ({
 });
 
 export const loginRequest = async (payload: LoginPayload): Promise<{ type: "tokens"; data: AuthTokenResponse } | { type: "mfa_required"; data: LoginMfaChallenge }> => {
-  const { status, payload: response } = await request<AuthTokenResponse | LoginMfaChallenge>("POST", "/login", payload);
+  const { status, payload: response } = await request<AuthTokenResponse | LoginMfaChallenge>("POST", "/login", payload, undefined, payload.role);
   if (status === 202) {
     return {
       type: "mfa_required",

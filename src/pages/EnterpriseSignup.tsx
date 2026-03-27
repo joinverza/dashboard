@@ -9,15 +9,8 @@ import {
 import versalogo from "@/assets/versalogoSVG.svg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth, type UserRole } from "@/features/auth/AuthContext";
+import { useAuth } from "@/features/auth/AuthContext";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function EnterpriseSignupPage() {
@@ -26,38 +19,23 @@ export default function EnterpriseSignupPage() {
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("enterprise");
   const [countryCode, setCountryCode] = useState("US");
   const [registrationNumber, setRegistrationNumber] = useState("");
-  const [licenseId, setLicenseId] = useState("");
-  const [jurisdiction, setJurisdiction] = useState("");
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [generatedKey, setGeneratedKey] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    const generatedAuthKey =
-      role === "enterprise"
-        ? await signup({
-            role: "enterprise",
-            organizationName: company,
-            contactName: name,
-            email,
-            password,
-            countryCode,
-            registrationNumber,
-            consentAccepted: true,
-          })
-        : await signup({
-            role: "verifier",
-            organizationName: company,
-            contactName: name,
-            email,
-            password,
-            verificationLicenseId: licenseId,
-            jurisdiction,
-            consentAccepted: true,
-          });
+    const generatedAuthKey = await signup({
+      role: "enterprise",
+      organizationName: company,
+      contactName: name,
+      email,
+      password,
+      countryCode,
+      registrationNumber,
+      consentAccepted: true,
+    });
     setGeneratedKey(generatedAuthKey);
     setShowKeyModal(true);
   };
@@ -126,23 +104,10 @@ export default function EnterpriseSignupPage() {
 
           <div className="space-y-2 text-center lg:text-left">
             <h2 className="text-3xl font-semibold tracking-tight text-white">Partner Application</h2>
-            <p className="text-zinc-400">Register for an enterprise or verifier account</p>
+            <p className="text-zinc-400">Register your enterprise account</p>
           </div>
 
           <form onSubmit={handleSignup} className="space-y-4">
-             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">Account Type</label>
-              <Select value={role} onValueChange={(v: UserRole) => setRole(v)}>
-                <SelectTrigger className="bg-zinc-900/50 border-zinc-800 focus:ring-blue-500/20 h-11 text-white">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="enterprise">Enterprise Partner</SelectItem>
-                  <SelectItem value="verifier">Verifier Node</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-300">Company / Organization</label>
               <Input 
@@ -187,53 +152,26 @@ export default function EnterpriseSignupPage() {
               />
             </div>
 
-            {role === "enterprise" ? (
-              <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Country Code</label>
-                  <Input
-                    type="text"
-                    placeholder="US"
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
-                    className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors uppercase"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Registration Number</label>
-                  <Input
-                    type="text"
-                    placeholder="REG-12345"
-                    value={registrationNumber}
-                    onChange={(e) => setRegistrationNumber(e.target.value)}
-                    className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
-                  />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Verifier License ID</label>
-                  <Input
-                    type="text"
-                    placeholder="VL-9981"
-                    value={licenseId}
-                    onChange={(e) => setLicenseId(e.target.value)}
-                    className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Jurisdiction</label>
-                  <Input
-                    type="text"
-                    placeholder="NG"
-                    value={jurisdiction}
-                    onChange={(e) => setJurisdiction(e.target.value)}
-                    className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
-                  />
-                </div>
-              </>
-            )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">Country Code</label>
+              <Input
+                type="text"
+                placeholder="US"
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
+                className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors uppercase"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">Registration Number</label>
+              <Input
+                type="text"
+                placeholder="REG-12345"
+                value={registrationNumber}
+                onChange={(e) => setRegistrationNumber(e.target.value)}
+                className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+              />
+            </div>
 
             <Button 
               type="submit" 
@@ -258,6 +196,14 @@ export default function EnterpriseSignupPage() {
             <Link href="/portal/login">
               <span className="text-blue-500 hover:text-blue-400 font-medium cursor-pointer transition-colors">
                 Sign in to Portal
+              </span>
+            </Link>
+          </p>
+          <p className="text-center text-sm text-zinc-500">
+            Need verifier onboarding?{" "}
+            <Link href="/verifier/signup">
+              <span className="text-blue-500 hover:text-blue-400 font-medium cursor-pointer transition-colors">
+                Register as verifier
               </span>
             </Link>
           </p>
