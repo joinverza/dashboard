@@ -227,29 +227,6 @@ export default function LoginPage() {
               </span>
             </Link>
           </p>
-          <p className="text-center text-sm text-zinc-500">
-            Need verifier access?{" "}
-            <Link href="/verifier/signup">
-              <span className="text-verza-emerald hover:text-verza-kelly font-medium cursor-pointer transition-colors">
-                Verifier signup
-              </span>
-            </Link>
-          </p>
-          <p className="text-center text-sm text-zinc-500">
-            Enterprise login:{" "}
-            <Link href="/portal/login">
-              <span className="text-verza-emerald hover:text-verza-kelly font-medium cursor-pointer transition-colors">
-                Portal access
-              </span>
-            </Link>
-            {" · "}
-            Admin login:{" "}
-            <Link href="/admin/login">
-              <span className="text-verza-emerald hover:text-verza-kelly font-medium cursor-pointer transition-colors">
-                Admin console
-              </span>
-            </Link>
-          </p>
         </div>
       </div>
     </div>

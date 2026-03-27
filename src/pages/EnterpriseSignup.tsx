@@ -199,14 +199,6 @@ export default function EnterpriseSignupPage() {
               </span>
             </Link>
           </p>
-          <p className="text-center text-sm text-zinc-500">
-            Need verifier onboarding?{" "}
-            <Link href="/verifier/signup">
-              <span className="text-blue-500 hover:text-blue-400 font-medium cursor-pointer transition-colors">
-                Register as verifier
-              </span>
-            </Link>
-          </p>
         </div>
       </div>
 

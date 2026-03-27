@@ -217,15 +217,6 @@ export default function SignupPage() {
               </span>
             </Link>
           </p>
-          <p className="text-center text-sm text-zinc-500">
-            Need enterprise onboarding?{" "}
-            <Link href="/portal/signup">
-              <span className="text-verza-emerald hover:text-verza-kelly font-medium cursor-pointer transition-colors">
-                Register enterprise account
-              </span>
-            </Link>
-          </p>
-          
           <p className="text-center text-xs text-zinc-600 max-w-xs mx-auto">
             By clicking continue, you agree to our <span className="underline cursor-pointer hover:text-zinc-400">Terms of Service</span> and <span className="underline cursor-pointer hover:text-zinc-400">Privacy Policy</span>.
           </p>

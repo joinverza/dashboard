@@ -211,14 +211,6 @@ export default function EnterpriseLoginPage() {
               </span>
             </Link>
           </p>
-          <p className="text-center text-sm text-zinc-500">
-            Verifier login:{" "}
-            <Link href="/verifier/login">
-              <span className="text-blue-500 hover:text-blue-400 font-medium cursor-pointer transition-colors">
-                Open verifier portal
-              </span>
-            </Link>
-          </p>
         </div>
       </div>
     </div>

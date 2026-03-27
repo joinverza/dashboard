@@ -155,20 +155,6 @@ export default function UserSignupPage() {
               </span>
             </Link>
           </p>
-          <p className="text-center text-sm text-zinc-500">
-            Need enterprise or verifier onboarding?{" "}
-            <Link href="/portal/signup">
-              <span className="text-verza-emerald hover:text-verza-kelly font-medium cursor-pointer transition-colors">
-                Enterprise signup
-              </span>
-            </Link>
-            {" · "}
-            <Link href="/verifier/signup">
-              <span className="text-verza-emerald hover:text-verza-kelly font-medium cursor-pointer transition-colors">
-                Verifier signup
-              </span>
-            </Link>
-          </p>
         </div>
       </div>
 
