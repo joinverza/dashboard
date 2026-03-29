@@ -54,6 +54,41 @@ import type {
   UserWalletOverview,
   SystemHealthService,
   GeoDistributionItem,
+  PagedResult,
+  PaginationMeta,
+  PrivacyProofSummary,
+  VerificationViewModel,
+  FraudTrendPoint,
+  RiskDistributionItem,
+  ComplianceMetric,
+  ProcessingTimePoint,
+  ConsentRecord,
+  DataExportResponse,
+  DataDeletionResponse,
+  ComplianceScheduleResponse,
+  ProofVerificationResponse,
+  CircuitCatalogItem,
+  NoirToolchainStatus,
+  SelectiveDisclosureResponse,
+  BlockchainAnchorResponse,
+  DidRecord,
+  CredentialRecord,
+  PresentationResponse,
+  MonitoringRule,
+  CaseRecord,
+  PrimitiveHealth,
+  PrimitiveModelStatus,
+  AccountVerificationResponse,
+  MonitoringToggleResponse,
+  DueReviewItem,
+  WatchlistEntry,
+  SourceOfFundsResponse,
+  SourceOfWealthAssessment,
+  CreditCheckResponse,
+  TranslationResponse,
+  CurrencyConversionResponse,
+  CountryRegulationResponse,
+  SandboxSeedResponse,
   ApiErrorShape,
   BankingRetryEventDetail,
   BankingRequestDiagnosticEvent,
@@ -66,6 +101,7 @@ import type {
   AMLRiskScoreApiData,
   TransactionMonitoringApiData
 } from '../types/banking';
+import { getStoredSession, refreshRequest, saveSession, toSession } from './authService';
 import { z } from 'zod';
 
 const API_PATH = '/api/v1/banking';
@@ -99,12 +135,13 @@ const normalizeBaseUrl = (value: string): string => {
 };
 
 const BASE_URL = normalizeBaseUrl(import.meta.env.VITE_BANKING_API_BASE_URL || '');
+const ROOT_BASE_URL = BASE_URL.endsWith(API_PATH) ? BASE_URL.slice(0, -API_PATH.length) : BASE_URL;
 const ENV_API_KEY = (import.meta.env.VITE_BANKING_API_KEY || '').trim();
 const ENV_ADMIN_TOKEN = (import.meta.env.VITE_BANKING_ADMIN_TOKEN || '').trim();
 
 type JsonRecord = Record<string, unknown>;
 type ApiEnvelope<T> = { success: boolean; data: T; timestamp?: string; error?: { code?: string; message?: string; details?: unknown[] } };
-type StoredAuthSession = { accessToken?: string };
+type StoredAuthSession = { accessToken?: string; refreshToken?: string; expiresAt?: number; user?: { name?: string }; permissions?: string[] };
 
 const isRecord = (value: unknown): value is JsonRecord => typeof value === 'object' && value !== null;
 
@@ -260,6 +297,45 @@ const getAuthAccessToken = (): string => {
   }
 };
 
+let refreshTokenPromise: Promise<string> | null = null;
+
+const refreshAuthAccessToken = async (): Promise<string> => {
+  const currentSession = getStoredSession();
+  if (!currentSession?.refreshToken) return '';
+  if (!refreshTokenPromise) {
+    refreshTokenPromise = (async () => {
+      const refreshed = await refreshRequest(currentSession.refreshToken);
+      const nextSession = toSession(refreshed);
+      if (currentSession.user?.name) {
+        nextSession.user.name = currentSession.user.name;
+      }
+      if (currentSession.permissions?.length) {
+        nextSession.permissions = currentSession.permissions;
+      }
+      saveSession(nextSession);
+      return nextSession.accessToken;
+    })().finally(() => {
+      refreshTokenPromise = null;
+    });
+  }
+  return refreshTokenPromise;
+};
+
+const resolveAccessToken = async (): Promise<string> => {
+  const currentSession = getStoredSession();
+  if (!currentSession?.accessToken) {
+    return getAuthAccessToken();
+  }
+  if (!currentSession.expiresAt || Date.now() < currentSession.expiresAt - 30_000) {
+    return currentSession.accessToken;
+  }
+  try {
+    return await refreshAuthAccessToken();
+  } catch {
+    return currentSession.accessToken;
+  }
+};
+
 class BankingApiError extends Error {
   status: number;
   path: string;
@@ -363,7 +439,8 @@ const assertImagePayloadLimit = (value: string | undefined, field: string): void
   }
 };
 
-const request = async <T>(
+const performRequest = async <T>(
+  baseUrl: string,
   method: string,
   path: string,
   body?: unknown,
@@ -380,15 +457,9 @@ const request = async <T>(
     headers['Content-Type'] = 'application/json';
   }
 
-  const accessToken = getAuthAccessToken();
+  let accessToken = await resolveAccessToken();
   const apiKey = getBankingApiKey();
   const adminToken = options?.allowBootstrapAdminToken ? getAdminToken() : '';
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  } else if (apiKey) {
-    headers.Authorization = `Bearer ${apiKey}`;
-  }
-
   if (adminToken) {
     headers['x-verza-admin-token'] = adminToken;
   }
@@ -406,9 +477,18 @@ const request = async <T>(
   });
 
   let retryAttempt = 0;
+  let refreshedAfterUnauthorized = false;
   while (true) {
     try {
-      const res = await fetch(`${BASE_URL}${normalizedPath}`, {
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+      } else if (apiKey) {
+        headers.Authorization = `Bearer ${apiKey}`;
+      } else {
+        delete headers.Authorization;
+      }
+
+      const res = await fetch(`${baseUrl}${normalizedPath}`, {
         method,
         headers,
         body: body === undefined ? undefined : JSON.stringify(body),
@@ -417,6 +497,18 @@ const request = async <T>(
       const text = await res.text();
       const payload = text ? safeParseJson(text) : {};
       if (!res.ok) {
+        if (res.status === 401 && !refreshedAfterUnauthorized) {
+          try {
+            const refreshedToken = await refreshAuthAccessToken();
+            if (refreshedToken) {
+              accessToken = refreshedToken;
+              refreshedAfterUnauthorized = true;
+              continue;
+            }
+          } catch {
+            accessToken = '';
+          }
+        }
         retryAttempt += 1;
         const retryable = shouldRetry(method, res.status, retryAttempt);
         if (retryable) {
@@ -531,6 +623,19 @@ const request = async <T>(
     }
   }
 };
+
+const request = async <T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  options?: { allowBootstrapAdminToken?: boolean; idempotent?: boolean }
+): Promise<T> => performRequest<T>(BASE_URL, method, path, body, options);
+
+const primitiveRequest = async <T>(
+  method: string,
+  path: string,
+  body?: unknown
+): Promise<T> => performRequest<T>(ROOT_BASE_URL, method, path, body, { idempotent: false });
 
 const toIsoNow = (): string => new Date().toISOString();
 
@@ -749,6 +854,116 @@ const mapSystemHealthService = (item: JsonRecord): SystemHealthService => {
 const mapGeoDistribution = (item: JsonRecord): GeoDistributionItem => ({
   region: String(item.region ?? item.country ?? item.name ?? 'Unknown'),
   percentage: typeof item.percentage === 'number' ? item.percentage : Number(item.percentage || item.share || 0),
+});
+
+const buildQueryString = (params: Record<string, string | number | boolean | undefined | null>): string => {
+  const query = new URLSearchParams(
+    Object.entries(params)
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
+      .map(([key, value]) => [key, String(value)]),
+  ).toString();
+  return query ? `?${query}` : '';
+};
+
+const normalizeMeta = (value: unknown): PaginationMeta => {
+  const meta = isRecord(value) ? value : {};
+  const metaItems = Array.isArray(meta.items) ? meta.items : [];
+  return {
+    page: Number(meta.page ?? 1),
+    limit: Number(meta.limit ?? 20),
+    total: Number(meta.total ?? metaItems.length),
+    totalPages: Number(meta.totalPages ?? 1),
+  };
+};
+
+const normalizePagedResult = <T>(
+  payload: unknown,
+  mapper: (value: JsonRecord) => T
+): PagedResult<T> => {
+  if (Array.isArray(payload)) {
+    return {
+      items: payload.filter(isRecord).map(mapper),
+      meta: {
+        page: 1,
+        limit: payload.length,
+        total: payload.length,
+        totalPages: 1,
+      },
+    };
+  }
+  if (isRecord(payload) && Array.isArray(payload.items)) {
+    return {
+      items: payload.items.filter(isRecord).map(mapper),
+      meta: normalizeMeta(payload.meta),
+    };
+  }
+  return {
+    items: [],
+    meta: {
+      page: 1,
+      limit: 0,
+      total: 0,
+      totalPages: 0,
+    },
+  };
+};
+
+const mapPrivacyProof = (value: unknown, role: PrivacyProofSummary['proofRole'] = 'primary'): PrivacyProofSummary | null => {
+  if (!isRecord(value)) return null;
+  const zkProof = isRecord(value.zkProof)
+    ? {
+        backend: 'noir' as const,
+        circuitId: String(value.zkProof.circuitId ?? 'unknown'),
+        verifierTarget: typeof value.zkProof.verifierTarget === 'string' ? value.zkProof.verifierTarget : undefined,
+      }
+    : null;
+  return {
+    proofId: String(value.proofId ?? value.id ?? generateToken('proof')),
+    proofType: String(value.proofType ?? value.type ?? 'verification_proof'),
+    proofRole: value.proofRole === 'claim' ? 'claim' : role,
+    verificationId: typeof value.verificationId === 'string' ? value.verificationId : undefined,
+    commitment: typeof value.commitment === 'string' ? value.commitment : undefined,
+    publicSignals: isRecord(value.publicSignals) ? value.publicSignals : {},
+    zkProof,
+  };
+};
+
+const mapVerificationViewModel = (value: unknown): VerificationViewModel => {
+  const record = isRecord(value) ? value : {};
+  const claims = Array.isArray(record.privacyClaims) ? record.privacyClaims.map((item) => mapPrivacyProof(item, 'claim')).filter(Boolean) as PrivacyProofSummary[] : [];
+  return {
+    verificationId: String(record.verificationId ?? record.id ?? ''),
+    status: String(record.status ?? 'pending'),
+    overallResult: typeof record.overallResult === 'string' ? record.overallResult : undefined,
+    riskLevel: typeof record.riskLevel === 'string' ? record.riskLevel : undefined,
+    privacyProof: mapPrivacyProof(record.privacyProof),
+    privacyClaims: claims,
+  };
+};
+
+const mapFraudTrendPoint = (value: JsonRecord): FraudTrendPoint => ({
+  period: String(value.period ?? value.date ?? value.label ?? ''),
+  count: Number(value.count ?? value.value ?? 0),
+  severity: typeof value.severity === 'string' ? value.severity : undefined,
+});
+
+const mapRiskDistributionItem = (value: JsonRecord): RiskDistributionItem => ({
+  bucket: String(value.bucket ?? value.riskLevel ?? value.label ?? 'unknown'),
+  count: Number(value.count ?? value.total ?? 0),
+  percentage: Number(value.percentage ?? value.share ?? 0),
+});
+
+const mapComplianceMetric = (value: JsonRecord): ComplianceMetric => ({
+  label: String(value.label ?? value.name ?? value.metric ?? 'metric'),
+  value: Number(value.value ?? value.count ?? 0),
+  unit: typeof value.unit === 'string' ? value.unit : undefined,
+  change: typeof value.change === 'number' ? value.change : undefined,
+});
+
+const mapProcessingTimePoint = (value: JsonRecord): ProcessingTimePoint => ({
+  period: String(value.period ?? value.date ?? value.label ?? ''),
+  averageSeconds: Number(value.averageSeconds ?? value.averageTime ?? value.avg ?? 0),
+  p95Seconds: typeof value.p95Seconds === 'number' ? value.p95Seconds : typeof value.p95 === 'number' ? value.p95 : undefined,
 });
 
 export const bankingService = {
@@ -1589,6 +1804,741 @@ export const bankingService = {
 
   updateVerifierProfile: async (data: Partial<VerifierProfile>): Promise<VerifierProfile> => {
     return request<VerifierProfile>('PATCH', '/verifier/profile', data, { idempotent: false });
+  },
+
+  getUserVerificationsPage: async (params?: { status?: string; page?: number; limit?: number }): Promise<PagedResult<VerificationRequestResponse>> => {
+    const query = buildQueryString({ status: params?.status, page: params?.page, limit: params?.limit });
+    const payload = await request<unknown>('GET', `/user/verifications${query}`, undefined, { idempotent: false });
+    return normalizePagedResult(payload, mapVerificationRequest);
+  },
+
+  getNotificationsPage: async (params?: { page?: number; limit?: number }): Promise<PagedResult<DashboardNotification>> => {
+    const query = buildQueryString({ page: params?.page, limit: params?.limit });
+    const payload = await request<unknown>('GET', `/notifications${query}`, undefined, { idempotent: false });
+    return normalizePagedResult(payload, mapDashboardNotification);
+  },
+
+  getFraudTrends: async (params?: { range?: string }): Promise<FraudTrendPoint[]> => {
+    const query = buildQueryString({ range: params?.range });
+    const payload = await request<unknown>('GET', `/analytics/fraud-trends${query}`, undefined, { idempotent: false });
+    if (Array.isArray(payload)) return payload.filter(isRecord).map(mapFraudTrendPoint);
+    if (isRecord(payload) && Array.isArray(payload.items)) return payload.items.filter(isRecord).map(mapFraudTrendPoint);
+    return [];
+  },
+
+  getRiskDistribution: async (params?: { range?: string }): Promise<RiskDistributionItem[]> => {
+    const query = buildQueryString({ range: params?.range });
+    const payload = await request<unknown>('GET', `/analytics/risk-distribution${query}`, undefined, { idempotent: false });
+    if (Array.isArray(payload)) return payload.filter(isRecord).map(mapRiskDistributionItem);
+    if (isRecord(payload) && Array.isArray(payload.items)) return payload.items.filter(isRecord).map(mapRiskDistributionItem);
+    return [];
+  },
+
+  getComplianceMetrics: async (params?: { range?: string }): Promise<ComplianceMetric[]> => {
+    const query = buildQueryString({ range: params?.range });
+    const payload = await request<unknown>('GET', `/analytics/compliance-metrics${query}`, undefined, { idempotent: false });
+    if (Array.isArray(payload)) return payload.filter(isRecord).map(mapComplianceMetric);
+    if (isRecord(payload) && Array.isArray(payload.items)) return payload.items.filter(isRecord).map(mapComplianceMetric);
+    if (isRecord(payload) && isRecord(payload.metrics)) {
+      return Object.entries(payload.metrics).map(([label, value]) => ({
+        label,
+        value: typeof value === 'number' ? value : Number(value || 0),
+      }));
+    }
+    return [];
+  },
+
+  getGeographicalAnalytics: async (): Promise<GeoDistributionItem[]> => {
+    const payload = await request<unknown>('GET', '/analytics/geographical', undefined, { idempotent: false });
+    if (Array.isArray(payload)) return payload.filter(isRecord).map(mapGeoDistribution);
+    if (isRecord(payload) && Array.isArray(payload.items)) return payload.items.filter(isRecord).map(mapGeoDistribution);
+    return [];
+  },
+
+  getProcessingTimes: async (params?: { range?: string }): Promise<ProcessingTimePoint[]> => {
+    const query = buildQueryString({ range: params?.range });
+    const payload = await request<unknown>('GET', `/analytics/processing-times${query}`, undefined, { idempotent: false });
+    if (Array.isArray(payload)) return payload.filter(isRecord).map(mapProcessingTimePoint);
+    if (isRecord(payload) && Array.isArray(payload.items)) return payload.items.filter(isRecord).map(mapProcessingTimePoint);
+    return [];
+  },
+
+  getHealth: async (): Promise<PrimitiveHealth> => {
+    const payload = await request<JsonRecord>('GET', '/health', undefined, { idempotent: false });
+    return {
+      status: typeof payload.status === 'string' ? payload.status : 'ok',
+      ready: payload.ready !== false,
+      details: isRecord(payload.details) ? payload.details : undefined,
+    };
+  },
+
+  getAdminAlerts: async (params?: { page?: number; limit?: number; status?: string }): Promise<PagedResult<DashboardNotification>> => {
+    const query = buildQueryString({ page: params?.page, limit: params?.limit, status: params?.status });
+    const payload = await request<unknown>('GET', `/admin/alerts${query}`, undefined, { idempotent: false });
+    return normalizePagedResult(payload, mapDashboardNotification);
+  },
+
+  getOperationalAlerts: async (params?: { page?: number; limit?: number; status?: string }): Promise<PagedResult<DashboardNotification>> => {
+    const query = buildQueryString({ page: params?.page, limit: params?.limit, status: params?.status });
+    const payload = await request<unknown>('GET', `/alerts${query}`, undefined, { idempotent: false });
+    return normalizePagedResult(payload, mapDashboardNotification);
+  },
+
+  getAlertDetails: async (alertId: string): Promise<DashboardNotification> => {
+    const payload = await request<JsonRecord>('GET', `/alerts/${alertId}`, undefined, { idempotent: false });
+    return mapDashboardNotification(payload);
+  },
+
+  investigateAlert: async (alertId: string, data?: Record<string, unknown>): Promise<{ status: string }> => {
+    const payload = await request<JsonRecord>('POST', `/alerts/${alertId}/investigate`, data ?? {}, { idempotent: false });
+    return { status: typeof payload.status === 'string' ? payload.status : 'investigating' };
+  },
+
+  resolveAlert: async (alertId: string, data?: Record<string, unknown>): Promise<{ status: string }> => {
+    const payload = await request<JsonRecord>('POST', `/alerts/${alertId}/resolve`, data ?? {}, { idempotent: false });
+    return { status: typeof payload.status === 'string' ? payload.status : 'resolved' };
+  },
+
+  recordConsent: async (data: Record<string, unknown>): Promise<ConsentRecord> => {
+    const payload = await request<JsonRecord>('POST', '/privacy/consent/record', data, { idempotent: false });
+    return {
+      consentId: String(payload.consentId ?? payload.id ?? generateToken('consent')),
+      customerId: String(payload.customerId ?? data.customerId ?? ''),
+      type: String(payload.type ?? data.type ?? 'general'),
+      status: String(payload.status ?? 'recorded'),
+      recordedAt: String(payload.recordedAt ?? payload.createdAt ?? toIsoNow()),
+      details: isRecord(payload.details) ? payload.details : undefined,
+    };
+  },
+
+  getConsentHistory: async (customerId: string): Promise<ConsentRecord[]> => {
+    const payload = await request<unknown>('GET', `/privacy/consent/${customerId}`, undefined, { idempotent: false });
+    const items = Array.isArray(payload) ? payload : isRecord(payload) && Array.isArray(payload.items) ? payload.items : [];
+    return items.filter(isRecord).map((item) => ({
+      consentId: String(item.consentId ?? item.id ?? generateToken('consent')),
+      customerId: String(item.customerId ?? customerId),
+      type: String(item.type ?? 'general'),
+      status: String(item.status ?? 'recorded'),
+      recordedAt: String(item.recordedAt ?? item.createdAt ?? toIsoNow()),
+      details: isRecord(item.details) ? item.details : undefined,
+    }));
+  },
+
+  requestDataExport: async (data: Record<string, unknown>): Promise<DataExportResponse> => {
+    const payload = await request<JsonRecord>('POST', '/privacy/data-export', data, { idempotent: false });
+    return {
+      exportId: String(payload.exportId ?? payload.id ?? generateToken('export')),
+      status: String(payload.status ?? 'queued'),
+      downloadUrl: typeof payload.downloadUrl === 'string' ? payload.downloadUrl : undefined,
+    };
+  },
+
+  requestDataDeletion: async (data: Record<string, unknown>): Promise<DataDeletionResponse> => {
+    const payload = await request<JsonRecord>('POST', '/privacy/data-deletion', data, { idempotent: false });
+    return {
+      requestId: String(payload.requestId ?? payload.id ?? generateToken('delete')),
+      status: String(payload.status ?? 'queued'),
+    };
+  },
+
+  scheduleComplianceReport: async (data: Record<string, unknown>): Promise<ComplianceScheduleResponse> => {
+    const payload = await request<JsonRecord>('POST', '/compliance/reports/schedule', data, { idempotent: false });
+    return {
+      scheduleId: String(payload.scheduleId ?? payload.id ?? generateToken('schedule')),
+      status: String(payload.status ?? 'scheduled'),
+      nextRunAt: typeof payload.nextRunAt === 'string' ? payload.nextRunAt : undefined,
+    };
+  },
+
+  getComplianceReports: async (params?: { page?: number; limit?: number }): Promise<PagedResult<ComplianceReport>> => {
+    const query = buildQueryString({ page: params?.page, limit: params?.limit });
+    const payload = await request<unknown>('GET', `/compliance/reports${query}`, undefined, { idempotent: false });
+    return normalizePagedResult(payload, (value) => value as unknown as ComplianceReport);
+  },
+
+  getVerificationView: async (verificationId: string): Promise<VerificationViewModel> => {
+    const payload = await request<unknown>('GET', `/kyc/individual/${verificationId}`, undefined, { idempotent: false });
+    return mapVerificationViewModel(payload);
+  },
+
+  generateZkProof: async (data: Record<string, unknown>): Promise<PrivacyProofSummary> => {
+    const payload = await request<unknown>('POST', '/zk-proof/generate', data, { idempotent: false });
+    return mapPrivacyProof(payload) ?? {
+      proofId: generateToken('proof'),
+      proofType: 'zk_proof',
+      proofRole: 'primary',
+      publicSignals: {},
+      zkProof: null,
+    };
+  },
+
+  verifyZkProof: async (data: Record<string, unknown>): Promise<ProofVerificationResponse> => {
+    const payload = await request<JsonRecord>('POST', '/zk-proof/verify', data, { idempotent: false });
+    return {
+      valid: payload.valid !== false,
+      proofId: typeof payload.proofId === 'string' ? payload.proofId : undefined,
+      message: typeof payload.message === 'string' ? payload.message : undefined,
+    };
+  },
+
+  getVerificationProof: async (verificationId: string): Promise<PrivacyProofSummary | null> => {
+    const payload = await request<unknown>('GET', `/zk-proof/verification/${verificationId}`, undefined, { idempotent: false });
+    return mapPrivacyProof(payload);
+  },
+
+  discloseProof: async (data: Record<string, unknown>): Promise<SelectiveDisclosureResponse> => {
+    const payload = await request<JsonRecord>('POST', '/zk-proof/disclose', data, { idempotent: false });
+    return {
+      disclosureId: String(payload.disclosureId ?? payload.id ?? generateToken('disclose')),
+      disclosedFields: Array.isArray(payload.disclosedFields) ? payload.disclosedFields.map(String) : [],
+      payload: isRecord(payload.payload) ? payload.payload : {},
+    };
+  },
+
+  getZkCircuits: async (): Promise<CircuitCatalogItem[]> => {
+    const payload = await request<unknown>('GET', '/zk-proof/circuits', undefined, { idempotent: false });
+    const items = Array.isArray(payload) ? payload : isRecord(payload) && Array.isArray(payload.items) ? payload.items : [];
+    return items.filter(isRecord).map((item) => ({
+      circuitId: String(item.circuitId ?? item.id ?? 'unknown'),
+      title: String(item.title ?? item.name ?? item.circuitId ?? 'Unnamed circuit'),
+      description: typeof item.description === 'string' ? item.description : undefined,
+      privateInputs: Array.isArray(item.privateInputs) ? item.privateInputs.map(String) : [],
+      publicInputs: Array.isArray(item.publicInputs) ? item.publicInputs.map(String) : [],
+      defaultDisclosureFields: Array.isArray(item.defaultDisclosureFields) ? item.defaultDisclosureFields.map(String) : [],
+    }));
+  },
+
+  getNoirToolchainStatus: async (): Promise<NoirToolchainStatus> => {
+    const payload = await request<JsonRecord>('GET', '/zk-proof/noir/toolchain', undefined, { idempotent: false });
+    return {
+      ready: payload.ready === true,
+      runtime:
+        payload.runtime === 'native' || payload.runtime === 'docker'
+          ? payload.runtime
+          : 'unknown',
+      version: typeof payload.version === 'string' ? payload.version : undefined,
+    };
+  },
+
+  generateNoirProof: async (data: Record<string, unknown>): Promise<PrivacyProofSummary> => {
+    const payload = await request<unknown>('POST', '/zk-proof/noir/generate', data, { idempotent: false });
+    return mapPrivacyProof(payload, 'claim') ?? {
+      proofId: generateToken('noir'),
+      proofType: 'noir_claim',
+      proofRole: 'claim',
+      publicSignals: {},
+      zkProof: { backend: 'noir', circuitId: String(data.circuitId ?? 'unknown') },
+    };
+  },
+
+  verifyNoirProof: async (data: Record<string, unknown>): Promise<ProofVerificationResponse> => {
+    const payload = await request<JsonRecord>('POST', '/zk-proof/noir/verify', data, { idempotent: false });
+    return {
+      valid: payload.valid !== false,
+      proofId: typeof payload.proofId === 'string' ? payload.proofId : undefined,
+      message: typeof payload.message === 'string' ? payload.message : undefined,
+    };
+  },
+
+  createBlockchainAnchor: async (data: Record<string, unknown>): Promise<BlockchainAnchorResponse> => {
+    const payload = await request<JsonRecord>('POST', '/blockchain/anchor', data, { idempotent: false });
+    return {
+      anchorId: String(payload.anchorId ?? payload.id ?? generateToken('anchor')),
+      transactionHash: String(payload.transactionHash ?? payload.hash ?? ''),
+      status: String(payload.status ?? 'pending'),
+      anchoredAt: typeof payload.anchoredAt === 'string' ? payload.anchoredAt : undefined,
+    };
+  },
+
+  getBlockchainProof: async (verificationId: string): Promise<BlockchainAnchorResponse> => {
+    const payload = await request<JsonRecord>('GET', `/blockchain/proof/${verificationId}`, undefined, { idempotent: false });
+    return {
+      anchorId: String(payload.anchorId ?? verificationId),
+      transactionHash: String(payload.transactionHash ?? payload.hash ?? ''),
+      status: String(payload.status ?? 'available'),
+      anchoredAt: typeof payload.anchoredAt === 'string' ? payload.anchoredAt : undefined,
+    };
+  },
+
+  createDid: async (data: Record<string, unknown>): Promise<DidRecord> => {
+    const payload = await request<JsonRecord>('POST', '/did/create', data, { idempotent: false });
+    return {
+      did: String(payload.did ?? payload.id ?? ''),
+      customerId: String(payload.customerId ?? data.customerId ?? ''),
+      status: String(payload.status ?? 'created'),
+      createdAt: String(payload.createdAt ?? toIsoNow()),
+      document: isRecord(payload.document) ? payload.document : undefined,
+    };
+  },
+
+  getDid: async (customerId: string): Promise<DidRecord> => {
+    const payload = await request<JsonRecord>('GET', `/did/${customerId}`, undefined, { idempotent: false });
+    return {
+      did: String(payload.did ?? ''),
+      customerId,
+      status: String(payload.status ?? 'active'),
+      createdAt: String(payload.createdAt ?? toIsoNow()),
+      document: isRecord(payload.document) ? payload.document : undefined,
+    };
+  },
+
+  getDidCredential: async (credentialId: string): Promise<CredentialRecord> => {
+    const payload = await request<JsonRecord>('GET', `/did/credentials/${credentialId}`, undefined, { idempotent: false });
+    return {
+      credentialId: String(payload.credentialId ?? credentialId),
+      type: String(payload.type ?? payload.credentialType ?? 'credential'),
+      issuedAt: String(payload.issuedAt ?? payload.createdAt ?? toIsoNow()),
+      status: String(payload.status ?? 'issued'),
+      subjectDid: typeof payload.subjectDid === 'string' ? payload.subjectDid : undefined,
+      issuerDid: typeof payload.issuerDid === 'string' ? payload.issuerDid : undefined,
+      data: isRecord(payload.data) ? payload.data : undefined,
+    };
+  },
+
+  listDidCredentials: async (customerId: string): Promise<CredentialRecord[]> => {
+    const payload = await request<unknown>('GET', `/did/credentials/customer/${customerId}`, undefined, { idempotent: false });
+    const items = Array.isArray(payload) ? payload : isRecord(payload) && Array.isArray(payload.items) ? payload.items : [];
+    return items.filter(isRecord).map((item) => ({
+      credentialId: String(item.credentialId ?? item.id ?? generateToken('cred')),
+      type: String(item.type ?? item.credentialType ?? 'credential'),
+      issuedAt: String(item.issuedAt ?? item.createdAt ?? toIsoNow()),
+      status: String(item.status ?? 'issued'),
+      subjectDid: typeof item.subjectDid === 'string' ? item.subjectDid : undefined,
+      issuerDid: typeof item.issuerDid === 'string' ? item.issuerDid : undefined,
+      data: isRecord(item.data) ? item.data : undefined,
+    }));
+  },
+
+  presentCredential: async (data: Record<string, unknown>): Promise<PresentationResponse> => {
+    const payload = await request<JsonRecord>('POST', '/did/credentials/present', data, { idempotent: false });
+    return {
+      presentationId: String(payload.presentationId ?? payload.id ?? generateToken('presentation')),
+      status: String(payload.status ?? 'created'),
+      challenge: typeof payload.challenge === 'string' ? payload.challenge : undefined,
+    };
+  },
+
+  verifyPresentedCredential: async (data: Record<string, unknown>): Promise<ProofVerificationResponse> => {
+    const payload = await request<JsonRecord>('POST', '/did/credentials/verify', data, { idempotent: false });
+    return {
+      valid: payload.valid !== false,
+      proofId: typeof payload.presentationId === 'string' ? payload.presentationId : undefined,
+      message: typeof payload.message === 'string' ? payload.message : undefined,
+    };
+  },
+
+  listMonitoringRules: async (): Promise<MonitoringRule[]> => {
+    const payload = await request<unknown>('GET', '/monitoring/rules', undefined, { idempotent: false });
+    const items = Array.isArray(payload) ? payload : isRecord(payload) && Array.isArray(payload.items) ? payload.items : [];
+    return items.filter(isRecord).map((item) => ({
+      ruleId: String(item.ruleId ?? item.id ?? generateToken('rule')),
+      name: String(item.name ?? 'Rule'),
+      status: String(item.status ?? 'active'),
+      severity: typeof item.severity === 'string' ? item.severity : undefined,
+      conditions: isRecord(item.conditions) ? item.conditions : {},
+      updatedAt: String(item.updatedAt ?? item.createdAt ?? toIsoNow()),
+    }));
+  },
+
+  createMonitoringRule: async (data: Record<string, unknown>): Promise<MonitoringRule> => {
+    const payload = await request<JsonRecord>('POST', '/monitoring/rules/create', data, { idempotent: false });
+    return {
+      ruleId: String(payload.ruleId ?? payload.id ?? generateToken('rule')),
+      name: String(payload.name ?? data.name ?? 'Rule'),
+      status: String(payload.status ?? 'active'),
+      severity: typeof payload.severity === 'string' ? payload.severity : undefined,
+      conditions: isRecord(payload.conditions) ? payload.conditions : {},
+      updatedAt: String(payload.updatedAt ?? payload.createdAt ?? toIsoNow()),
+    };
+  },
+
+  updateMonitoringRule: async (ruleId: string, data: Record<string, unknown>): Promise<MonitoringRule> => {
+    const payload = await request<JsonRecord>('PATCH', `/monitoring/rules/${ruleId}`, data, { idempotent: false });
+    return {
+      ruleId,
+      name: String(payload.name ?? data.name ?? 'Rule'),
+      status: String(payload.status ?? 'active'),
+      severity: typeof payload.severity === 'string' ? payload.severity : undefined,
+      conditions: isRecord(payload.conditions) ? payload.conditions : {},
+      updatedAt: String(payload.updatedAt ?? toIsoNow()),
+    };
+  },
+
+  deleteMonitoringRule: async (ruleId: string): Promise<void> => {
+    await request('DELETE', `/monitoring/rules/${ruleId}`, undefined, { idempotent: false });
+  },
+
+  listCases: async (params?: { page?: number; limit?: number; status?: string }): Promise<PagedResult<CaseRecord>> => {
+    const query = buildQueryString({ page: params?.page, limit: params?.limit, status: params?.status });
+    const payload = await request<unknown>('GET', `/cases${query}`, undefined, { idempotent: false });
+    return normalizePagedResult(payload, (item) => ({
+      caseId: String(item.caseId ?? item.id ?? generateToken('case')),
+      status: String(item.status ?? 'open'),
+      priority: String(item.priority ?? 'medium'),
+      title: String(item.title ?? item.subject ?? 'Case'),
+      assignedTo: typeof item.assignedTo === 'string' ? item.assignedTo : undefined,
+      updatedAt: String(item.updatedAt ?? item.createdAt ?? toIsoNow()),
+      details: isRecord(item.details) ? item.details : undefined,
+    }));
+  },
+
+  createCase: async (data: Record<string, unknown>): Promise<CaseRecord> => {
+    const payload = await request<JsonRecord>('POST', '/cases/create', data, { idempotent: false });
+    return {
+      caseId: String(payload.caseId ?? payload.id ?? generateToken('case')),
+      status: String(payload.status ?? 'open'),
+      priority: String(payload.priority ?? data.priority ?? 'medium'),
+      title: String(payload.title ?? data.title ?? 'Case'),
+      assignedTo: typeof payload.assignedTo === 'string' ? payload.assignedTo : undefined,
+      updatedAt: String(payload.updatedAt ?? payload.createdAt ?? toIsoNow()),
+      details: isRecord(payload.details) ? payload.details : undefined,
+    };
+  },
+
+  getCase: async (caseId: string): Promise<CaseRecord> => {
+    const payload = await request<JsonRecord>('GET', `/cases/${caseId}`, undefined, { idempotent: false });
+    return {
+      caseId,
+      status: String(payload.status ?? 'open'),
+      priority: String(payload.priority ?? 'medium'),
+      title: String(payload.title ?? payload.subject ?? 'Case'),
+      assignedTo: typeof payload.assignedTo === 'string' ? payload.assignedTo : undefined,
+      updatedAt: String(payload.updatedAt ?? payload.createdAt ?? toIsoNow()),
+      details: isRecord(payload.details) ? payload.details : undefined,
+    };
+  },
+
+  updateCase: async (caseId: string, data: Record<string, unknown>): Promise<CaseRecord> => {
+    const payload = await request<JsonRecord>('PATCH', `/cases/${caseId}`, data, { idempotent: false });
+    return {
+      caseId,
+      status: String(payload.status ?? 'open'),
+      priority: String(payload.priority ?? data.priority ?? 'medium'),
+      title: String(payload.title ?? data.title ?? 'Case'),
+      assignedTo: typeof payload.assignedTo === 'string' ? payload.assignedTo : undefined,
+      updatedAt: String(payload.updatedAt ?? toIsoNow()),
+      details: isRecord(payload.details) ? payload.details : undefined,
+    };
+  },
+
+  assignCase: async (caseId: string, assigneeId: string): Promise<{ status: string }> => {
+    const payload = await request<JsonRecord>('POST', `/cases/${caseId}/assign`, { assigneeId }, { idempotent: false });
+    return { status: String(payload.status ?? 'assigned') };
+  },
+
+  closeCase: async (caseId: string, data?: Record<string, unknown>): Promise<{ status: string }> => {
+    const payload = await request<JsonRecord>('POST', `/cases/${caseId}/close`, data ?? {}, { idempotent: false });
+    return { status: String(payload.status ?? 'closed') };
+  },
+
+  getDocumentSupportedTypes: async (country?: string): Promise<string[]> => {
+    const query = buildQueryString({ country });
+    const payload = await request<unknown>('GET', `/documents/supported-types${query}`, undefined, { idempotent: false });
+    if (Array.isArray(payload)) return payload.map(String);
+    if (isRecord(payload) && Array.isArray(payload.items)) return payload.items.map(String);
+    return [];
+  },
+
+  classifyDocument: async (data: Record<string, unknown>): Promise<{ documentType: string; confidence: number }> => {
+    const payload = await request<JsonRecord>('POST', '/documents/classify', data, { idempotent: false });
+    return {
+      documentType: String(payload.documentType ?? payload.type ?? 'unknown'),
+      confidence: Number(payload.confidence ?? 0),
+    };
+  },
+
+  compareDocuments: async (data: Record<string, unknown>): Promise<{ matched: boolean; differences: string[] }> => {
+    const payload = await request<JsonRecord>('POST', '/documents/compare', data, { idempotent: false });
+    return {
+      matched: payload.matched !== false,
+      differences: Array.isArray(payload.differences) ? payload.differences.map(String) : [],
+    };
+  },
+
+  checkAdverseMedia: async (data: Record<string, unknown>): Promise<SanctionsCheckResponse> => {
+    const payload = await request<JsonRecord>('POST', '/screening/adverse-media/check', data, { idempotent: false });
+    const matches = Array.isArray(payload.matches) ? payload.matches : [];
+    return {
+      matchFound: matches.length > 0 || payload.status === 'potential_match',
+      hits: matches.filter(isRecord),
+    };
+  },
+
+  listSanctionsLists: async (): Promise<string[]> => {
+    const payload = await request<unknown>('GET', '/screening/sanctions/lists', undefined, { idempotent: false });
+    if (Array.isArray(payload)) return payload.map(String);
+    if (isRecord(payload) && Array.isArray(payload.items)) return payload.items.map(String);
+    return [];
+  },
+
+  toggleOngoingScreening: async (screeningType: 'sanctions' | 'pep' | 'adverse-media', customerId: string, active: boolean): Promise<MonitoringToggleResponse> => {
+    const payload = await request<JsonRecord>('POST', `/screening/${screeningType}/ongoing`, { customerId, active }, { idempotent: false });
+    return {
+      customerId,
+      active: payload.active === undefined ? active : Boolean(payload.active),
+      monitoringType: screeningType,
+      updatedAt: String(payload.updatedAt ?? toIsoNow()),
+    };
+  },
+
+  verifyBankAccount: async (data: Record<string, unknown>): Promise<AccountVerificationResponse> => {
+    const payload = await request<JsonRecord>('POST', '/account/verify', data, { idempotent: false });
+    return {
+      verificationId: String(payload.verificationId ?? payload.id ?? generateToken('acct')),
+      status: String(payload.status ?? 'pending'),
+      accountName: typeof payload.accountName === 'string' ? payload.accountName : undefined,
+      bankName: typeof payload.bankName === 'string' ? payload.bankName : undefined,
+      confidence: typeof payload.confidence === 'number' ? payload.confidence : undefined,
+    };
+  },
+
+  instantVerifyBankAccount: async (data: Record<string, unknown>): Promise<AccountVerificationResponse> => {
+    const payload = await request<JsonRecord>('POST', '/account/instant-verify', data, { idempotent: false });
+    return {
+      verificationId: String(payload.verificationId ?? payload.id ?? generateToken('acct')),
+      status: String(payload.status ?? 'verified'),
+      accountName: typeof payload.accountName === 'string' ? payload.accountName : undefined,
+      bankName: typeof payload.bankName === 'string' ? payload.bankName : undefined,
+      confidence: typeof payload.confidence === 'number' ? payload.confidence : undefined,
+    };
+  },
+
+  verifyMicroDeposits: async (data: Record<string, unknown>): Promise<AccountVerificationResponse> => {
+    const payload = await request<JsonRecord>('POST', '/account/micro-deposits', data, { idempotent: false });
+    return {
+      verificationId: String(payload.verificationId ?? payload.id ?? generateToken('acct')),
+      status: String(payload.status ?? 'pending'),
+      accountName: typeof payload.accountName === 'string' ? payload.accountName : undefined,
+      bankName: typeof payload.bankName === 'string' ? payload.bankName : undefined,
+      confidence: typeof payload.confidence === 'number' ? payload.confidence : undefined,
+    };
+  },
+
+  screenTransaction: async (data: Record<string, unknown>): Promise<TransactionMonitoringResponse> => {
+    const payload = await request<JsonRecord>('POST', '/transactions/screen', data, { idempotent: false });
+    const decision = String(payload.decision ?? 'approve');
+    return {
+      isSuspicious: decision !== 'approve',
+      riskScore: Number(payload.riskScore ?? payload.transactionRiskScore ?? 0),
+      action: decision === 'block' ? 'block' : decision === 'manual_review' ? 'manual_review' : 'approve',
+    };
+  },
+
+  enableOngoingMonitoring: async (customerId: string): Promise<MonitoringToggleResponse> => {
+    const payload = await request<JsonRecord>('POST', '/ongoing/enable', { customerId }, { idempotent: false });
+    return {
+      customerId,
+      active: payload.active === undefined ? true : Boolean(payload.active),
+      monitoringType: typeof payload.monitoringType === 'string' ? payload.monitoringType : undefined,
+      updatedAt: String(payload.updatedAt ?? toIsoNow()),
+    };
+  },
+
+  disableOngoingMonitoring: async (customerId: string): Promise<MonitoringToggleResponse> => {
+    const payload = await request<JsonRecord>('POST', '/ongoing/disable', { customerId }, { idempotent: false });
+    return {
+      customerId,
+      active: payload.active === undefined ? false : Boolean(payload.active),
+      monitoringType: typeof payload.monitoringType === 'string' ? payload.monitoringType : undefined,
+      updatedAt: String(payload.updatedAt ?? toIsoNow()),
+    };
+  },
+
+  getDueReviews: async (): Promise<DueReviewItem[]> => {
+    const payload = await request<unknown>('GET', '/ongoing/due-reviews', undefined, { idempotent: false });
+    const items = Array.isArray(payload) ? payload : isRecord(payload) && Array.isArray(payload.items) ? payload.items : [];
+    return items.filter(isRecord).map((item) => ({
+      id: String(item.id ?? generateToken('review')),
+      customerId: String(item.customerId ?? ''),
+      dueAt: String(item.dueAt ?? item.reviewAt ?? toIsoNow()),
+      reason: String(item.reason ?? 'Periodic review'),
+      status: String(item.status ?? 'due'),
+    }));
+  },
+
+  addWatchlistEntry: async (data: Record<string, unknown>): Promise<WatchlistEntry> => {
+    const payload = await request<JsonRecord>('POST', '/watchlist/add', data, { idempotent: false });
+    return {
+      id: String(payload.id ?? generateToken('watch')),
+      customerId: String(payload.customerId ?? data.customerId ?? ''),
+      status: String(payload.status ?? 'active'),
+      reason: typeof payload.reason === 'string' ? payload.reason : typeof data.reason === 'string' ? data.reason : undefined,
+      createdAt: String(payload.createdAt ?? toIsoNow()),
+    };
+  },
+
+  getWatchlist: async (): Promise<WatchlistEntry[]> => {
+    const payload = await request<unknown>('GET', '/watchlist', undefined, { idempotent: false });
+    const items = Array.isArray(payload) ? payload : isRecord(payload) && Array.isArray(payload.items) ? payload.items : [];
+    return items.filter(isRecord).map((item) => ({
+      id: String(item.id ?? generateToken('watch')),
+      customerId: String(item.customerId ?? ''),
+      status: String(item.status ?? 'active'),
+      reason: typeof item.reason === 'string' ? item.reason : undefined,
+      createdAt: String(item.createdAt ?? toIsoNow()),
+    }));
+  },
+
+  verifySourceOfFunds: async (data: Record<string, unknown>): Promise<SourceOfFundsResponse> => {
+    const payload = await request<JsonRecord>('POST', '/source-of-funds/verify', data, { idempotent: false });
+    return {
+      verificationId: String(payload.verificationId ?? payload.id ?? generateToken('sof')),
+      status: String(payload.status ?? 'pending'),
+      riskLevel: typeof payload.riskLevel === 'string' ? payload.riskLevel : undefined,
+      summary: typeof payload.summary === 'string' ? payload.summary : undefined,
+    };
+  },
+
+  analyzeSourceOfFunds: async (data: Record<string, unknown>): Promise<SourceOfFundsResponse> => {
+    const payload = await request<JsonRecord>('POST', '/source-of-funds/analyze', data, { idempotent: false });
+    return {
+      verificationId: String(payload.verificationId ?? payload.id ?? generateToken('sof')),
+      status: String(payload.status ?? 'completed'),
+      riskLevel: typeof payload.riskLevel === 'string' ? payload.riskLevel : undefined,
+      summary: typeof payload.summary === 'string' ? payload.summary : undefined,
+    };
+  },
+
+  verifySourceOfWealth: async (data: Record<string, unknown>): Promise<SourceOfFundsResponse> => {
+    const payload = await request<JsonRecord>('POST', '/source-of-wealth/verify', data, { idempotent: false });
+    return {
+      verificationId: String(payload.verificationId ?? payload.id ?? generateToken('sow')),
+      status: String(payload.status ?? 'pending'),
+      riskLevel: typeof payload.riskLevel === 'string' ? payload.riskLevel : undefined,
+      summary: typeof payload.summary === 'string' ? payload.summary : undefined,
+    };
+  },
+
+  getSourceOfWealthAssessment: async (customerId: string): Promise<SourceOfWealthAssessment> => {
+    const payload = await request<JsonRecord>('GET', `/source-of-wealth/${customerId}/assessment`, undefined, { idempotent: false });
+    return {
+      customerId,
+      riskLevel: String(payload.riskLevel ?? 'low'),
+      summary: String(payload.summary ?? ''),
+      factors: Array.isArray(payload.factors) ? payload.factors.map(String) : [],
+    };
+  },
+
+  runCreditCheck: async (data: Record<string, unknown>): Promise<CreditCheckResponse> => {
+    const payload = await request<JsonRecord>('POST', '/credit/check', data, { idempotent: false });
+    return {
+      checkId: String(payload.checkId ?? payload.id ?? generateToken('credit')),
+      status: String(payload.status ?? 'completed'),
+      score: typeof payload.score === 'number' ? payload.score : undefined,
+      provider: typeof payload.provider === 'string' ? payload.provider : undefined,
+    };
+  },
+
+  getCreditScore: async (data: Record<string, unknown>): Promise<CreditCheckResponse> => {
+    const payload = await request<JsonRecord>('POST', '/credit/score', data, { idempotent: false });
+    return {
+      checkId: String(payload.checkId ?? payload.id ?? generateToken('credit')),
+      status: String(payload.status ?? 'completed'),
+      score: typeof payload.score === 'number' ? payload.score : undefined,
+      provider: typeof payload.provider === 'string' ? payload.provider : undefined,
+    };
+  },
+
+  translateText: async (data: Record<string, unknown>): Promise<TranslationResponse> => {
+    const payload = await request<JsonRecord>('POST', '/translation/text', data, { idempotent: false });
+    return {
+      translatedText: String(payload.translatedText ?? payload.text ?? ''),
+      sourceLanguage: typeof payload.sourceLanguage === 'string' ? payload.sourceLanguage : undefined,
+      targetLanguage: typeof payload.targetLanguage === 'string' ? payload.targetLanguage : undefined,
+    };
+  },
+
+  translateDocument: async (data: Record<string, unknown>): Promise<TranslationResponse> => {
+    const payload = await request<JsonRecord>('POST', '/translation/document', data, { idempotent: false });
+    return {
+      translatedText: String(payload.translatedText ?? payload.text ?? ''),
+      sourceLanguage: typeof payload.sourceLanguage === 'string' ? payload.sourceLanguage : undefined,
+      targetLanguage: typeof payload.targetLanguage === 'string' ? payload.targetLanguage : undefined,
+    };
+  },
+
+  convertCurrency: async (data: { sourceCurrency: string; targetCurrency: string; amount: number }): Promise<CurrencyConversionResponse> => {
+    const payload = await request<JsonRecord>('POST', '/localization/currency-convert', data, { idempotent: false });
+    return {
+      sourceCurrency: data.sourceCurrency,
+      targetCurrency: data.targetCurrency,
+      sourceAmount: data.amount,
+      convertedAmount: Number(payload.convertedAmount ?? payload.amount ?? 0),
+      rate: Number(payload.rate ?? 0),
+    };
+  },
+
+  getCountryRegulations: async (country: string): Promise<CountryRegulationResponse> => {
+    const payload = await request<unknown>('GET', `/localization/regulations/${country}`, undefined, { idempotent: false });
+    const regulations = Array.isArray(payload)
+      ? payload
+      : isRecord(payload) && Array.isArray(payload.items)
+        ? payload.items
+        : isRecord(payload) && Array.isArray(payload.regulations)
+          ? payload.regulations
+          : [];
+    return {
+      country,
+      regulations: regulations.filter(isRecord).map((item) => ({
+        id: String(item.id ?? generateToken('reg')),
+        title: String(item.title ?? item.name ?? 'Regulation'),
+        summary: String(item.summary ?? item.description ?? ''),
+        category: typeof item.category === 'string' ? item.category : undefined,
+      })),
+    };
+  },
+
+  generateSandboxTestData: async (data?: Record<string, unknown>): Promise<SandboxSeedResponse> => {
+    const payload = await request<JsonRecord>('POST', '/sandbox/generate-test-data', data ?? {}, { idempotent: false });
+    return {
+      batchId: String(payload.batchId ?? payload.id ?? generateToken('sandbox')),
+      recordsCreated: Number(payload.recordsCreated ?? payload.count ?? 0),
+      status: String(payload.status ?? 'completed'),
+    };
+  },
+
+  getPrimitiveHealth: async (): Promise<PrimitiveHealth> => {
+    const payload = await primitiveRequest<JsonRecord>('GET', '/verification/health');
+    return {
+      status: typeof payload.status === 'string' ? payload.status : 'ok',
+      ready: payload.ready !== false,
+      details: isRecord(payload.details) ? payload.details : undefined,
+    };
+  },
+
+  getPrimitiveCameras: async (): Promise<Array<Record<string, unknown>>> => {
+    const payload = await primitiveRequest<unknown>('GET', '/verification/cameras');
+    if (Array.isArray(payload)) return payload.filter(isRecord);
+    if (isRecord(payload) && Array.isArray(payload.items)) return payload.items.filter(isRecord);
+    return [];
+  },
+
+  getPrimitiveConfig: async (): Promise<Record<string, unknown>> => {
+    const payload = await primitiveRequest<unknown>('GET', '/verification/config');
+    return isRecord(payload) ? payload : {};
+  },
+
+  getPrimitiveProxyToken: async (data?: Record<string, unknown>): Promise<Record<string, unknown>> => {
+    const payload = await primitiveRequest<unknown>('POST', '/verification/proxy/token', data ?? {});
+    return isRecord(payload) ? payload : {};
+  },
+
+  getPrimitiveModelStatus: async (): Promise<PrimitiveModelStatus> => {
+    const payload = await primitiveRequest<JsonRecord>('GET', '/verification/model/status');
+    return {
+      status: String(payload.status ?? 'unknown'),
+      loaded: payload.loaded === true,
+      modelVersion: typeof payload.modelVersion === 'string' ? payload.modelVersion : undefined,
+    };
+  },
+
+  reloadPrimitiveModel: async (): Promise<PrimitiveModelStatus> => {
+    const payload = await primitiveRequest<JsonRecord>('POST', '/verification/model/reload', {});
+    return {
+      status: String(payload.status ?? 'reloading'),
+      loaded: payload.loaded === true,
+      modelVersion: typeof payload.modelVersion === 'string' ? payload.modelVersion : undefined,
+    };
   },
 
   issueCredential: async (data: CredentialIssuanceRequest): Promise<CredentialIssuanceResponse> => {

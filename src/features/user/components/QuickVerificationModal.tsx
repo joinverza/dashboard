@@ -20,6 +20,8 @@ interface QuickVerificationModalProps {
   onSuccess: () => void;
 }
 
+type IdDocumentType = "passport" | "drivers_license" | "national_id";
+
 export default function QuickVerificationModal({ isOpen, onClose, onSuccess }: QuickVerificationModalProps) {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -29,7 +31,7 @@ export default function QuickVerificationModal({ isOpen, onClose, onSuccess }: Q
     lastName: "",
     email: "",
     dob: "",
-    idDocumentType: "national_id" as "passport" | "drivers_license" | "national_id",
+    idDocumentType: "national_id" as IdDocumentType,
   });
 
   const handleNext = () => setStep((s) => s + 1);
@@ -137,9 +139,9 @@ export default function QuickVerificationModal({ isOpen, onClose, onSuccess }: Q
               >
                 <div className="space-y-2">
                   <Label className="text-zinc-300">Document Type</Label>
-                  <Select 
-                    value={formData.idDocumentType} 
-                    onValueChange={(v: any) => setFormData({...formData, idDocumentType: v})}
+                  <Select
+                    value={formData.idDocumentType}
+                    onValueChange={(value) => setFormData({ ...formData, idDocumentType: value as IdDocumentType })}
                   >
                     <SelectTrigger className="bg-zinc-900 border-zinc-800 focus:ring-verza-emerald">
                       <SelectValue placeholder="Select document type" />

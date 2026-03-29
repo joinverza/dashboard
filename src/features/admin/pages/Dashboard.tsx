@@ -21,9 +21,8 @@ import {
   Legend,
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
-import { useState, useEffect } from 'react';
-import { bankingService } from '@/services/bankingService';
-import type { VerificationStatsResponse, DashboardNotification, SystemHealthService, GeoDistributionItem } from '@/types/banking';
+import { useEffect } from 'react';
+import { useAdminDashboardData } from '@/hooks/useBankingDashboard';
 
 ChartJS.register(
   CategoryScale,
@@ -49,37 +48,13 @@ const formatRelativeTime = (value: string): string => {
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
-  const [stats, setStats] = useState<VerificationStatsResponse | null>(null);
-  const [activeVerifiers, setActiveVerifiers] = useState(0);
-  const [systemHealth, setSystemHealth] = useState<SystemHealthService[]>([]);
-  const [recentAlerts, setRecentAlerts] = useState<DashboardNotification[]>([]);
-  const [geoDistribution, setGeoDistribution] = useState<GeoDistributionItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { stats, activeVerifiers, systemHealth, recentAlerts, geoDistribution, isLoading, error } = useAdminDashboardData();
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
-      try {
-        const [statsData, activeVerifierUsers, healthData, alertsData, geoData] = await Promise.all([
-          bankingService.getVerificationStats(),
-          bankingService.getUsers({ role: "verifier", status: "active" }),
-          bankingService.getSystemHealth(),
-          bankingService.getRecentAlerts(),
-          bankingService.getGeoDistribution(),
-        ]);
-        setStats(statsData);
-        setActiveVerifiers(activeVerifierUsers.length);
-        setSystemHealth(healthData);
-        setRecentAlerts(alertsData.slice(0, 5));
-        setGeoDistribution(geoData.slice(0, 6));
-      } catch {
-        toast.error("Failed to load dashboard statistics");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    void fetchDashboardData();
-  }, []);
+    if (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to load dashboard statistics");
+    }
+  }, [error]);
 
   if (isLoading) {
     return (
@@ -209,18 +184,18 @@ export default function AdminDashboard() {
               <CardDescription>Real-time status of key services.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {systemHealth.map((service, index) => (
-                <div key={index} className="flex items-center justify-between">
+              {systemHealth.slice(0, 5).map((service, index) => (
+                <div key={`${String(service.name)}-${index}`} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    {service.name.includes("Database") ? <Database className="h-4 w-4 text-muted-foreground" /> :
-                     service.name.includes("Node") ? <Globe className="h-4 w-4 text-muted-foreground" /> :
+                    {String(service.name).includes("Database") ? <Database className="h-4 w-4 text-muted-foreground" /> :
+                     String(service.name).includes("Node") ? <Globe className="h-4 w-4 text-muted-foreground" /> :
                      <Server className="h-4 w-4 text-muted-foreground" />}
-                    <span className="text-sm font-medium">{service.name}</span>
+                    <span className="text-sm font-medium">{String(service.name)}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground">{service.uptime}</span>
+                    <span className="text-xs text-muted-foreground">{String(service.uptime)}</span>
                     <div className={`h-2.5 w-2.5 rounded-full ${
-                      service.status === "operational" ? "bg-green-500" : 
+                      service.status === "operational" ? "bg-green-500" :
                       service.status === "degraded" ? "bg-yellow-500" : "bg-red-500"
                     }`} />
                   </div>

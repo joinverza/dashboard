@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShieldCheck, 
@@ -13,16 +13,9 @@ import { Button } from "@/components/ui/button";
 
 export default function UserOnboarding({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(1);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => !localStorage.getItem("verza_user_onboarded"));
 
-  useEffect(() => {
-    const hasCompleted = localStorage.getItem("verza_user_onboarded");
-    if (!hasCompleted) {
-      setIsOpen(true);
-    } else {
-      onComplete();
-    }
-  }, [onComplete]);
+  if (!isOpen) return null;
 
   const handleNext = () => {
     if (step < 4) {
@@ -33,8 +26,6 @@ export default function UserOnboarding({ onComplete }: { onComplete: () => void 
       onComplete();
     }
   };
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">

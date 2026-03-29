@@ -774,3 +774,276 @@ export interface CredentialIssuanceResponse {
   issuedAt: string;
   status: 'issued' | 'pending' | 'failed';
 }
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  [key: string]: unknown;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  meta: PaginationMeta;
+}
+
+export interface PrivacyProofSummary {
+  proofId: string;
+  proofType: string;
+  proofRole: 'primary' | 'claim';
+  verificationId?: string;
+  commitment?: string;
+  publicSignals: Record<string, unknown>;
+  zkProof?: {
+    backend: 'noir';
+    circuitId: string;
+    verifierTarget?: string;
+  } | null;
+}
+
+export interface VerificationViewModel {
+  verificationId: string;
+  status: string;
+  overallResult?: string;
+  riskLevel?: string;
+  privacyProof?: PrivacyProofSummary | null;
+  privacyClaims: PrivacyProofSummary[];
+}
+
+export interface FraudTrendPoint {
+  period: string;
+  count: number;
+  severity?: string;
+}
+
+export interface RiskDistributionItem {
+  bucket: string;
+  count: number;
+  percentage: number;
+}
+
+export interface ComplianceMetric {
+  label: string;
+  value: number;
+  unit?: string;
+  change?: number;
+}
+
+export interface ProcessingTimePoint {
+  period: string;
+  averageSeconds: number;
+  p95Seconds?: number;
+}
+
+export interface ConsentRecord {
+  consentId: string;
+  customerId: string;
+  type: string;
+  status: string;
+  recordedAt: string;
+  details?: Record<string, unknown>;
+}
+
+export interface DataExportResponse {
+  exportId: string;
+  status: string;
+  downloadUrl?: string;
+}
+
+export interface DataDeletionResponse {
+  requestId: string;
+  status: string;
+}
+
+export interface ComplianceScheduleResponse {
+  scheduleId: string;
+  status: string;
+  nextRunAt?: string;
+}
+
+export interface ProofVerificationResponse {
+  valid: boolean;
+  proofId?: string;
+  message?: string;
+}
+
+export interface CircuitCatalogItem {
+  circuitId: string;
+  title: string;
+  description?: string;
+  privateInputs: string[];
+  publicInputs: string[];
+  defaultDisclosureFields: string[];
+}
+
+export interface NoirToolchainStatus {
+  ready: boolean;
+  runtime: 'native' | 'docker' | 'unknown';
+  version?: string;
+}
+
+export interface SelectiveDisclosureResponse {
+  disclosureId: string;
+  disclosedFields: string[];
+  payload: Record<string, unknown>;
+}
+
+export interface BlockchainAnchorResponse {
+  anchorId: string;
+  transactionHash: string;
+  status: string;
+  anchoredAt?: string;
+}
+
+export interface DidRecord {
+  did: string;
+  customerId: string;
+  status: string;
+  createdAt: string;
+  document?: Record<string, unknown>;
+}
+
+export interface CredentialRecord {
+  credentialId: string;
+  type: string;
+  issuedAt: string;
+  status: string;
+  subjectDid?: string;
+  issuerDid?: string;
+  data?: Record<string, unknown>;
+}
+
+export interface PresentationResponse {
+  presentationId: string;
+  status: string;
+  challenge?: string;
+}
+
+export interface MonitoringRule {
+  ruleId: string;
+  name: string;
+  status: string;
+  severity?: string;
+  conditions: Record<string, unknown>;
+  updatedAt: string;
+}
+
+export interface CaseRecord {
+  caseId: string;
+  status: string;
+  priority: string;
+  title: string;
+  assignedTo?: string;
+  updatedAt: string;
+  details?: Record<string, unknown>;
+}
+
+export interface PrimitiveHealth {
+  status: string;
+  ready: boolean;
+  details?: Record<string, unknown>;
+}
+
+export interface PrimitiveModelStatus {
+  status: string;
+  loaded: boolean;
+  modelVersion?: string;
+}
+
+export interface AccountVerificationResponse {
+  verificationId: string;
+  status: string;
+  accountName?: string;
+  bankName?: string;
+  confidence?: number;
+}
+
+export interface MonitoringToggleResponse {
+  customerId: string;
+  active: boolean;
+  monitoringType?: string;
+  updatedAt: string;
+}
+
+export interface DueReviewItem {
+  id: string;
+  customerId: string;
+  dueAt: string;
+  reason: string;
+  status: string;
+}
+
+export interface WatchlistEntry {
+  id: string;
+  customerId: string;
+  status: string;
+  reason?: string;
+  createdAt: string;
+}
+
+export interface SourceOfFundsResponse {
+  verificationId: string;
+  status: string;
+  riskLevel?: string;
+  summary?: string;
+}
+
+export interface SourceOfWealthAssessment {
+  customerId: string;
+  riskLevel: string;
+  summary: string;
+  factors: string[];
+}
+
+export interface CreditCheckResponse {
+  checkId: string;
+  status: string;
+  score?: number;
+  provider?: string;
+}
+
+export interface TranslationResponse {
+  translatedText: string;
+  sourceLanguage?: string;
+  targetLanguage?: string;
+}
+
+export interface CurrencyConversionResponse {
+  sourceCurrency: string;
+  targetCurrency: string;
+  sourceAmount: number;
+  convertedAmount: number;
+  rate: number;
+}
+
+export interface CountryRegulationResponse {
+  country: string;
+  regulations: Array<{
+    id: string;
+    title: string;
+    summary: string;
+    category?: string;
+  }>;
+}
+
+export interface SandboxSeedResponse {
+  batchId: string;
+  recordsCreated: number;
+  status: string;
+}
+
+export interface ApiReferenceEndpoint {
+  category: string;
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  path: string;
+  component: string;
+  description: string;
+  auth?: string;
+}
+
+export interface ApiReferenceSection {
+  id: string;
+  title: string;
+  endpoints: ApiReferenceEndpoint[];
+}
