@@ -68,6 +68,8 @@ export default function ApiManagement() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isTestingWebhookId, setIsTestingWebhookId] = useState<string | null>(null);
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
+  const [isRetryingRequestId, setIsRetryingRequestId] = useState<string | null>(null);
+  const [isCancellingRequestId, setIsCancellingRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -251,6 +253,68 @@ export default function ApiManagement() {
   const clearRequestHistory = () => {
     setRequestHistory([]);
     window.localStorage.removeItem(REQUEST_HISTORY_STORAGE_KEY);
+  };
+
+  const persistRequestHistory = (next: BankingRequestDiagnosticEvent[]) => {
+    setRequestHistory(next);
+    window.localStorage.setItem(REQUEST_HISTORY_STORAGE_KEY, JSON.stringify(next));
+  };
+
+  const cancelDiagnosticRequest = async (item: BankingRequestDiagnosticEvent) => {
+    setIsCancellingRequestId(item.requestId);
+    try {
+      const next = [
+        {
+          ...item,
+          stage: 'failed' as const,
+          status: 499,
+          message: 'Retry cancelled by user',
+          retryInMs: undefined,
+          occurredAt: new Date().toISOString(),
+        },
+        ...requestHistory.filter((entry) => !(entry.requestId === item.requestId && entry.stage === 'retrying')),
+      ].slice(0, 80);
+      persistRequestHistory(next);
+      toast.success('Retry cancelled for this request');
+    } finally {
+      setIsCancellingRequestId(null);
+    }
+  };
+
+  const retryDiagnosticRequest = async (item: BankingRequestDiagnosticEvent) => {
+    setIsRetryingRequestId(item.requestId);
+    try {
+      if (item.method === 'GET' && item.path.includes('/api-keys')) {
+        const keys = await apiKeysService.list();
+        setApiKeys(keys);
+      } else if (item.method === 'GET' && item.path.includes('/webhooks')) {
+        const hooks = await webhooksService.list();
+        setWebhooks(hooks);
+      } else if (item.method === 'GET' && item.path.includes('/api/settings')) {
+        await loadApiSettings();
+      } else {
+        toast.info('This request type cannot be auto-retried. Repeat the original action from the page controls.');
+        return;
+      }
+
+      const event: BankingRequestDiagnosticEvent = {
+        requestId: item.requestId,
+        path: item.path,
+        method: item.method,
+        stage: 'succeeded',
+        status: 200,
+        attempt: (item.attempt ?? 0) + 1,
+        message: 'Retried by user from diagnostics',
+        occurredAt: new Date().toISOString(),
+      };
+      const next = [event, ...requestHistory].slice(0, 80);
+      persistRequestHistory(next);
+      toast.success('Request retried successfully');
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Retry failed'));
+    } finally {
+      setIsRetryingRequestId(null);
+    }
   };
 
   const requestHistoryRows = useMemo(() => requestHistory.slice(0, 20), [requestHistory]);
@@ -514,6 +578,7 @@ export default function ApiManagement() {
                     <TableHead>Request ID</TableHead>
                     <TableHead>Retry</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -541,6 +606,27 @@ export default function ApiManagement() {
                         {item.attempt ? `#${item.attempt}${item.retryInMs ? ` · ${Math.round(item.retryInMs / 1000)}s` : ''}` : '-'}
                       </TableCell>
                       <TableCell>{item.status ?? '-'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => retryDiagnosticRequest(item)}
+                            disabled={isRetryingRequestId === item.requestId}
+                          >
+                            {isRetryingRequestId === item.requestId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Retry'}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => cancelDiagnosticRequest(item)}
+                            disabled={isCancellingRequestId === item.requestId}
+                          >
+                            {isCancellingRequestId === item.requestId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Cancel'}
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -574,6 +660,7 @@ export default function ApiManagement() {
                       <TableHead>Request ID</TableHead>
                       <TableHead>Retry</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -599,6 +686,27 @@ export default function ApiManagement() {
                           {item.attempt ? `#${item.attempt}${item.retryInMs ? ` · ${Math.round(item.retryInMs / 1000)}s` : ''}` : '-'}
                         </TableCell>
                         <TableCell>{item.status ?? '-'}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => retryDiagnosticRequest(item)}
+                              disabled={isRetryingRequestId === item.requestId}
+                            >
+                              {isRetryingRequestId === item.requestId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Retry'}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => cancelDiagnosticRequest(item)}
+                              disabled={isCancellingRequestId === item.requestId}
+                            >
+                              {isCancellingRequestId === item.requestId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Cancel'}
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
