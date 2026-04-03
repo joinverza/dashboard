@@ -62,7 +62,7 @@ export default function ApiManagement() {
   const [newWebhookUrl, setNewWebhookUrl] = useState('');
   const [newWebhookEvents, setNewWebhookEvents] = useState<string[]>([]);
   const [apiKeyFilter, setApiKeyFilter] = useState<ApiKeyFilter>('all');
-  const [createKeyEnvironment, setCreateKeyEnvironment] = useState<ApiKeyEnvironment>('production');
+  const [createKeyEnvironment, setCreateKeyEnvironment] = useState<ApiKeyEnvironment | null>(null);
   const [isCreateKeyDialogOpen, setIsCreateKeyDialogOpen] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [rawApiKey, setRawApiKey] = useState('');
@@ -186,6 +186,10 @@ export default function ApiManagement() {
     const trimmedName = newKeyName.trim();
     if (!trimmedName || trimmedName.length > 128) {
       toast.error('Key name must be 1-128 characters');
+      return;
+    }
+    if (!createKeyEnvironment) {
+      toast.error('Select an environment before creating the key');
       return;
     }
     setIsCreatingKey(true);
@@ -429,7 +433,15 @@ export default function ApiManagement() {
             </Button>
           </div>
           
-          <Dialog open={isCreateKeyDialogOpen} onOpenChange={setIsCreateKeyDialogOpen}>
+          <Dialog
+            open={isCreateKeyDialogOpen}
+            onOpenChange={(open) => {
+              setIsCreateKeyDialogOpen(open);
+              if (open) {
+                setCreateKeyEnvironment(null);
+              }
+            }}
+          >
             <DialogTrigger asChild>
                 <Button className="gap-2 bg-verza-primary hover:bg-verza-primary/90">
                     <Plus className="h-4 w-4" />
@@ -455,7 +467,7 @@ export default function ApiManagement() {
                     </div>
                     <div className="space-y-3">
                       <Label>Environment</Label>
-                      <RadioGroup value={createKeyEnvironment} onValueChange={(value) => setCreateKeyEnvironment(value as ApiKeyEnvironment)}>
+                      <RadioGroup value={createKeyEnvironment ?? ''} onValueChange={(value) => setCreateKeyEnvironment(value as ApiKeyEnvironment)}>
                         <Label
                           htmlFor="api-key-env-production"
                           className="flex cursor-pointer items-start justify-between rounded-lg border p-3 hover:bg-muted/50"
@@ -477,10 +489,13 @@ export default function ApiManagement() {
                           <RadioGroupItem id="api-key-env-sandbox" value="sandbox" />
                         </Label>
                       </RadioGroup>
+                      {!createKeyEnvironment ? (
+                        <p className="text-xs text-muted-foreground">Choose one environment to continue.</p>
+                      ) : null}
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleCreateKey} disabled={!newKeyName || isCreatingKey}>
+                    <Button onClick={handleCreateKey} disabled={!newKeyName.trim() || !createKeyEnvironment || isCreatingKey}>
                         {isCreatingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Key"}
                     </Button>
                 </DialogFooter>
