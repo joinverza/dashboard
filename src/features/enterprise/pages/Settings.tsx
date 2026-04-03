@@ -115,11 +115,6 @@ export default function EnterpriseSettings() {
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
         <p className="text-muted-foreground">Manage your company profile and preferences.</p>
       </div>
-      <TabHelpCard
-        title="Settings Guide"
-        description="Use Company Profile for organization details, Notifications for alerts, and Security for account protection controls."
-      />
-
       <Tabs defaultValue="company" className="space-y-6">
         <TabsList className="bg-card/50 backdrop-blur-sm border border-border/50 p-1">
           <TabsTrigger value="company">Company Profile</TabsTrigger>
@@ -128,6 +123,15 @@ export default function EnterpriseSettings() {
         </TabsList>
 
         <TabsContent value="company">
+          <TabHelpCard
+            title="Company Profile"
+            description="Update core business identity details shown across your organization and integrations."
+            icon={Building2}
+            sectionLabel="Profile"
+            tone="blue"
+            useWhen="you need to update legal/contact information or branding assets."
+            highlights={['Business details', 'Contact fields', 'Logo management']}
+          />
           <Card className="bg-card/80 backdrop-blur-sm border-border/50">
             <CardHeader>
               <CardTitle>Company Information</CardTitle>
@@ -256,6 +260,15 @@ export default function EnterpriseSettings() {
         </TabsContent>
 
         <TabsContent value="notifications">
+          <TabHelpCard
+            title="Notifications"
+            description="Control how operational and security events are delivered to your team."
+            icon={Bell}
+            sectionLabel="Alerts"
+            tone="violet"
+            useWhen="different teams need different channels for critical and non-critical updates."
+            highlights={['Email alerts', 'SMS alerts', 'Webhook notifications']}
+          />
           <Card className="bg-card/80 backdrop-blur-sm border-border/50">
             <CardHeader>
               <CardTitle>Notification Preferences</CardTitle>
@@ -318,6 +331,15 @@ export default function EnterpriseSettings() {
         </TabsContent>
 
         <TabsContent value="security">
+          <TabHelpCard
+            title="Security"
+            description="Strengthen account and API protection with authentication and network controls."
+            icon={Shield}
+            sectionLabel="Protection"
+            tone="blue"
+            useWhen="you are hardening production access and reducing account compromise risk."
+            highlights={['MFA controls', 'Secret rotation', 'IP whitelist rules']}
+          />
           <Card className="bg-card/80 backdrop-blur-sm border-border/50">
             <CardHeader>
               <CardTitle>Security Settings</CardTitle>

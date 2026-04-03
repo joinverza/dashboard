@@ -14,8 +14,10 @@ import {
   Plus,
   RefreshCw,
   Server,
+  Settings2,
   Shield,
-  Trash2
+  Trash2,
+  Webhook
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -34,8 +36,9 @@ import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
 import { TabHelpCard } from '@/components/shared/TabHelpCard';
 import { useAuth } from '@/features/auth/AuthContext';
 import { BANKING_REQUEST_DIAGNOSTIC_EVENT, getBankingErrorMessage } from '@/services/bankingService';
+import { bankingService } from '@/services/bankingService';
 import { apiKeysService, apiManagementEndpointMappings, webhooksService } from '@/services/apiManagementService';
-import type { ApiKeyResponse, BankingRequestDiagnosticEvent, WebhookResponse } from '@/types/banking';
+import type { ApiKeyResponse, ApiSecuritySettings, BankingRequestDiagnosticEvent, WebhookResponse } from '@/types/banking';
 
 const REQUEST_HISTORY_STORAGE_KEY = 'verza:banking:requestHistory';
 const API_SETTINGS_STORAGE_KEY = 'verza:api:settings';
@@ -50,7 +53,8 @@ export default function ApiManagement() {
   const [isDeletingWebhookId, setIsDeletingWebhookId] = useState<string | null>(null);
   const [isDeletingKeyId, setIsDeletingKeyId] = useState<string | null>(null);
   const [newKeyName, setNewKeyName] = useState('');
-  const [isCreatingWebhook, setIsCreatingWebhook] = useState(false);
+  const [isWebhookDialogOpen, setIsWebhookDialogOpen] = useState(false);
+  const [isSubmittingWebhook, setIsSubmittingWebhook] = useState(false);
   const [newWebhookUrl, setNewWebhookUrl] = useState('');
   const [newWebhookEvents, setNewWebhookEvents] = useState<string[]>([]);
   const [sandboxMode, setSandboxMode] = useState(true);
@@ -60,7 +64,10 @@ export default function ApiManagement() {
   const [requestHistory, setRequestHistory] = useState<BankingRequestDiagnosticEvent[]>([]);
   const [autoRotateSecrets, setAutoRotateSecrets] = useState(false);
   const [ipWhitelistEnabled, setIpWhitelistEnabled] = useState(false);
+  const [allowedIps, setAllowedIps] = useState('');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isTestingWebhookId, setIsTestingWebhookId] = useState<string | null>(null);
+  const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -106,17 +113,31 @@ export default function ApiManagement() {
   }, [rawApiKey, rawApiKeyExpiresAt]);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(API_SETTINGS_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { autoRotateSecrets?: boolean; ipWhitelistEnabled?: boolean };
-      setAutoRotateSecrets(Boolean(parsed.autoRotateSecrets));
-      setIpWhitelistEnabled(Boolean(parsed.ipWhitelistEnabled));
-    } catch {
-      setAutoRotateSecrets(false);
-      setIpWhitelistEnabled(false);
-    }
+    void loadApiSettings();
   }, []);
+
+  const loadApiSettings = async () => {
+    try {
+      const response = await bankingService.getApiSecuritySettings();
+      setAutoRotateSecrets(response.autoRotateSecrets);
+      setIpWhitelistEnabled(response.ipWhitelistEnabled);
+      setAllowedIps((response.allowedIps || []).join(', '));
+      return;
+    } catch {
+      try {
+        const raw = window.localStorage.getItem(API_SETTINGS_STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw) as { autoRotateSecrets?: boolean; ipWhitelistEnabled?: boolean; allowedIps?: string[] };
+        setAutoRotateSecrets(Boolean(parsed.autoRotateSecrets));
+        setIpWhitelistEnabled(Boolean(parsed.ipWhitelistEnabled));
+        setAllowedIps(Array.isArray(parsed.allowedIps) ? parsed.allowedIps.join(', ') : '');
+      } catch {
+        setAutoRotateSecrets(false);
+        setIpWhitelistEnabled(false);
+        setAllowedIps('');
+      }
+    }
+  };
 
   const loadData = async () => {
     setIsLoadingData(true);
@@ -190,7 +211,7 @@ export default function ApiManagement() {
       toast.error('Enter a valid webhook URL');
       return;
     }
-    setIsCreatingWebhook(true);
+    setIsSubmittingWebhook(true);
     try {
       await webhooksService.register({
         url: newWebhookUrl.trim(),
@@ -199,11 +220,12 @@ export default function ApiManagement() {
       setNewWebhookUrl('');
       setNewWebhookEvents([]);
       await loadData();
+      setIsWebhookDialogOpen(false);
       toast.success('Webhook registered successfully');
     } catch (error) {
       toast.error(getBankingErrorMessage(error, 'Failed to register webhook'));
     } finally {
-      setIsCreatingWebhook(false);
+      setIsSubmittingWebhook(false);
     }
   };
 
@@ -234,26 +256,55 @@ export default function ApiManagement() {
   const requestHistoryRows = useMemo(() => requestHistory.slice(0, 20), [requestHistory]);
   const canViewApiKeys = hasPermission('api_keys:read') || user?.role === 'admin' || user?.role === 'manager' || user?.role === 'enterprise';
   const getApiKeyEnvironment = (key: ApiKeyResponse): 'production' | 'sandbox' => {
+    const explicit = String((key as ApiKeyResponse & { environment?: string }).environment ?? '').toLowerCase();
+    if (explicit === 'production' || explicit === 'sandbox') return explicit;
     const hint = `${key.name} ${key.keyPrefix}`.toLowerCase();
     return hint.includes('sandbox') || hint.includes('test') || hint.includes('dev') ? 'sandbox' : 'production';
   };
-  const visibleApiKeys = useMemo(
-    () => apiKeys.filter((key) => (sandboxMode ? getApiKeyEnvironment(key) === 'sandbox' : getApiKeyEnvironment(key) === 'production')),
-    [apiKeys, sandboxMode],
-  );
+  const visibleApiKeys = useMemo(() => {
+    const filtered = apiKeys.filter((key) => (sandboxMode ? getApiKeyEnvironment(key) === 'sandbox' : getApiKeyEnvironment(key) === 'production'));
+    return filtered.length > 0 ? filtered : apiKeys;
+  }, [apiKeys, sandboxMode]);
   const productionKeyCount = useMemo(() => apiKeys.filter((key) => getApiKeyEnvironment(key) === 'production').length, [apiKeys]);
   const sandboxKeyCount = useMemo(() => apiKeys.filter((key) => getApiKeyEnvironment(key) === 'sandbox').length, [apiKeys]);
 
   const saveApiSettings = async () => {
     setIsSavingSettings(true);
     try {
+      const payload: ApiSecuritySettings = {
+        autoRotateSecrets,
+        ipWhitelistEnabled,
+        allowedIps: allowedIps
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean),
+      };
+      await bankingService.updateApiSecuritySettings(payload);
       window.localStorage.setItem(
         API_SETTINGS_STORAGE_KEY,
-        JSON.stringify({ autoRotateSecrets, ipWhitelistEnabled }),
+        JSON.stringify(payload),
       );
       toast.success('API settings saved');
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to save API settings'));
     } finally {
       setIsSavingSettings(false);
+    }
+  };
+
+  const handleTestWebhook = async (webhookId: string) => {
+    setIsTestingWebhookId(webhookId);
+    try {
+      const result = await webhooksService.test({
+        webhookId,
+        eventType: 'verification.completed',
+        payload: { source: 'api-management' },
+      });
+      toast.success(`Webhook test ${result.status}`);
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to test webhook endpoint'));
+    } finally {
+      setIsTestingWebhookId(null);
     }
   };
 
@@ -437,9 +488,14 @@ export default function ApiManagement() {
             <CardTitle>Request Diagnostics</CardTitle>
             <CardDescription>Persistent history of request IDs, retries, and outcomes</CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={clearRequestHistory} disabled={requestHistory.length === 0}>
-            Clear History
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsDiagnosticsOpen(true)} disabled={requestHistory.length === 0}>
+              View Full Screen
+            </Button>
+            <Button variant="outline" size="sm" onClick={clearRequestHistory} disabled={requestHistory.length === 0}>
+              Clear History
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {requestHistoryRows.length === 0 ? (
@@ -447,7 +503,7 @@ export default function ApiManagement() {
               No request diagnostics yet. Run API actions to populate this panel.
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border max-h-[360px] overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -493,6 +549,65 @@ export default function ApiManagement() {
           )}
         </CardContent>
       </Card>
+      <Dialog open={isDiagnosticsOpen} onOpenChange={setIsDiagnosticsOpen}>
+        <DialogContent className="w-[95vw] max-w-[95vw] h-[90vh] p-0 flex flex-col">
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle>Request Diagnostics (Full Screen)</DialogTitle>
+            <DialogDescription>
+              Complete request log history with request IDs, retry attempts, and statuses.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 pb-6 pt-4 flex-1 min-h-0">
+            {requestHistory.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-3">
+                No request diagnostics yet. Run API actions to populate this panel.
+              </div>
+            ) : (
+              <div className="rounded-md border h-full overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Stage</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Path</TableHead>
+                      <TableHead>Request ID</TableHead>
+                      <TableHead>Retry</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {requestHistory.map((item) => (
+                      <TableRow key={`fullscreen-${item.requestId}-${item.stage}-${item.occurredAt}-${item.attempt || 0}`}>
+                        <TableCell className="text-xs">{new Date(item.occurredAt).toLocaleTimeString()}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={item.stage === 'failed' ? 'destructive' : item.stage === 'retrying' ? 'secondary' : 'outline'}
+                            className="uppercase text-[10px]"
+                          >
+                            {item.stage}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{item.method}</TableCell>
+                        <TableCell className="font-mono text-xs">{item.path}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          <button onClick={() => copyText(item.requestId)} className="hover:underline">
+                            {item.requestId}
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {item.attempt ? `#${item.attempt}${item.retryInMs ? ` · ${Math.round(item.retryInMs / 1000)}s` : ''}` : '-'}
+                        </TableCell>
+                        <TableCell>{item.status ?? '-'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Tabs defaultValue="keys" className="space-y-6">
         <TabsList>
@@ -505,6 +620,11 @@ export default function ApiManagement() {
           <TabHelpCard
             title="API Keys Tab"
             description="Create and rotate keys for production or sandbox usage. Key visibility is restricted to privileged team members."
+            icon={Key}
+            sectionLabel="Authentication"
+            tone="blue"
+            useWhen="you need to issue credentials for backend services or rotate compromised keys."
+            highlights={['Create keys', 'Revoke keys', 'Copy prefixes', 'Environment split']}
           />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -647,13 +767,18 @@ export default function ApiManagement() {
           <TabHelpCard
             title="Webhooks Tab"
             description="Register callback endpoints to receive verification events and monitor delivery status."
+            icon={Webhook}
+            sectionLabel="Event Delivery"
+            tone="violet"
+            useWhen="your system needs real-time updates without polling the API."
+            highlights={['Register endpoint', 'Choose events', 'Delivery status', 'Secret handling']}
           />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
             <div className="flex justify-end mb-4">
-                 <Dialog open={isCreatingWebhook} onOpenChange={setIsCreatingWebhook}>
+                 <Dialog open={isWebhookDialogOpen} onOpenChange={setIsWebhookDialogOpen}>
                     <DialogTrigger asChild>
                         <Button className="gap-2 bg-verza-primary hover:bg-verza-primary/90">
                             <Plus className="h-4 w-4" />
@@ -732,8 +857,8 @@ export default function ApiManagement() {
                               </div>
                         </div>
                         <DialogFooter>
-                            <Button onClick={handleCreateWebhook} disabled={!newWebhookUrl || isCreatingWebhook}>
-                                {isCreatingWebhook ? <Loader2 className="h-4 w-4 animate-spin" /> : "Register Webhook"}
+                            <Button onClick={handleCreateWebhook} disabled={!newWebhookUrl || isSubmittingWebhook}>
+                                {isSubmittingWebhook ? <Loader2 className="h-4 w-4 animate-spin" /> : "Register Webhook"}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -770,6 +895,9 @@ export default function ApiManagement() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
+                                        <Button variant="ghost" size="sm" onClick={() => handleTestWebhook(hook.id)} disabled={isTestingWebhookId === hook.id}>
+                                          {isTestingWebhookId === hook.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Test'}
+                                        </Button>
                                         <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteWebhook(hook.id)} disabled={isDeletingWebhookId === hook.id}>
                                           {isDeletingWebhookId === hook.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
                                         </Button>
@@ -787,6 +915,11 @@ export default function ApiManagement() {
             <TabHelpCard
               title="Settings Tab"
               description="Configure global API behavior and maintain endpoint-to-page mapping used by the dashboard."
+              icon={Settings2}
+              sectionLabel="Configuration"
+              tone="emerald"
+              useWhen="you need to harden API security controls and align endpoint ownership."
+              highlights={['Auto-rotation', 'IP restrictions', 'Endpoint mapping']}
             />
             <Card>
                 <CardHeader>
@@ -814,6 +947,15 @@ export default function ApiManagement() {
                             </p>
                         </div>
                         <Switch checked={ipWhitelistEnabled} onCheckedChange={setIpWhitelistEnabled} />
+                    </div>
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label>Allowed IPs (comma-separated)</Label>
+                      <Input
+                        placeholder="203.0.113.10/32, 198.51.100.0/24"
+                        value={allowedIps}
+                        onChange={(event) => setAllowedIps(event.target.value)}
+                      />
                     </div>
                     <Separator />
                     <div className="space-y-3">
