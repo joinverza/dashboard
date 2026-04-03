@@ -31,13 +31,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
+import { TabHelpCard } from '@/components/shared/TabHelpCard';
+import { useAuth } from '@/features/auth/AuthContext';
 import { BANKING_REQUEST_DIAGNOSTIC_EVENT, getBankingErrorMessage } from '@/services/bankingService';
 import { apiKeysService, apiManagementEndpointMappings, webhooksService } from '@/services/apiManagementService';
 import type { ApiKeyResponse, BankingRequestDiagnosticEvent, WebhookResponse } from '@/types/banking';
 
 const REQUEST_HISTORY_STORAGE_KEY = 'verza:banking:requestHistory';
+const API_SETTINGS_STORAGE_KEY = 'verza:api:settings';
 
 export default function ApiManagement() {
+  const { user, hasPermission } = useAuth();
   const [apiKeys, setApiKeys] = useState<ApiKeyResponse[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookResponse[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -54,6 +58,9 @@ export default function ApiManagement() {
   const [rawApiKey, setRawApiKey] = useState('');
   const [rawApiKeyExpiresAt, setRawApiKeyExpiresAt] = useState<number | null>(null);
   const [requestHistory, setRequestHistory] = useState<BankingRequestDiagnosticEvent[]>([]);
+  const [autoRotateSecrets, setAutoRotateSecrets] = useState(false);
+  const [ipWhitelistEnabled, setIpWhitelistEnabled] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -97,6 +104,19 @@ export default function ApiManagement() {
     }, timeoutMs);
     return () => window.clearTimeout(timeoutId);
   }, [rawApiKey, rawApiKeyExpiresAt]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(API_SETTINGS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { autoRotateSecrets?: boolean; ipWhitelistEnabled?: boolean };
+      setAutoRotateSecrets(Boolean(parsed.autoRotateSecrets));
+      setIpWhitelistEnabled(Boolean(parsed.ipWhitelistEnabled));
+    } catch {
+      setAutoRotateSecrets(false);
+      setIpWhitelistEnabled(false);
+    }
+  }, []);
 
   const loadData = async () => {
     setIsLoadingData(true);
@@ -144,7 +164,9 @@ export default function ApiManagement() {
         void navigator.clipboard.writeText(created.apiKey);
       }
     } catch (error) {
-      toast.error(getBankingErrorMessage(error, 'Failed to create API key'));
+      const message = getBankingErrorMessage(error, 'Failed to create API key');
+      const rateLimited = /429|rate limit/i.test(message);
+      toast.error(rateLimited ? 'Rate limit reached. Please wait and try again in a moment.' : message);
     } finally {
       setIsCreatingKey(false);
     }
@@ -210,6 +232,30 @@ export default function ApiManagement() {
   };
 
   const requestHistoryRows = useMemo(() => requestHistory.slice(0, 20), [requestHistory]);
+  const canViewApiKeys = hasPermission('api_keys:read') || user?.role === 'admin' || user?.role === 'manager' || user?.role === 'enterprise';
+  const getApiKeyEnvironment = (key: ApiKeyResponse): 'production' | 'sandbox' => {
+    const hint = `${key.name} ${key.keyPrefix}`.toLowerCase();
+    return hint.includes('sandbox') || hint.includes('test') || hint.includes('dev') ? 'sandbox' : 'production';
+  };
+  const visibleApiKeys = useMemo(
+    () => apiKeys.filter((key) => (sandboxMode ? getApiKeyEnvironment(key) === 'sandbox' : getApiKeyEnvironment(key) === 'production')),
+    [apiKeys, sandboxMode],
+  );
+  const productionKeyCount = useMemo(() => apiKeys.filter((key) => getApiKeyEnvironment(key) === 'production').length, [apiKeys]);
+  const sandboxKeyCount = useMemo(() => apiKeys.filter((key) => getApiKeyEnvironment(key) === 'sandbox').length, [apiKeys]);
+
+  const saveApiSettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      window.localStorage.setItem(
+        API_SETTINGS_STORAGE_KEY,
+        JSON.stringify({ autoRotateSecrets, ipWhitelistEnabled }),
+      );
+      toast.success('API settings saved');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   return (
     <ApiErrorBoundary>
@@ -362,6 +408,28 @@ export default function ApiManagement() {
           </CardContent>
         </Card>
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className={!sandboxMode ? 'border-blue-500/40' : ''}>
+          <CardHeader>
+            <CardTitle className="text-base">Production Environment</CardTitle>
+            <CardDescription>Live credentials and traffic</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{productionKeyCount}</div>
+            <p className="text-xs text-muted-foreground">Active keys in production</p>
+          </CardContent>
+        </Card>
+        <Card className={sandboxMode ? 'border-blue-500/40' : ''}>
+          <CardHeader>
+            <CardTitle className="text-base">Sandbox Environment</CardTitle>
+            <CardDescription>Testing and staging credentials</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{sandboxKeyCount}</div>
+            <p className="text-xs text-muted-foreground">Active keys in sandbox</p>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="bg-card/80 backdrop-blur-sm border-border/50">
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -434,6 +502,10 @@ export default function ApiManagement() {
         </TabsList>
 
         <TabsContent value="keys" className="space-y-6">
+          <TabHelpCard
+            title="API Keys Tab"
+            description="Create and rotate keys for production or sandbox usage. Key visibility is restricted to privileged team members."
+          />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -446,6 +518,11 @@ export default function ApiManagement() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {!canViewApiKeys ? (
+                  <div className="text-sm text-muted-foreground rounded-md border p-4">
+                    You do not have permission to view API keys. Ask an Admin or Manager for `api_keys:read` access.
+                  </div>
+                ) : (
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
@@ -459,7 +536,7 @@ export default function ApiManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {apiKeys.map((key) => (
+                      {visibleApiKeys.map((key) => (
                         <TableRow key={key.id}>
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
@@ -496,9 +573,17 @@ export default function ApiManagement() {
                           </TableCell>
                         </TableRow>
                       ))}
+                      {visibleApiKeys.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                            No {sandboxMode ? 'sandbox' : 'production'} API keys found.
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -559,6 +644,10 @@ export default function ApiManagement() {
         </TabsContent>
 
         <TabsContent value="webhooks" className="space-y-6">
+          <TabHelpCard
+            title="Webhooks Tab"
+            description="Register callback endpoints to receive verification events and monitor delivery status."
+          />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -695,6 +784,10 @@ export default function ApiManagement() {
         </TabsContent>
 
         <TabsContent value="settings">
+            <TabHelpCard
+              title="Settings Tab"
+              description="Configure global API behavior and maintain endpoint-to-page mapping used by the dashboard."
+            />
             <Card>
                 <CardHeader>
                     <CardTitle>API Settings</CardTitle>
@@ -710,7 +803,7 @@ export default function ApiManagement() {
                                 Automatically rotate secret keys every 90 days.
                             </p>
                         </div>
-                        <Switch />
+                        <Switch checked={autoRotateSecrets} onCheckedChange={setAutoRotateSecrets} />
                     </div>
                     <Separator />
                     <div className="flex items-center justify-between">
@@ -720,7 +813,7 @@ export default function ApiManagement() {
                                 Restrict API access to specific IP addresses.
                             </p>
                         </div>
-                        <Switch />
+                        <Switch checked={ipWhitelistEnabled} onCheckedChange={setIpWhitelistEnabled} />
                     </div>
                     <Separator />
                     <div className="space-y-3">
@@ -747,6 +840,12 @@ export default function ApiManagement() {
                           </TableBody>
                         </Table>
                       </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button onClick={saveApiSettings} disabled={isSavingSettings}>
+                        {isSavingSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Save API Settings
+                      </Button>
                     </div>
                 </CardContent>
             </Card>

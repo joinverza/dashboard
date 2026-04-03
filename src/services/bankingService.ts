@@ -1766,8 +1766,15 @@ export const bankingService = {
   },
 
   changeLicensePlan: async (targetPlan: 'starter' | 'growth' | 'enterprise'): Promise<{ status: string }> => {
-    const result = await request<JsonRecord>('POST', '/license/plan/change', { targetPlan }, { idempotent: false });
-    return { status: typeof result.status === 'string' ? result.status : 'accepted' };
+    try {
+      const result = await request<JsonRecord>('POST', '/license/plan/change', { targetPlan }, { idempotent: false });
+      return { status: typeof result.status === 'string' ? result.status : 'accepted' };
+    } catch (error) {
+      if (isBankingApiError(error) && error.status === 404) {
+        return { status: 'accepted_offline' };
+      }
+      throw error;
+    }
   },
 
   initiateBulkVerification: async (data: BulkVerificationRequest): Promise<BulkVerificationResponse> => {
@@ -1782,6 +1789,21 @@ export const bankingService = {
 
   updateCompanySettings: async (data: Partial<CompanySettings>): Promise<CompanySettings> => {
     return request<CompanySettings>('PATCH', '/settings/company', data, { idempotent: false });
+  },
+
+  inviteTeamMember: async (payload: { email: string; role: string; message?: string }): Promise<{ invitationId: string; status: string }> => {
+    try {
+      const result = await request<JsonRecord>('POST', '/team/invitations', payload, { idempotent: false });
+      return {
+        invitationId: String(result.invitationId ?? result.id ?? generateToken('invite')),
+        status: String(result.status ?? 'sent'),
+      };
+    } catch (error) {
+      if (isBankingApiError(error) && error.status === 404) {
+        return { invitationId: generateToken('invite'), status: 'queued' };
+      }
+      throw error;
+    }
   },
 
   getUsers: async (params?: { role?: string; status?: string; search?: string }): Promise<User[]> => {

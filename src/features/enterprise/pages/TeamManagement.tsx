@@ -22,7 +22,7 @@ const TEAM_MEMBERS = [
     role: "Admin", 
     status: "active",
     lastActive: "2 mins ago",
-    avatar: "/avatars/alex.jpg"
+    avatar: "/avatars/alex.svg"
   },
   { 
     id: "TM-002", 
@@ -31,7 +31,7 @@ const TEAM_MEMBERS = [
     role: "Manager", 
     status: "active",
     lastActive: "1 hour ago",
-    avatar: "/avatars/sarah.jpg"
+    avatar: "/avatars/sarah.svg"
   },
   { 
     id: "TM-003", 
@@ -40,7 +40,7 @@ const TEAM_MEMBERS = [
     role: "Analyst", 
     status: "away",
     lastActive: "3 days ago",
-    avatar: "/avatars/mike.jpg"
+    avatar: "/avatars/mike.svg"
   },
   { 
     id: "TM-004", 
@@ -58,7 +58,7 @@ const TEAM_MEMBERS = [
     role: "Analyst", 
     status: "suspended",
     lastActive: "2 weeks ago",
-    avatar: "/avatars/james.jpg"
+    avatar: "/avatars/james.svg"
   }
 ];
 

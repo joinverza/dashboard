@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, type ChangeEvent } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Building2, Globe, Mail, Phone, MapPin, 
@@ -15,11 +15,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { bankingService } from '@/services/bankingService';
 import type { CompanySettings } from '@/types/banking';
+import { toast } from 'sonner';
+import { TabHelpCard } from '@/components/shared/TabHelpCard';
 
 export default function EnterpriseSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [settings, setSettings] = useState<CompanySettings | null>(null);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     fetchSettings();
@@ -44,12 +47,31 @@ export default function EnterpriseSettings() {
       setIsSaving(true);
       const updated = await bankingService.updateCompanySettings(settings);
       setSettings(updated);
-      // In a real app, we would show a toast here
+      toast.success('Settings updated successfully');
     } catch (error) {
       console.error("Failed to update settings", error);
+      toast.error('Failed to update settings');
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleLogoUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !settings) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const nextUrl = typeof reader.result === 'string' ? reader.result : settings.logoUrl;
+      setSettings({ ...settings, logoUrl: nextUrl });
+      toast.success('Logo updated');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoRemove = () => {
+    if (!settings) return;
+    setSettings({ ...settings, logoUrl: '' });
+    toast.success('Logo removed');
   };
 
   if (isLoading) {
@@ -70,6 +92,10 @@ export default function EnterpriseSettings() {
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
         <p className="text-muted-foreground">Manage your company profile and preferences.</p>
       </div>
+      <TabHelpCard
+        title="Settings Guide"
+        description="Use Company Profile for organization details, Notifications for alerts, and Security for account protection controls."
+      />
 
       <Tabs defaultValue="company" className="space-y-6">
         <TabsList className="bg-card/50 backdrop-blur-sm border border-border/50 p-1">
@@ -85,6 +111,13 @@ export default function EnterpriseSettings() {
               <CardDescription>Update your company details and public profile.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleLogoUpload}
+              />
               {/* Logo Section */}
               <div className="flex items-center gap-6">
                 <Avatar className="h-24 w-24">
@@ -94,8 +127,8 @@ export default function EnterpriseSettings() {
                 <div className="space-y-2">
                   <h3 className="font-medium">Company Logo</h3>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">Upload New</Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">Remove</Button>
+                    <Button variant="outline" size="sm" onClick={() => logoInputRef.current?.click()}>Upload New</Button>
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={handleLogoRemove}>Remove</Button>
                   </div>
                   <p className="text-xs text-muted-foreground">Recommended size: 400x400px. Max size: 2MB.</p>
                 </div>

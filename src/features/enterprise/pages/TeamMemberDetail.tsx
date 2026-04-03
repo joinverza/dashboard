@@ -28,7 +28,7 @@ const MEMBER_DATA = {
   status: "active",
   joinDate: "Oct 15, 2023",
   lastActive: "2 mins ago",
-  avatar: "/avatars/alex.jpg",
+  avatar: "/avatars/alex.svg",
   permissions: [
     "Manage Team Members",
     "View Analytics",
