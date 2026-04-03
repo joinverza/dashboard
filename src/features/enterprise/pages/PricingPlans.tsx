@@ -90,7 +90,7 @@ export default function EnterprisePricingPlans() {
       return;
     }
     const interval = isAnnual ? 'yearly' : 'monthly';
-    setLocation(`/enterprise/billing?plan=${planId}&interval=${interval}`);
+    setLocation(`/enterprise/billing/checkout?plan=${planId}&interval=${interval}`);
   };
 
   return (

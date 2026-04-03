@@ -52,6 +52,10 @@ const EnterpriseIntegrationSetup = lazy(() => import("@/features/enterprise/page
 const EnterpriseBilling = lazy(() => import("@/features/enterprise/pages/Billing"));
 const EnterprisePricingPlans = lazy(() => import("@/features/enterprise/pages/PricingPlans"));
 const EnterpriseSettings = lazy(() => import("@/features/enterprise/pages/Settings"));
+const EnterpriseKybWizard = lazy(() => import("@/features/enterprise/pages/KybWizard"));
+const EnterpriseMonoViewer = lazy(() => import("@/features/enterprise/pages/MonoAccountViewer"));
+const EnterpriseComplianceWorkflow = lazy(() => import("@/features/enterprise/pages/ComplianceWorkflow"));
+const EnterpriseBillingCheckoutRedirect = lazy(() => import("@/features/enterprise/pages/BillingCheckoutRedirect"));
 const AdminDashboard = lazy(() => import("@/features/admin/pages/Dashboard"));
 const AdminUserManagement = lazy(() => import("@/features/admin/pages/UserManagement"));
 const AdminUserDetail = lazy(() => import("@/features/admin/pages/UserDetail"));
@@ -97,6 +101,7 @@ const AdminLoginPage = lazy(() => import("@/pages/AdminLogin"));
 const AdminSignupPage = lazy(() => import("@/pages/AdminSignup"));
 const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPassword"));
 const ResetPasswordPage = lazy(() => import("@/pages/ResetPassword"));
+const AcceptTeamInvitationPage = lazy(() => import("@/pages/AcceptTeamInvitation"));
 
 const MarketplacePage = lazy(() => import("@/pages/Marketplace"));
 const WalletPage = lazy(() => import("@/pages/Wallet"));
@@ -165,6 +170,7 @@ function Router() {
         </Route>
         <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/reset-password" component={ResetPasswordPage} />
+        <Route path="/invite/accept" component={AcceptTeamInvitationPage} />
         <Route path="/privacy" component={PrivacyPolicyPage} />
         <Route path="/terms" component={TermsOfServicePage} />
         <Route path="/onboarding" component={OnboardingPage} />
@@ -252,11 +258,15 @@ function Router() {
             <Route path="/enterprise/audit" component={EnterpriseAuditTrail} />
             <Route path="/enterprise/analytics" component={EnterpriseAnalytics} />
             <Route path="/enterprise/billing" component={EnterpriseBilling} />
+            <Route path="/enterprise/billing/checkout" component={EnterpriseBillingCheckoutRedirect} />
             <Route path="/enterprise/cost-analysis" component={EnterpriseCostAnalysis} />
             <Route path="/enterprise/pricing" component={EnterprisePricingPlans} />
             <Route path="/enterprise/integrations" component={EnterpriseIntegrations} />
             <Route path="/enterprise/integrations/setup" component={EnterpriseIntegrationSetup} />
             <Route path="/enterprise/integrations/setup/:id" component={EnterpriseIntegrationSetup} />
+            <Route path="/enterprise/kyb" component={EnterpriseKybWizard} />
+            <Route path="/enterprise/mono" component={EnterpriseMonoViewer} />
+            <Route path="/enterprise/compliance/workflows" component={EnterpriseComplianceWorkflow} />
             <Route path="/enterprise/settings" component={EnterpriseSettings} />
             <Route path="/enterprise/*" component={EnterpriseDashboard} />
           </>
@@ -271,6 +281,8 @@ function Router() {
             <Route path="/manager/team" component={EnterpriseTeamManagement} />
             <Route path="/manager/analytics" component={EnterpriseAnalytics} />
             <Route path="/manager/compliance" component={EnterpriseComplianceReports} />
+            <Route path="/manager/compliance/workflows" component={EnterpriseComplianceWorkflow} />
+            <Route path="/manager/kyb" component={EnterpriseKybWizard} />
             <Route path="/manager/audit" component={EnterpriseAuditTrail} />
             <Route path="/manager/settings" component={EnterpriseSettings} />
             <Route path="/manager/*" component={EnterpriseDashboard} />

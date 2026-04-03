@@ -52,8 +52,11 @@ export const verifierNavItems: NavItem[] = [
 export const enterpriseNavItems: NavItem[] = [
   { path: "/enterprise", label: "Dashboard", icon: LayoutDashboard },
   { path: "/enterprise/bulk", label: "Bulk Verification", icon: Upload },
+  { path: "/enterprise/kyb", label: "KYB Wizard", icon: Shield },
+  { path: "/enterprise/mono", label: "Mono Accounts", icon: Wallet },
   { path: "/enterprise/requests", label: "Requests", icon: FileText },
   { path: "/enterprise/verifications", label: "Verifications", icon: Shield },
+  { path: "/enterprise/compliance/workflows", label: "Case Workflows", icon: FileText },
   { path: "/enterprise/team", label: "Team", icon: Users },
   { path: "/enterprise/tools", label: "Operations Hub", icon: Wrench },
   { path: "/enterprise/api", label: "API", icon: Key },
@@ -65,10 +68,12 @@ export const managerNavItems: NavItem[] = [
   { path: "/manager", label: "Dashboard", icon: LayoutDashboard },
   { path: "/manager/requests", label: "Requests", icon: FileText },
   { path: "/manager/verifications", label: "Verifications", icon: Shield },
+  { path: "/manager/kyb", label: "KYB Wizard", icon: Shield },
   { path: "/manager/tools", label: "Operations Hub", icon: Wrench },
   { path: "/manager/team", label: "Team", icon: Users },
   { path: "/manager/analytics", label: "Analytics", icon: BarChart3 },
   { path: "/manager/compliance", label: "Compliance", icon: Shield },
+  { path: "/manager/compliance/workflows", label: "Case Workflows", icon: FileText },
   { path: "/manager/settings", label: "Settings", icon: Settings },
 ];
 

@@ -1,3 +1,156 @@
+# Frontend Schemas + Endpoint Mapping (Complete)
+
+This document is generated from frontend source code to provide an exhaustive backend mapping contract.
+
+## 1) Endpoint Inventory Used By Frontend Services
+
+| Service File | Line | Method | Endpoint Path (as used in frontend) | Request/Response Generic Schema |
+|---|---:|---|---|---|
+| bankingService.ts | 973 | GET | `/requests${query}` | `unknown` |
+| bankingService.ts | 990 | POST | `/requests/${verificationId}/review` | `JsonRecord` |
+| bankingService.ts | 1024 | POST | `/kyc/individual/verify` | `IndividualKYCVerifyApiData` |
+| bankingService.ts | 1035 | GET | `/kyc/individual/${verificationId}` | `IndividualKYCVerifyApiData` |
+| bankingService.ts | 1091 | POST | `/kyc/individual/basic` | `IndividualKYCVerifyApiData` |
+| bankingService.ts | 1116 | POST | `/documents/verify` | `unknown` |
+| bankingService.ts | 1122 | POST | `/documents/extract` | `DocumentExtractApiData` |
+| bankingService.ts | 1136 | POST | `/biometrics/face-match` | `BiometricFaceMatchApiData` |
+| bankingService.ts | 1156 | POST | `/biometrics/liveness` | `BiometricLivenessApiData` |
+| bankingService.ts | 1170 | POST | `/screening/sanctions/check` | `SanctionsCheckApiData` |
+| bankingService.ts | 1187 | POST | `/screening/pep/check` | `PEPCheckApiData` |
+| bankingService.ts | 1213 | POST | `/aml/risk-score` | `AMLRiskScoreApiData` |
+| bankingService.ts | 1224 | POST | `/risk/sandbox/simulate` | `JsonRecord` |
+| bankingService.ts | 1267 | POST | `/risk/sandbox/report` | `JsonRecord` |
+| bankingService.ts | 1286 | POST | `/aml/transaction-monitoring` | `TransactionMonitoringApiData` |
+| bankingService.ts | 1300 | POST | `/webhooks/register` | `JsonRecord` |
+| bankingService.ts | 1319 | POST | `/webhooks/test` | `JsonRecord` |
+| bankingService.ts | 1332 | POST | `/webhooks/${input.webhookId}/test` | `JsonRecord` |
+| bankingService.ts | 1346 | GET | `/webhooks${query}` | `JsonRecord` |
+| bankingService.ts | 1355 | DELETE | `/webhooks/${webhookId}` | `(implicit/none)` |
+| bankingService.ts | 1359 | POST | `/webhooks/${webhookId}/rotate-secret` | `JsonRecord` |
+| bankingService.ts | 1370 | GET | `/webhooks/retries` | `unknown` |
+| bankingService.ts | 1406 | POST | `/api-keys/create` | `JsonRecord` |
+| bankingService.ts | 1415 | GET | `/api-keys` | `JsonRecord` |
+| bankingService.ts | 1424 | DELETE | `/api-keys/${keyId}` | `(implicit/none)` |
+| bankingService.ts | 1428 | GET | `/audit/customer/${customerId}` | `JsonRecord` |
+| bankingService.ts | 1433 | GET | `/audit/verification/${verificationId}` | `JsonRecord` |
+| bankingService.ts | 1438 | GET | `/audit/logs` | `unknown` |
+| bankingService.ts | 1469 | POST | `/audit/logs/export-signed` | `JsonRecord` |
+| bankingService.ts | 1509 | POST | `/reports/create` | `JsonRecord` |
+| bankingService.ts | 1528 | GET | `/reports` | `unknown` |
+| bankingService.ts | 1539 | GET | `/analytics?timeRange=${encodeURIComponent(timeRange)}` | `AnalyticsData` |
+| bankingService.ts | 1631 | GET | `/user/wallet` | `unknown` |
+| bankingService.ts | 1650 | GET | `/admin/system-health` | `unknown` |
+| bankingService.ts | 1668 | GET | `/admin/alerts` | `unknown` |
+| bankingService.ts | 1686 | GET | `/analytics/geographic-distribution` | `unknown` |
+| bankingService.ts | 1703 | POST | `/onboarding/bulk/validate` | `JsonRecord` |
+| bankingService.ts | 1721 | POST | `/onboarding/bulk/import` | `JsonRecord` |
+| bankingService.ts | 1731 | GET | `/onboarding/bulk/errors/${validationId}` | `JsonRecord` |
+| bankingService.ts | 1737 | GET | `/license/usage` | `JsonRecord` |
+| bankingService.ts | 1770 | POST | `/license/plan/change` | `JsonRecord` |
+| bankingService.ts | 1782 | POST | `/bulk/verify` | `unknown` |
+| bankingService.ts | 1787 | GET | `/settings/company` | `CompanySettings` |
+| bankingService.ts | 1791 | PATCH | `/settings/company` | `CompanySettings` |
+| bankingService.ts | 1796 | POST | `/team/invitations` | `JsonRecord` |
+| bankingService.ts | 1811 | GET | `/admin/users?${query}` | `User[]` |
+| bankingService.ts | 1816 | GET | `/admin/verifiers?${query}` | `Verifier[]` |
+| bankingService.ts | 1820 | GET | `/admin/verifiers/${id}` | `Verifier` |
+| bankingService.ts | 1824 | GET | `/verifier/profile` | `VerifierProfile` |
+| bankingService.ts | 1828 | PATCH | `/verifier/profile` | `VerifierProfile` |
+| bankingService.ts | 1833 | GET | `/user/verifications${query}` | `unknown` |
+| bankingService.ts | 1839 | GET | `/notifications${query}` | `unknown` |
+| bankingService.ts | 1845 | GET | `/analytics/fraud-trends${query}` | `unknown` |
+| bankingService.ts | 1853 | GET | `/analytics/risk-distribution${query}` | `unknown` |
+| bankingService.ts | 1861 | GET | `/analytics/compliance-metrics${query}` | `unknown` |
+| bankingService.ts | 1874 | GET | `/analytics/geographical` | `unknown` |
+| bankingService.ts | 1882 | GET | `/analytics/processing-times${query}` | `unknown` |
+| bankingService.ts | 1889 | GET | `/health` | `JsonRecord` |
+| bankingService.ts | 1899 | GET | `/admin/alerts${query}` | `unknown` |
+| bankingService.ts | 1905 | GET | `/alerts${query}` | `unknown` |
+| bankingService.ts | 1910 | GET | `/alerts/${alertId}` | `JsonRecord` |
+| bankingService.ts | 1915 | POST | `/alerts/${alertId}/investigate` | `JsonRecord` |
+| bankingService.ts | 1920 | POST | `/alerts/${alertId}/resolve` | `JsonRecord` |
+| bankingService.ts | 1925 | POST | `/privacy/consent/record` | `JsonRecord` |
+| bankingService.ts | 1937 | GET | `/privacy/consent/${customerId}` | `unknown` |
+| bankingService.ts | 1950 | POST | `/privacy/data-export` | `JsonRecord` |
+| bankingService.ts | 1959 | POST | `/privacy/data-deletion` | `JsonRecord` |
+| bankingService.ts | 1967 | POST | `/compliance/reports/schedule` | `JsonRecord` |
+| bankingService.ts | 1977 | GET | `/compliance/reports${query}` | `unknown` |
+| bankingService.ts | 1982 | GET | `/kyc/individual/${verificationId}` | `unknown` |
+| bankingService.ts | 1987 | POST | `/zk-proof/generate` | `unknown` |
+| bankingService.ts | 1998 | POST | `/zk-proof/verify` | `JsonRecord` |
+| bankingService.ts | 2007 | GET | `/zk-proof/verification/${verificationId}` | `unknown` |
+| bankingService.ts | 2012 | POST | `/zk-proof/disclose` | `JsonRecord` |
+| bankingService.ts | 2021 | GET | `/zk-proof/circuits` | `unknown` |
+| bankingService.ts | 2034 | GET | `/zk-proof/noir/toolchain` | `JsonRecord` |
+| bankingService.ts | 2046 | POST | `/zk-proof/noir/generate` | `unknown` |
+| bankingService.ts | 2057 | POST | `/zk-proof/noir/verify` | `JsonRecord` |
+| bankingService.ts | 2066 | POST | `/blockchain/anchor` | `JsonRecord` |
+| bankingService.ts | 2076 | GET | `/blockchain/proof/${verificationId}` | `JsonRecord` |
+| bankingService.ts | 2086 | POST | `/did/create` | `JsonRecord` |
+| bankingService.ts | 2097 | GET | `/did/${customerId}` | `JsonRecord` |
+| bankingService.ts | 2108 | GET | `/did/credentials/${credentialId}` | `JsonRecord` |
+| bankingService.ts | 2121 | GET | `/did/credentials/customer/${customerId}` | `unknown` |
+| bankingService.ts | 2135 | POST | `/did/credentials/present` | `JsonRecord` |
+| bankingService.ts | 2144 | POST | `/did/credentials/verify` | `JsonRecord` |
+| bankingService.ts | 2153 | GET | `/monitoring/rules` | `unknown` |
+| bankingService.ts | 2166 | POST | `/monitoring/rules/create` | `JsonRecord` |
+| bankingService.ts | 2178 | PATCH | `/monitoring/rules/${ruleId}` | `JsonRecord` |
+| bankingService.ts | 2190 | DELETE | `/monitoring/rules/${ruleId}` | `(implicit/none)` |
+| bankingService.ts | 2195 | GET | `/cases${query}` | `unknown` |
+| bankingService.ts | 2208 | POST | `/cases/create` | `JsonRecord` |
+| bankingService.ts | 2221 | GET | `/cases/${caseId}` | `JsonRecord` |
+| bankingService.ts | 2234 | PATCH | `/cases/${caseId}` | `JsonRecord` |
+| bankingService.ts | 2247 | POST | `/cases/${caseId}/assign` | `JsonRecord` |
+| bankingService.ts | 2252 | POST | `/cases/${caseId}/close` | `JsonRecord` |
+| bankingService.ts | 2258 | GET | `/documents/supported-types${query}` | `unknown` |
+| bankingService.ts | 2265 | POST | `/documents/classify` | `JsonRecord` |
+| bankingService.ts | 2273 | POST | `/documents/compare` | `JsonRecord` |
+| bankingService.ts | 2281 | POST | `/screening/adverse-media/check` | `JsonRecord` |
+| bankingService.ts | 2290 | GET | `/screening/sanctions/lists` | `unknown` |
+| bankingService.ts | 2297 | POST | `/screening/${screeningType}/ongoing` | `JsonRecord` |
+| bankingService.ts | 2307 | POST | `/account/verify` | `JsonRecord` |
+| bankingService.ts | 2318 | POST | `/account/instant-verify` | `JsonRecord` |
+| bankingService.ts | 2329 | POST | `/account/micro-deposits` | `JsonRecord` |
+| bankingService.ts | 2340 | POST | `/transactions/screen` | `JsonRecord` |
+| bankingService.ts | 2350 | POST | `/ongoing/enable` | `JsonRecord` |
+| bankingService.ts | 2360 | POST | `/ongoing/disable` | `JsonRecord` |
+| bankingService.ts | 2370 | GET | `/ongoing/due-reviews` | `unknown` |
+| bankingService.ts | 2382 | POST | `/watchlist/add` | `JsonRecord` |
+| bankingService.ts | 2393 | GET | `/watchlist` | `unknown` |
+| bankingService.ts | 2405 | POST | `/source-of-funds/verify` | `JsonRecord` |
+| bankingService.ts | 2415 | POST | `/source-of-funds/analyze` | `JsonRecord` |
+| bankingService.ts | 2425 | POST | `/source-of-wealth/verify` | `JsonRecord` |
+| bankingService.ts | 2435 | GET | `/source-of-wealth/${customerId}/assessment` | `JsonRecord` |
+| bankingService.ts | 2445 | POST | `/credit/check` | `JsonRecord` |
+| bankingService.ts | 2455 | POST | `/credit/score` | `JsonRecord` |
+| bankingService.ts | 2465 | POST | `/translation/text` | `JsonRecord` |
+| bankingService.ts | 2474 | POST | `/translation/document` | `JsonRecord` |
+| bankingService.ts | 2483 | POST | `/localization/currency-convert` | `JsonRecord` |
+| bankingService.ts | 2494 | GET | `/localization/regulations/${country}` | `unknown` |
+| bankingService.ts | 2514 | POST | `/sandbox/generate-test-data` | `JsonRecord` |
+| bankingService.ts | 2523 | GET | `/verification/health` | `JsonRecord` |
+| bankingService.ts | 2532 | GET | `/verification/cameras` | `unknown` |
+| bankingService.ts | 2539 | GET | `/verification/config` | `unknown` |
+| bankingService.ts | 2544 | POST | `/verification/proxy/token` | `unknown` |
+| bankingService.ts | 2549 | GET | `/verification/model/status` | `JsonRecord` |
+| bankingService.ts | 2558 | POST | `/verification/model/reload` | `JsonRecord` |
+| bankingService.ts | 2567 | POST | `/verifier/issue-credential` | `CredentialIssuanceResponse` |
+| authService.ts | 292 | POST | `/login` | `AuthTokenResponse \| LoginMfaChallenge` |
+| authService.ts | 309 | POST | `/mfa/verify` | `AuthTokenResponse` |
+| authService.ts | 317 | POST | `/mfa/recovery-code/verify` | `AuthTokenResponse` |
+| authService.ts | 342 | POST | `/mfa/enroll/verify` | `(implicit/none)` |
+| authService.ts | 349 | POST | `/signup` | `SignupResponse` |
+| authService.ts | 357 | POST | `/refresh` | `AuthTokenResponse` |
+| authService.ts | 365 | POST | `/logout` | `undefined` |
+| authService.ts | 372 | POST | `/forgot-password` | `(implicit/none)` |
+| authService.ts | 379 | POST | `/reset-password` | `(implicit/none)` |
+| authService.ts | 386 | GET | `/me` | `{ id: string; email: string; role: BackendRole; permissions: string[] }` |
+
+## 2) Frontend Schema Source Of Truth (Banking Domain)
+
+Verbatim schema definitions from `src/types/banking.ts`:
+
+```ts
 
 export interface IndividualKYCRequest {
   firstName: string;
@@ -661,230 +814,6 @@ export interface CompanySettings {
   };
 }
 
-export interface InvitationAcceptBody {
-  token: string;
-}
-
-export interface InvitationLifecycleResponse {
-  invitationId: string;
-  status: string;
-}
-
-export interface ApiSecuritySettings {
-  autoRotateSecrets: boolean;
-  ipWhitelistEnabled: boolean;
-  allowedIps: string[];
-}
-
-export interface BillingPlan {
-  id: string;
-  name: string;
-  description?: string;
-  amount?: number;
-  currency?: string;
-  interval?: 'monthly' | 'yearly';
-  features?: string[];
-  [key: string]: unknown;
-}
-
-export interface CheckoutSessionBody {
-  targetPlan: string;
-  billingInterval: 'monthly' | 'yearly';
-}
-
-export interface CheckoutSessionResponse {
-  checkoutSessionId?: string;
-  checkoutUrl: string;
-  [key: string]: unknown;
-}
-
-export interface MonoExchangeBody {
-  customerId: string;
-  code: string;
-  metadata?: Record<string, unknown>;
-}
-
-export interface MonoExchangeResponse {
-  monoAccountId: string;
-  status?: string;
-  [key: string]: unknown;
-}
-
-export interface VoiceVerificationBody {
-  customerId: string;
-  voiceSample: string;
-  phrase?: string;
-}
-
-export interface BehavioralBody {
-  customerId: string;
-  signals: Record<string, unknown>;
-}
-
-export interface FingerprintBody {
-  customerId: string;
-  fingerprintTemplate: string;
-}
-
-export interface BiometricVerificationResponse {
-  verificationId?: string;
-  sessionId?: string;
-  status: string;
-  score?: number;
-  riskScore?: number;
-  privacyProof?: Record<string, unknown>;
-  [key: string]: unknown;
-}
-
-export interface BusinessInfo {
-  businessRef: string;
-  name: string;
-  country: string;
-  registrationNumber?: string;
-  address?: Record<string, unknown>;
-}
-
-export interface KybDirectorsBody {
-  businessRef: string;
-  directors: Array<Record<string, unknown>>;
-  matchThreshold?: number;
-  fuzzyMatching?: boolean;
-}
-
-export interface KybFinancialHealthBody {
-  businessRef: string;
-  [key: string]: unknown;
-}
-
-export interface KybWorkflowResponse {
-  status: string;
-  verificationId?: string;
-  recommendation?: string;
-  overallRecommendation?: string;
-  results?: Array<Record<string, unknown>>;
-  score?: number;
-  details?: Record<string, unknown>;
-  [key: string]: unknown;
-}
-
-export interface KycIndividualEnhancedBody {
-  [key: string]: unknown;
-  additionalChecks?: Record<string, unknown>;
-  callbackUrl?: string;
-  priority?: 'low' | 'standard' | 'high' | 'urgent';
-}
-
-export interface KycBatchBody {
-  items: Array<Record<string, unknown>>;
-}
-
-export interface KycBatchResponse {
-  batchId: string;
-  verificationIds?: string[];
-  [key: string]: unknown;
-}
-
-export interface DidVerifyBody {
-  did: string;
-  challenge: string;
-  signature: string;
-}
-
-export interface DidVerifyResponse {
-  did: string;
-  verified: boolean;
-}
-
-export interface CredentialIssueBody {
-  customerId: string;
-  verificationId?: string;
-  did?: string;
-  credentialType: string;
-  schema?: Record<string, unknown> | string;
-  claims: Record<string, unknown>;
-  expiresAt?: string;
-}
-
-export interface CredentialIssueResponse {
-  credentialId: string;
-  status: string;
-  credential?: Record<string, unknown>;
-  [key: string]: unknown;
-}
-
-export interface BlockchainProofByAnchorResponse {
-  anchorId: string;
-  status: 'anchored' | 'not_found' | string;
-  proof?: {
-    chain?: string;
-    txHash?: string;
-    anchorData?: Record<string, unknown>;
-    anchoredAt?: string;
-  };
-}
-
-export interface OngoingMonitoringStatusResponse {
-  subscriptionId: string;
-  active: boolean;
-  monitoringType: string;
-  frequencyDays?: number;
-  nextReviewAt?: string;
-  callbackUrl?: string;
-}
-
-export interface OngoingChangeItem {
-  changeId: string;
-  changeType: string;
-  details?: Record<string, unknown>;
-  detectedAt: string;
-}
-
-export interface OngoingMonitoringChangesResponse {
-  items: OngoingChangeItem[];
-}
-
-export interface SarCreateBody {
-  requestId: string;
-  customerId?: string;
-  narrative: string;
-  activity: Record<string, unknown>;
-}
-
-export interface SarSubmitBody {
-  reportId: string;
-  submissionChannel: 'electronic' | 'manual';
-}
-
-export interface CtrCreateBody {
-  requestId: string;
-  customerId?: string;
-  transaction: Record<string, unknown>;
-}
-
-export interface ComplianceCaseResponse {
-  reportId: string;
-  status: string;
-  [key: string]: unknown;
-}
-
-export interface PepFamilyBody {
-  firstName: string;
-  lastName: string;
-  fuzzyMatching?: boolean;
-  matchThreshold?: number;
-}
-
-export interface ReportDetailResponse {
-  reportId: string;
-  reportType: 'verification_summary' | 'compliance_summary' | 'risk_distribution' | string;
-  status: 'generating' | 'ready' | 'failed' | 'not_found' | string;
-  format: 'pdf' | 'csv' | 'excel' | string;
-  downloadUrl: string | null;
-  createdAt: string;
-  updatedAt: string;
-  readyAt: string | null;
-}
-
 export interface User {
   id: string;
   name: string;
@@ -973,9 +902,6 @@ export interface MarketplaceVerifier {
   rating: number;
   verified: boolean;
   imageUrl?: string;
-  reviewCount?: number;
-  priceFrom?: number;
-  currency?: string;
 }
 
 export interface UserWalletOverview {
@@ -1274,3 +1200,165 @@ export interface ApiReferenceSection {
   title: string;
   endpoints: ApiReferenceEndpoint[];
 }
+
+```
+
+## 3) Frontend Schema Source Of Truth (Auth Domain)
+
+Verbatim auth request/response schema definitions from `src/services/authService.ts` (type block):
+
+```ts
+import type { UserRole } from "@/features/auth/AuthContext";
+
+const AUTH_STORAGE_KEY = "verza:auth:session";
+
+type BackendRole = UserRole;
+type MfaMethod = "totp" | "webauthn" | "recovery_code";
+
+type ApiSuccess<T> = {
+  success: true;
+  data?: T;
+  requestId: string;
+};
+
+type ApiFailure = {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: unknown[];
+  };
+  requestId: string;
+};
+
+export type AuthTokenResponse = {
+  accessToken: string;
+  refreshToken: string;
+  tokenType: "Bearer";
+  expiresIn: number;
+  user: {
+    id: string;
+    email: string;
+    role: BackendRole;
+  };
+  permissions: string[];
+};
+
+export type AuthSession = {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;
+  user: {
+    id: string;
+    email: string;
+    role: UserRole;
+    name: string;
+  };
+  permissions: string[];
+};
+
+export type LoginPayload = {
+  email: string;
+  password: string;
+  role: BackendRole;
+  authKey: string;
+  mfa?: {
+    method: "totp";
+    code: string;
+  };
+};
+
+export type LoginMfaChallenge = {
+  mfaRequired: true;
+  challengeId: string;
+  methods: MfaMethod[];
+};
+
+export type MfaEnrollment = {
+  qrCodeImageUrl?: string;
+  otpauthUri?: string;
+  backupCodes: string[];
+};
+
+export type SignupPayload =
+  | {
+      role: "user";
+      fullName: string;
+      email: string;
+      password: string;
+      consentAccepted: boolean;
+    }
+  | {
+      role: "enterprise";
+      organizationName: string;
+      contactName: string;
+      email: string;
+      password: string;
+      countryCode: string;
+      registrationNumber: string;
+      consentAccepted: boolean;
+    }
+  | {
+      role: "verifier";
+      organizationName: string;
+      contactName: string;
+      email: string;
+      password: string;
+      verificationLicenseId: string;
+      jurisdiction: string;
+      consentAccepted: boolean;
+    }
+  | {
+      role: "admin";
+      fullName: string;
+      email: string;
+      password: string;
+      department: string;
+      authorizationCode: string;
+      consentAccepted: boolean;
+    };
+
+export type SignupResponse = {
+  userId: string;
+  role: BackendRole;
+  status: string;
+  generatedAuthKey: string;
+};
+
+export type AuthApiErrorCode =
+  | "validation_error"
+  | "invalid_credentials"
+  | "mfa_failed"
+  | "token_invalid"
+  | "role_mismatch"
+  | "account_disabled"
+  | "ip_blocked"
+  | "email_conflict"
+  | "account_locked"
+  | "rate_limited"
+  | "auth_internal_error"
+  | string;
+
+export class AuthApiError extends Error {
+  status: number;
+  code: AuthApiErrorCode;
+  requestId?: string;
+  details?: unknown[];
+
+  constructor(status: number, code: AuthApiErrorCode, message: string, requestId?: string, details?: unknown[]) {
+    super(message);
+    this.name = "AuthApiError";
+    this.status = status;
+    this.code = code;
+    this.requestId = requestId;
+    this.details = details;
+  }
+}
+```
+
+## 4) Backend Mapping Notes
+
+- Base banking path used by frontend runtime: `/api/v1/banking` (see `bankingService.ts`).
+- Auth base path is role-normalized by frontend (`/admin/auth`, `/enterprise/auth`, `/verifier/auth`, `/user/auth`) from `authService.ts`.
+- For endpoints with template paths (for example `/cases/${caseId}`), backend must support path params exactly as called.
+- For rows marked `implicit/none`, request/response typing is inferred in code or not generic-annotated; backend should still return envelope-compatible responses.

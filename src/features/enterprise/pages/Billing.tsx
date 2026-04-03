@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { TabHelpCard } from '@/components/shared/TabHelpCard';
 
@@ -32,12 +32,12 @@ const PLAN_PRICE_MAP = {
 } as const;
 
 export default function EnterpriseBilling() {
+  const [, setLocation] = useLocation();
   const [paymentMethods, setPaymentMethods] = useState(PAYMENT_METHODS);
   const [billingHistory] = useState(BILLING_HISTORY);
-  const [currentPlan, setCurrentPlan] = useState<'starter' | 'business' | 'enterprise'>('business');
-  const [interval, setIntervalValue] = useState<'monthly' | 'yearly'>('monthly');
+  const [currentPlan] = useState<'starter' | 'business' | 'enterprise'>('business');
+  const [interval] = useState<'monthly' | 'yearly'>('monthly');
   const [pendingPlan, setPendingPlan] = useState<{ plan: 'starter' | 'business' | 'enterprise'; interval: 'monthly' | 'yearly' } | null>(null);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -79,15 +79,9 @@ export default function EnterpriseBilling() {
     toast.success('Payment method added');
   };
 
-  const completeUpgrade = async () => {
+  const continueToCheckout = () => {
     if (!pendingPlan) return;
-    setIsProcessingPayment(true);
-    await new Promise((resolve) => setTimeout(resolve, 1400));
-    setCurrentPlan(pendingPlan.plan);
-    setIntervalValue(pendingPlan.interval);
-    setPendingPlan(null);
-    setIsProcessingPayment(false);
-    toast.success('Payment confirmed and plan updated.');
+    setLocation(`/enterprise/billing/checkout?plan=${pendingPlan.plan}&interval=${pendingPlan.interval}`);
   };
 
   return (
@@ -119,8 +113,8 @@ export default function EnterpriseBilling() {
             </CardDescription>
           </CardHeader>
           <CardFooter className="gap-2">
-            <Button onClick={completeUpgrade} disabled={isProcessingPayment}>
-              {isProcessingPayment ? 'Processing payment...' : 'Make Payment & Upgrade'}
+            <Button onClick={continueToCheckout}>
+              Continue To Secure Checkout
             </Button>
             <Button variant="outline" onClick={() => setPendingPlan(null)}>Cancel</Button>
           </CardFooter>

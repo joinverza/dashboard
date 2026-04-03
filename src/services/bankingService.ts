@@ -99,7 +99,39 @@ import type {
   SanctionsCheckApiData,
   PEPCheckApiData,
   AMLRiskScoreApiData,
-  TransactionMonitoringApiData
+  TransactionMonitoringApiData,
+  InvitationAcceptBody,
+  InvitationLifecycleResponse,
+  ApiSecuritySettings,
+  BillingPlan,
+  CheckoutSessionBody,
+  CheckoutSessionResponse,
+  MonoExchangeBody,
+  MonoExchangeResponse,
+  VoiceVerificationBody,
+  BehavioralBody,
+  FingerprintBody,
+  BiometricVerificationResponse,
+  BusinessInfo,
+  KybDirectorsBody,
+  KybFinancialHealthBody,
+  KybWorkflowResponse,
+  KycIndividualEnhancedBody,
+  KycBatchBody,
+  KycBatchResponse,
+  DidVerifyBody,
+  DidVerifyResponse,
+  CredentialIssueBody,
+  CredentialIssueResponse,
+  BlockchainProofByAnchorResponse,
+  OngoingMonitoringStatusResponse,
+  OngoingMonitoringChangesResponse,
+  SarCreateBody,
+  SarSubmitBody,
+  CtrCreateBody,
+  ComplianceCaseResponse,
+  PepFamilyBody,
+  ReportDetailResponse
 } from '../types/banking';
 import { getStoredSession, refreshRequest, saveSession, toSession } from './authService';
 import { z } from 'zod';
@@ -637,6 +669,49 @@ const primitiveRequest = async <T>(
   body?: unknown
 ): Promise<T> => performRequest<T>(ROOT_BASE_URL, method, path, body, { idempotent: false });
 
+const uploadMultipart = async <T>(path: string, formData: FormData): Promise<T> => {
+  const normalizedPath = normalizeEndpointPath(path);
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'X-Request-Id': generateUuid(),
+  };
+  const accessToken = await resolveAccessToken();
+  const apiKey = getBankingApiKey();
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  } else if (apiKey) {
+    headers.Authorization = `Bearer ${apiKey}`;
+  }
+  const res = await fetch(`${BASE_URL}${normalizedPath}`, {
+    method: 'POST',
+    headers,
+    body: formData,
+    credentials: 'include',
+  });
+  const text = await res.text();
+  const payload = text ? safeParseJson(text) : {};
+  if (!res.ok) {
+    throw new BankingApiError(
+      res.status,
+      normalizedPath,
+      toErrorMessage(res.status, payload),
+      res.headers.get('x-request-id') || headers['X-Request-Id'],
+      false
+    );
+  }
+  const { value, envelopeError } = unwrapEnvelope<T>(res.status, payload);
+  if (envelopeError) {
+    throw new BankingApiError(
+      res.status,
+      normalizedPath,
+      toErrorMessage(res.status, envelopeError),
+      res.headers.get('x-request-id') || headers['X-Request-Id'],
+      false
+    );
+  }
+  return value;
+};
+
 const toIsoNow = (): string => new Date().toISOString();
 
 const splitName = (name?: string): { firstName: string; lastName: string } => {
@@ -826,6 +901,9 @@ const mapMarketplaceVerifier = (item: JsonRecord): MarketplaceVerifier => ({
   category: String(item.category ?? item.specialization ?? item.service ?? 'General'),
   rating: typeof item.rating === 'number' ? item.rating : Number(item.rating || 0),
   verified: Boolean(item.verified ?? item.isVerified ?? item.status === 'verified'),
+  reviewCount: typeof item.reviewCount === 'number' ? item.reviewCount : undefined,
+  priceFrom: typeof item.priceFrom === 'number' ? item.priceFrom : undefined,
+  currency: typeof item.currency === 'string' ? item.currency : undefined,
   imageUrl:
     typeof item.imageUrl === 'string'
       ? item.imageUrl
@@ -1804,6 +1882,259 @@ export const bankingService = {
       }
       throw error;
     }
+  },
+
+  resendTeamInvitation: async (invitationId: string): Promise<InvitationLifecycleResponse> => {
+    const result = await request<JsonRecord>('POST', `/team/invitations/${invitationId}/resend`, undefined, { idempotent: false });
+    return {
+      invitationId: String(result.invitationId ?? invitationId),
+      status: String(result.status ?? 'sent'),
+    };
+  },
+
+  acceptTeamInvitation: async (data: InvitationAcceptBody): Promise<InvitationLifecycleResponse> => {
+    const result = await request<JsonRecord>('POST', '/team/invitations/accept', data, { idempotent: false });
+    return {
+      invitationId: String(result.invitationId ?? generateToken('invite')),
+      status: String(result.status ?? 'accepted'),
+    };
+  },
+
+  getApiSecuritySettings: async (): Promise<ApiSecuritySettings> => {
+    const result = await request<JsonRecord>('GET', '/api/settings', undefined, { idempotent: false });
+    return {
+      autoRotateSecrets: Boolean(result.autoRotateSecrets),
+      ipWhitelistEnabled: Boolean(result.ipWhitelistEnabled),
+      allowedIps: Array.isArray(result.allowedIps) ? result.allowedIps.map(String) : [],
+    };
+  },
+
+  updateApiSecuritySettings: async (data: ApiSecuritySettings): Promise<ApiSecuritySettings> => {
+    const result = await request<JsonRecord>('PATCH', '/api/settings', data, { idempotent: false });
+    return {
+      autoRotateSecrets: Boolean(result.autoRotateSecrets),
+      ipWhitelistEnabled: Boolean(result.ipWhitelistEnabled),
+      allowedIps: Array.isArray(result.allowedIps) ? result.allowedIps.map(String) : [],
+    };
+  },
+
+  getBillingPlans: async (): Promise<BillingPlan[]> => {
+    const payload = await request<unknown>('GET', '/billing/plans', undefined, { idempotent: false });
+    if (Array.isArray(payload)) return payload.filter(isRecord) as BillingPlan[];
+    if (isRecord(payload) && Array.isArray(payload.items)) return payload.items.filter(isRecord) as BillingPlan[];
+    return [];
+  },
+
+  createCheckoutSession: async (data: CheckoutSessionBody): Promise<CheckoutSessionResponse> => {
+    const result = await request<JsonRecord>('POST', '/billing/checkout/session', data, { idempotent: false });
+    return {
+      checkoutSessionId: typeof result.checkoutSessionId === 'string' ? result.checkoutSessionId : undefined,
+      checkoutUrl: String(result.checkoutUrl ?? ''),
+      ...result,
+    };
+  },
+
+  uploadCompanyLogo: async (file: File): Promise<{ logoUrl: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const result = await uploadMultipart<JsonRecord>('/settings/company/logo', formData);
+    return {
+      logoUrl: String(result.logoUrl ?? ''),
+    };
+  },
+
+  exchangeMonoCode: async (data: MonoExchangeBody): Promise<MonoExchangeResponse> => {
+    const result = await request<JsonRecord>('POST', '/account/mono/exchange', data, { idempotent: false });
+    return {
+      monoAccountId: String(result.monoAccountId ?? result.accountId ?? ''),
+      status: typeof result.status === 'string' ? result.status : undefined,
+      ...result,
+    };
+  },
+
+  getMonoAccountDetails: async (monoAccountId: string): Promise<Record<string, unknown>> => {
+    const result = await request<unknown>('GET', `/account/mono/${monoAccountId}/details`, undefined, { idempotent: false });
+    return isRecord(result) ? result : {};
+  },
+
+  getMonoAccountIdentity: async (monoAccountId: string): Promise<Record<string, unknown>> => {
+    const result = await request<unknown>('GET', `/account/mono/${monoAccountId}/identity`, undefined, { idempotent: false });
+    return isRecord(result) ? result : {};
+  },
+
+  getMonoAccountTransactions: async (monoAccountId: string): Promise<Record<string, unknown>> => {
+    const result = await request<unknown>('GET', `/account/mono/${monoAccountId}/transactions`, undefined, { idempotent: false });
+    return isRecord(result) ? result : {};
+  },
+
+  verifyVoiceBiometrics: async (data: VoiceVerificationBody): Promise<BiometricVerificationResponse> => {
+    const result = await request<JsonRecord>('POST', '/biometrics/voice-verification', data, { idempotent: false });
+    return {
+      verificationId: typeof result.verificationId === 'string' ? result.verificationId : undefined,
+      status: String(result.status ?? 'review'),
+      score: typeof result.score === 'number' ? result.score : undefined,
+      privacyProof: isRecord(result.privacyProof) ? result.privacyProof : undefined,
+      ...result,
+    };
+  },
+
+  verifyBehavioralBiometrics: async (data: BehavioralBody): Promise<BiometricVerificationResponse> => {
+    const result = await request<JsonRecord>('POST', '/biometrics/behavioral', data, { idempotent: false });
+    return {
+      sessionId: typeof result.sessionId === 'string' ? result.sessionId : undefined,
+      status: String(result.status ?? 'ok'),
+      riskScore: typeof result.riskScore === 'number' ? result.riskScore : undefined,
+      privacyProof: isRecord(result.privacyProof) ? result.privacyProof : undefined,
+      ...result,
+    };
+  },
+
+  verifyFingerprintBiometrics: async (data: FingerprintBody): Promise<BiometricVerificationResponse> => {
+    const result = await request<JsonRecord>('POST', '/biometrics/fingerprint', data, { idempotent: false });
+    return {
+      verificationId: typeof result.verificationId === 'string' ? result.verificationId : undefined,
+      status: String(result.status ?? 'review'),
+      score: typeof result.score === 'number' ? result.score : undefined,
+      privacyProof: isRecord(result.privacyProof) ? result.privacyProof : undefined,
+      ...result,
+    };
+  },
+
+  verifyBusinessKyb: async (data: BusinessInfo): Promise<KybWorkflowResponse> => {
+    return request<KybWorkflowResponse>('POST', '/kyb/business/verify', data, { idempotent: false });
+  },
+
+  runKybRegistryCheck: async (data: { businessRef: string }): Promise<KybWorkflowResponse> => {
+    return request<KybWorkflowResponse>('POST', '/kyb/business/registry-check', data, { idempotent: false });
+  },
+
+  runKybOwnershipCheck: async (data: { businessRef: string }): Promise<KybWorkflowResponse> => {
+    return request<KybWorkflowResponse>('POST', '/kyb/business/ownership', data, { idempotent: false });
+  },
+
+  runKybDirectorsCheck: async (data: KybDirectorsBody): Promise<KybWorkflowResponse> => {
+    return request<KybWorkflowResponse>('POST', '/kyb/business/directors', data, { idempotent: false });
+  },
+
+  runKybFinancialHealth: async (data: KybFinancialHealthBody): Promise<KybWorkflowResponse> => {
+    return request<KybWorkflowResponse>('POST', '/kyb/business/financial-health', data, { idempotent: false });
+  },
+
+  verifyKycIndividualEnhanced: async (data: KycIndividualEnhancedBody): Promise<IndividualKYCResponse> => {
+    const result = await request<IndividualKYCVerifyApiData>('POST', '/kyc/individual/enhanced', data, { idempotent: false });
+    const normalizedStatus = normalizeVerificationStatus(typeof result.status === 'string' ? result.status : 'pending', typeof result.overallResult === 'string' ? result.overallResult : undefined);
+    return {
+      verificationId: String(result.verificationId ?? result.id ?? ''),
+      status: normalizedStatus === 'not_found' ? 'pending' : normalizedStatus,
+      riskScore: 'low',
+      createdAt: typeof result.createdAt === 'string' ? result.createdAt : toIsoNow(),
+    };
+  },
+
+  submitKycIndividualBatch: async (data: KycBatchBody): Promise<KycBatchResponse> => {
+    const result = await request<JsonRecord>('POST', '/kyc/individual/batch', data, { idempotent: false });
+    return {
+      batchId: String(result.batchId ?? generateToken('kyc-batch')),
+      verificationIds: Array.isArray(result.verificationIds) ? result.verificationIds.map(String) : undefined,
+      ...result,
+    };
+  },
+
+  refreshKycIndividualVerification: async (verificationId: string): Promise<VerificationStatusResponse> => {
+    const result = await request<IndividualKYCVerifyApiData>('POST', `/kyc/individual/${verificationId}/refresh`, undefined, { idempotent: false });
+    return mapVerificationStatusResponse(result as JsonRecord);
+  },
+
+  verifyDidChallenge: async (data: DidVerifyBody): Promise<DidVerifyResponse> => {
+    const result = await request<JsonRecord>('POST', '/did/verify', data, { idempotent: false });
+    return {
+      did: String(result.did ?? data.did),
+      verified: Boolean(result.verified),
+    };
+  },
+
+  issueDidCredentialAdvanced: async (data: CredentialIssueBody): Promise<CredentialIssueResponse> => {
+    const result = await request<JsonRecord>('POST', '/did/credentials/issue', data, { idempotent: false });
+    return {
+      credentialId: String(result.credentialId ?? generateToken('cred')),
+      status: String(result.status ?? 'issued'),
+      credential: isRecord(result.credential) ? result.credential : undefined,
+      ...result,
+    };
+  },
+
+  getBlockchainProofByAnchor: async (anchorId: string): Promise<BlockchainProofByAnchorResponse> => {
+    return request<BlockchainProofByAnchorResponse>('POST', '/blockchain/proof', { anchorId }, { idempotent: false });
+  },
+
+  getOngoingMonitoringStatus: async (customerId: string): Promise<OngoingMonitoringStatusResponse> => {
+    return request<OngoingMonitoringStatusResponse>('GET', `/ongoing/${customerId}/status`, undefined, { idempotent: false });
+  },
+
+  getOngoingMonitoringChanges: async (customerId: string): Promise<OngoingMonitoringChangesResponse> => {
+    const result = await request<unknown>('GET', `/ongoing/${customerId}/changes`, undefined, { idempotent: false });
+    const toChangeItem = (item: JsonRecord) => ({
+      changeId: String(item.changeId ?? item.id ?? generateToken('change')),
+      changeType: String(item.changeType ?? item.type ?? 'update'),
+      details: isRecord(item.details) ? item.details : undefined,
+      detectedAt: String(item.detectedAt ?? item.createdAt ?? toIsoNow()),
+    });
+    if (Array.isArray(result)) {
+      return { items: result.filter(isRecord).map(toChangeItem) };
+    }
+    if (isRecord(result) && Array.isArray(result.items)) {
+      return { items: result.items.filter(isRecord).map(toChangeItem) };
+    }
+    return { items: [] };
+  },
+
+  createSarDraft: async (data: SarCreateBody): Promise<ComplianceCaseResponse> => {
+    const result = await request<JsonRecord>('POST', '/compliance/sar/create', data, { idempotent: false });
+    return {
+      reportId: String(result.reportId ?? result.id ?? generateToken('sar')),
+      status: String(result.status ?? 'draft'),
+      ...result,
+    };
+  },
+
+  submitSarReport: async (data: SarSubmitBody): Promise<ComplianceCaseResponse> => {
+    const result = await request<JsonRecord>('POST', '/compliance/sar/submit', data, { idempotent: false });
+    return {
+      reportId: String(result.reportId ?? data.reportId),
+      status: String(result.status ?? 'submitted'),
+      ...result,
+    };
+  },
+
+  createCtrDraft: async (data: CtrCreateBody): Promise<ComplianceCaseResponse> => {
+    const result = await request<JsonRecord>('POST', '/compliance/ctr/create', data, { idempotent: false });
+    return {
+      reportId: String(result.reportId ?? result.id ?? generateToken('ctr')),
+      status: String(result.status ?? 'draft'),
+      ...result,
+    };
+  },
+
+  checkPepFamilyAssociates: async (data: PepFamilyBody): Promise<PEPCheckResponse> => {
+    const result = await request<PEPCheckApiData>('POST', '/screening/pep/family-associates', data, { idempotent: false });
+    return {
+      isPEP: result.status === 'potential_match' || Number(result.totalMatches || 0) > 0,
+      details: result,
+    };
+  },
+
+  getReportDetails: async (reportId: string): Promise<ReportDetailResponse> => {
+    const result = await request<JsonRecord>('GET', `/reports/${reportId}`, undefined, { idempotent: false });
+    return {
+      reportId: String(result.reportId ?? reportId),
+      reportType: String(result.reportType ?? 'verification_summary'),
+      status: String(result.status ?? 'generating'),
+      format: String(result.format ?? 'pdf'),
+      downloadUrl: typeof result.downloadUrl === 'string' ? result.downloadUrl : null,
+      createdAt: String(result.createdAt ?? toIsoNow()),
+      updatedAt: String(result.updatedAt ?? toIsoNow()),
+      readyAt: typeof result.readyAt === 'string' ? result.readyAt : null,
+    };
   },
 
   getUsers: async (params?: { role?: string; status?: string; search?: string }): Promise<User[]> => {

@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { bankingService } from '@/services/bankingService';
-import type { CompanySettings } from '@/types/banking';
+import type { ApiSecuritySettings, CompanySettings } from '@/types/banking';
 import { toast } from 'sonner';
 import { TabHelpCard } from '@/components/shared/TabHelpCard';
 
@@ -22,6 +22,7 @@ export default function EnterpriseSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [settings, setSettings] = useState<CompanySettings | null>(null);
+  const [apiSecurity, setApiSecurity] = useState<ApiSecuritySettings | null>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -33,6 +34,8 @@ export default function EnterpriseSettings() {
       setIsLoading(true);
       const data = await bankingService.getCompanySettings();
       setSettings(data);
+      const securityData = await bankingService.getApiSecuritySettings();
+      setApiSecurity(securityData);
     } catch (error) {
       console.error("Failed to fetch company settings", error);
     } finally {
@@ -41,12 +44,16 @@ export default function EnterpriseSettings() {
   };
 
   const handleSave = async () => {
-    if (!settings) return;
+    if (!settings || !apiSecurity) return;
     
     try {
       setIsSaving(true);
-      const updated = await bankingService.updateCompanySettings(settings);
+      const [updated, updatedSecurity] = await Promise.all([
+        bankingService.updateCompanySettings(settings),
+        bankingService.updateApiSecuritySettings(apiSecurity),
+      ]);
       setSettings(updated);
+      setApiSecurity(updatedSecurity);
       toast.success('Settings updated successfully');
     } catch (error) {
       console.error("Failed to update settings", error);
@@ -56,16 +63,32 @@ export default function EnterpriseSettings() {
     }
   };
 
-  const handleLogoUpload = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !settings) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const nextUrl = typeof reader.result === 'string' ? reader.result : settings.logoUrl;
-      setSettings({ ...settings, logoUrl: nextUrl });
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file.');
+      return;
+    }
+    const maxSizeBytes = 10 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      toast.error('Image is too large. Max size is 10MB.');
+      return;
+    }
+    try {
+      setIsSaving(true);
+      const uploaded = await bankingService.uploadCompanyLogo(file);
+      setSettings({ ...settings, logoUrl: uploaded.logoUrl });
       toast.success('Logo updated');
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Failed to upload logo', error);
+      toast.error('Failed to upload logo');
+    } finally {
+      setIsSaving(false);
+      if (logoInputRef.current) {
+        logoInputRef.current.value = '';
+      }
+    }
   };
 
   const handleLogoRemove = () => {
@@ -314,6 +337,50 @@ export default function EnterpriseSettings() {
                  <Switch 
                     checked={settings?.security?.mfaEnabled || false}
                     onCheckedChange={(c) => setSettings({...settings!, security: {...settings!.security, mfaEnabled: c}})}
+                 />
+               </div>
+               <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-4">
+                   <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+                     <Shield className="h-5 w-5" />
+                   </div>
+                   <div>
+                     <div className="font-medium">Auto Rotate API Secrets</div>
+                     <div className="text-sm text-muted-foreground">Enable periodic API secret rotation.</div>
+                   </div>
+                 </div>
+                 <Switch
+                    checked={apiSecurity?.autoRotateSecrets || false}
+                    onCheckedChange={(c) => setApiSecurity((prev) => prev ? { ...prev, autoRotateSecrets: c } : prev)}
+                 />
+               </div>
+               <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-4">
+                   <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+                     <Shield className="h-5 w-5" />
+                   </div>
+                   <div>
+                     <div className="font-medium">IP Whitelist</div>
+                     <div className="text-sm text-muted-foreground">Restrict API access to approved IP/CIDR ranges.</div>
+                   </div>
+                 </div>
+                 <Switch
+                    checked={apiSecurity?.ipWhitelistEnabled || false}
+                    onCheckedChange={(c) => setApiSecurity((prev) => prev ? { ...prev, ipWhitelistEnabled: c } : prev)}
+                 />
+               </div>
+               <div className="space-y-2">
+                 <Label>Allowed IPs (comma separated)</Label>
+                 <Textarea
+                   className="min-h-[80px]"
+                   value={(apiSecurity?.allowedIps || []).join(', ')}
+                   onChange={(e) => {
+                     const ips = e.target.value
+                       .split(',')
+                       .map((item) => item.trim())
+                       .filter(Boolean);
+                     setApiSecurity((prev) => prev ? { ...prev, allowedIps: ips } : prev);
+                   }}
                  />
                </div>
             </CardContent>

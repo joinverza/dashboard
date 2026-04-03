@@ -222,10 +222,10 @@ export default function EnterpriseDashboard() {
                   <span>API Access</span>
                 </Button>
               </Link>
-              <Link href="/enterprise/reports">
+              <Link href="/enterprise/compliance/workflows">
                 <Button variant="outline" className="w-full h-24 flex flex-col gap-2 hover:border-verza-emerald/50 hover:bg-verza-emerald/5">
                   <FileText className="h-6 w-6 text-verza-emerald" />
-                  <span>View Reports</span>
+                  <span>Case Workflows</span>
                 </Button>
               </Link>
               <Link href="/enterprise/team/invite">
