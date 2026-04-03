@@ -86,7 +86,7 @@ export default function EnterprisePricingPlans() {
   const handlePlanAction = (planId: string, isCurrent: boolean, isEnterprise: boolean) => {
     if (isCurrent) return;
     if (isEnterprise) {
-      window.open('mailto:sales@verza.com?subject=Enterprise%20Plan%20Inquiry', '_self');
+      window.open('mailto:sales@ontiver.com?subject=Enterprise%20Plan%20Inquiry', '_self');
       return;
     }
     const interval = isAnnual ? 'yearly' : 'monthly';
@@ -174,7 +174,7 @@ export default function EnterprisePricingPlans() {
         <p className="text-muted-foreground mb-4">
           We offer tailored packages for large enterprises with specific compliance and volume requirements.
         </p>
-        <Button variant="outline" onClick={() => window.open('mailto:sales@verza.com?subject=Enterprise%20Pricing%20Inquiry', '_self')}>
+        <Button variant="outline" onClick={() => window.open('mailto:sales@ontiver.com?subject=Enterprise%20Pricing%20Inquiry', '_self')}>
           Contact Enterprise Sales
         </Button>
       </div>

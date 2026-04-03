@@ -83,10 +83,10 @@ export default function FinancialOverview() {
   };
 
   const treasuryTx = [
-    { id: 'TX-9821', type: 'Deposit', amount: '+ 50,000 VERZA', from: 'Staking Pool', date: '2 hours ago' },
-    { id: 'TX-9820', type: 'Withdrawal', amount: '- 12,500 VERZA', to: 'Grant Payout', date: '1 day ago' },
-    { id: 'TX-9819', type: 'Fee Collection', amount: '+ 2,450 VERZA', from: 'Platform Fees', date: '1 day ago' },
-    { id: 'TX-9818', type: 'Withdrawal', amount: '- 5,000 VERZA', to: 'Operational Costs', date: '2 days ago' },
+    { id: 'TX-9821', type: 'Deposit', amount: '+ 50,000 ONTIVER', from: 'Staking Pool', date: '2 hours ago' },
+    { id: 'TX-9820', type: 'Withdrawal', amount: '- 12,500 ONTIVER', to: 'Grant Payout', date: '1 day ago' },
+    { id: 'TX-9819', type: 'Fee Collection', amount: '+ 2,450 ONTIVER', from: 'Platform Fees', date: '1 day ago' },
+    { id: 'TX-9818', type: 'Withdrawal', amount: '- 5,000 ONTIVER', to: 'Operational Costs', date: '2 days ago' },
   ];
 
   return (
@@ -157,7 +157,7 @@ export default function FinancialOverview() {
             <Wallet className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2.5M VERZA</div>
+            <div className="text-2xl font-bold">2.5M ONTIVER</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
               <ArrowDownRight className="h-3 w-3 text-red-500 mr-1" />
               -2.1% (Grant Payouts)

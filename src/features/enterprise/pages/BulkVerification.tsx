@@ -310,7 +310,7 @@ export default function BulkVerification() {
               <CardHeader>
                 <CardTitle>Map Fields</CardTitle>
                 <CardDescription>
-                  Map the columns from your file to the corresponding Verza fields.
+                  Map the columns from your file to the corresponding Ontiver fields.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">

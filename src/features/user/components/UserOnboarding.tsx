@@ -57,7 +57,7 @@ export default function UserOnboarding({ onComplete }: { onComplete: () => void 
                 <div className="w-20 h-20 bg-verza-emerald/10 text-verza-emerald rounded-full flex items-center justify-center mx-auto mb-6">
                   <ShieldCheck className="w-10 h-10" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Welcome to Verza</h2>
+                <h2 className="text-2xl font-bold text-white">Welcome to Ontiver</h2>
                 <p className="text-zinc-400 leading-relaxed">
                   We're excited to have you on board. Let's get your digital identity set up so you can start securely verifying your credentials.
                 </p>

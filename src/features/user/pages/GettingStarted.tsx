@@ -40,7 +40,7 @@ export default function GettingStarted() {
     {
       title: "Wallet",
       icon: Wallet,
-      description: "Handle transactions, view your balance, and track spending across the Verza network.",
+      description: "Handle transactions, view your balance, and track spending across the Ontiver network.",
       color: "text-amber-400",
       bg: "bg-amber-400/10",
     },
@@ -74,7 +74,7 @@ export default function GettingStarted() {
       description: "Complete the liveness check and face match.",
     },
     {
-      title: "Start Using Verza",
+      title: "Start Using Ontiver",
       description: "You're all set to use your verified identity.",
     }
   ];
@@ -92,7 +92,7 @@ export default function GettingStarted() {
         <div className="relative z-10 max-w-2xl space-y-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-verza-emerald/10 border border-verza-emerald/20 text-verza-emerald text-sm font-medium">
             <ShieldCheck className="w-4 h-4" />
-            Welcome to Verza
+            Welcome to Ontiver
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
             Your Digital Identity, <br />

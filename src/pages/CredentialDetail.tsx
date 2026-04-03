@@ -45,7 +45,7 @@ export default function CredentialDetailPage() {
     },
     verification: {
       method: "ZK-Proof (Groth16)",
-      verifier: "Verza Global Verification",
+      verifier: "Ontiver Global Verification",
       date: "2023-05-21 14:30:00",
       confidence: "99.9%"
     }
@@ -91,7 +91,7 @@ export default function CredentialDetailPage() {
 
   const timeline = [
     { id: 1, title: "Credential Issued", date: "May 20, 2023 10:00 AM", icon: FileText, color: "text-blue-400" },
-    { id: 2, title: "Uploaded to Verza", date: "May 21, 2023 09:15 AM", icon: Upload, color: "text-purple-400" },
+    { id: 2, title: "Uploaded to Ontiver", date: "May 21, 2023 09:15 AM", icon: Upload, color: "text-purple-400" },
     { id: 3, title: "AI Pre-Screening Passed", date: "May 21, 2023 09:17 AM", icon: ShieldCheck, color: "text-green-400" },
     { id: 4, title: "Verifier Assigned", date: "May 21, 2023 10:00 AM", icon: User, color: "text-orange-400" },
     { id: 5, title: "Verification Complete", date: "May 21, 2023 02:30 PM", icon: CheckCircle2, color: "text-verza-emerald" },

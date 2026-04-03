@@ -80,7 +80,7 @@ const CREDENTIALS = [
 const VERIFIERS = [
   { 
     id: 1, 
-    name: "Verza Global Verification", 
+    name: "Ontiver Global Verification", 
     type: "Premium", 
     rating: 4.9, 
     price: "50 VZT", 
@@ -185,7 +185,7 @@ export default function RequestVerificationPage() {
         toast.error("Failed to start payment. Please try again.");
       }
     } else {
-      toast.loading("Processing transaction on Verza Chain...");
+      toast.loading("Processing transaction on Ontiver Chain...");
       setTimeout(() => {
         setIsProcessing(false);
         toast.dismiss();
@@ -433,7 +433,7 @@ export default function RequestVerificationPage() {
                       </Avatar>
                       <div>
                         <p className="text-sm text-muted-foreground">Verifier</p>
-                        <h4 className="font-semibold">Verza Global Verification</h4>
+                        <h4 className="font-semibold">Ontiver Global Verification</h4>
                         <p className="text-xs text-muted-foreground">Premium Service • ~24h Turnaround</p>
                       </div>
                     </div>
@@ -492,7 +492,7 @@ export default function RequestVerificationPage() {
                             <Coins className="w-4 h-4 text-verza-emerald" />
                           </div>
                           <div>
-                            <span className="block font-medium">Verza Token (Crypto)</span>
+                            <span className="block font-medium">Ontiver Token (Crypto)</span>
                             <span className="text-xs text-muted-foreground">Pay with VZT wallet balance</span>
                           </div>
                         </Label>

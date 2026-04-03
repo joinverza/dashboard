@@ -85,8 +85,8 @@ export default function EnterpriseIntegrationSetup() {
         <CardHeader>
           <CardTitle>{STEPS[currentStep - 1].name}</CardTitle>
           <CardDescription>
-            {currentStep === 1 && "Authorize Verza to access your Salesforce account."}
-            {currentStep === 2 && "Map Verza data fields to your Salesforce objects."}
+            {currentStep === 1 && "Authorize Ontiver to access your Salesforce account."}
+            {currentStep === 2 && "Map Ontiver data fields to your Salesforce objects."}
             {currentStep === 3 && "Configure how often and what data to sync."}
             {currentStep === 4 && "Test the connection with sample data before activating."}
           </CardDescription>
@@ -107,7 +107,7 @@ export default function EnterpriseIntegrationSetup() {
                 </div>
               </div>
               <div className="text-center space-y-2 max-w-sm">
-                <p>Verza will request permission to:</p>
+                <p>Ontiver will request permission to:</p>
                 <ul className="text-sm text-muted-foreground text-left list-disc pl-4 space-y-1">
                   <li>Read lead and contact data</li>
                   <li>Update verification status fields</li>
@@ -121,15 +121,15 @@ export default function EnterpriseIntegrationSetup() {
           {currentStep === 2 && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4 font-medium text-sm text-muted-foreground mb-2">
-                <div>Verza Field</div>
+                <div>Ontiver Field</div>
                 <div>Salesforce Field</div>
               </div>
               {[
                 { label: 'First Name', default: 'FirstName' },
                 { label: 'Last Name', default: 'LastName' },
                 { label: 'Email', default: 'Email' },
-                { label: 'Verification Status', default: 'Verza_Status__c' },
-                { label: 'Verification Date', default: 'Verza_Date__c' },
+                { label: 'Verification Status', default: 'Ontiver_Status__c' },
+                { label: 'Verification Date', default: 'Ontiver_Date__c' },
               ].map((field, i) => (
                 <div key={i} className="grid grid-cols-2 gap-4 items-center">
                   <div className="p-2 bg-muted/50 rounded-md text-sm">{field.label}</div>
@@ -195,7 +195,7 @@ export default function EnterpriseIntegrationSetup() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="verza">Verza Wins</SelectItem>
+                    <SelectItem value="verza">Ontiver Wins</SelectItem>
                     <SelectItem value="salesforce">Salesforce Wins</SelectItem>
                     <SelectItem value="manual">Manual Review</SelectItem>
                   </SelectContent>

@@ -21,7 +21,7 @@ const PAYMENT_DETAILS = {
   amount: 50.00,
   currency: "ADA",
   service: "University Degree Verification",
-  recipient: "Verza Global Verification",
+  recipient: "Ontiver Global Verification",
   fee: 0.17,
   credentialId: "EDU-2023-8921"
 };

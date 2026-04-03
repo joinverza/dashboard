@@ -190,7 +190,7 @@ export default function EnterpriseIntegrations() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Integrations</h1>
-          <p className="text-muted-foreground">Connect Verza with your existing tools and workflows.</p>
+          <p className="text-muted-foreground">Connect Ontiver with your existing tools and workflows.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
@@ -198,7 +198,7 @@ export default function EnterpriseIntegrations() {
               <ExternalLink className="mr-2 h-4 w-4" /> API Docs
             </Link>
           </Button>
-          <Button onClick={() => window.open('mailto:partnerships@verza.com?subject=New%20Integration%20Request', '_self')}>
+          <Button onClick={() => window.open('mailto:partnerships@ontiver.com?subject=New%20Integration%20Request', '_self')}>
             <Plus className="mr-2 h-4 w-4" /> Request Integration
           </Button>
         </div>

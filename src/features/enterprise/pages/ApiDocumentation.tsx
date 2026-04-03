@@ -46,7 +46,7 @@ export default function ApiDocumentation() {
   };
 
   const curlSnippet = activeEndpoint
-    ? `curl -X ${activeEndpoint.method} https://api.verza.io${activeEndpoint.path} \\
+    ? `curl -X ${activeEndpoint.method} https://api.ontiver.io${activeEndpoint.path} \\
   -H "Authorization: Bearer YOUR_TOKEN" \\
   -H "Content-Type: application/json"`
     : '';

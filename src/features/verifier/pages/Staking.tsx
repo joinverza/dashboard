@@ -17,9 +17,9 @@ import {
   } from "@/components/ui/table";
 
 const STAKE_HISTORY = [
-    { id: 1, date: "2025-05-15", action: "Stake", amount: "+5,000 VERZA", status: "Completed" },
-    { id: 2, date: "2025-04-01", action: "Stake", amount: "+10,000 VERZA", status: "Completed" },
-    { id: 3, date: "2025-03-10", action: "Reward", amount: "+250 VERZA", status: "Completed" },
+    { id: 1, date: "2025-05-15", action: "Stake", amount: "+5,000 ONTIVER", status: "Completed" },
+    { id: 2, date: "2025-04-01", action: "Stake", amount: "+10,000 ONTIVER", status: "Completed" },
+    { id: 3, date: "2025-03-10", action: "Reward", amount: "+250 ONTIVER", status: "Completed" },
 ];
 
 export default function Staking() {
@@ -35,7 +35,7 @@ export default function Staking() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Staking</h1>
-          <p className="text-muted-foreground">Manage your VERZA stake to increase your verifier tier and rewards.</p>
+          <p className="text-muted-foreground">Manage your ONTIVER stake to increase your verifier tier and rewards.</p>
         </div>
         <div className="flex items-center gap-2">
             <Badge variant="outline" className="px-3 py-1 bg-verza-purple/10 text-verza-purple border-verza-purple/20">
@@ -54,7 +54,7 @@ export default function Staking() {
             <CardContent>
                 <div className="flex items-baseline gap-2">
                     <span className="text-5xl font-bold tracking-tight">15,250</span>
-                    <span className="text-xl text-muted-foreground">VERZA</span>
+                    <span className="text-xl text-muted-foreground">ONTIVER</span>
                 </div>
                 <div className="mt-6 flex gap-8">
                     <div>
@@ -63,7 +63,7 @@ export default function Staking() {
                     </div>
                     <div>
                         <p className="text-sm text-muted-foreground mb-1">Est. Monthly Reward</p>
-                        <p className="text-xl font-semibold">108 VERZA</p>
+                        <p className="text-xl font-semibold">108 ONTIVER</p>
                     </div>
                     <div>
                         <p className="text-sm text-muted-foreground mb-1">Unstake Period</p>
@@ -80,7 +80,7 @@ export default function Staking() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="flex justify-between text-sm">
-                    <span>15,250 / 25,000 VERZA</span>
+                    <span>15,250 / 25,000 ONTIVER</span>
                     <span className="text-muted-foreground">61%</span>
                 </div>
                 <Progress value={61} className="h-2" />
@@ -117,11 +117,11 @@ export default function Staking() {
                                     className="pr-16"
                                 />
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                                    VERZA
+                                    ONTIVER
                                 </div>
                             </div>
                             <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Available: 2,450 VERZA</span>
+                                <span>Available: 2,450 ONTIVER</span>
                                 <button className="text-verza-emerald hover:underline" onClick={() => setStakeAmount("2450")}>Max</button>
                             </div>
                         </div>
@@ -149,11 +149,11 @@ export default function Staking() {
                                     className="pr-16"
                                 />
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                                    VERZA
+                                    ONTIVER
                                 </div>
                             </div>
                             <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Staked: 15,250 VERZA</span>
+                                <span>Staked: 15,250 ONTIVER</span>
                                 <button className="text-verza-emerald hover:underline" onClick={() => setUnstakeAmount("15250")}>Max</button>
                             </div>
                         </div>
@@ -190,22 +190,22 @@ export default function Staking() {
                     <TableBody>
                         <TableRow>
                             <TableCell className="font-medium">Tier 1 (Novice)</TableCell>
-                            <TableCell>1,000 VERZA</TableCell>
+                            <TableCell>1,000 ONTIVER</TableCell>
                             <TableCell><Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Achieved</Badge></TableCell>
                         </TableRow>
                         <TableRow>
                             <TableCell className="font-medium">Tier 2 (Pro)</TableCell>
-                            <TableCell>10,000 VERZA</TableCell>
+                            <TableCell>10,000 ONTIVER</TableCell>
                             <TableCell><Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Current</Badge></TableCell>
                         </TableRow>
                         <TableRow>
                             <TableCell className="font-medium">Tier 3 (Authority)</TableCell>
-                            <TableCell>25,000 VERZA</TableCell>
+                            <TableCell>25,000 ONTIVER</TableCell>
                             <TableCell><span className="text-muted-foreground text-sm">Locked</span></TableCell>
                         </TableRow>
                         <TableRow>
                             <TableCell className="font-medium">Tier 4 (Partner)</TableCell>
-                            <TableCell>100,000 VERZA</TableCell>
+                            <TableCell>100,000 ONTIVER</TableCell>
                             <TableCell><span className="text-muted-foreground text-sm">Locked</span></TableCell>
                         </TableRow>
                     </TableBody>

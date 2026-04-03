@@ -92,8 +92,8 @@ export default function Earnings() {
       {
         label: 'Earnings ($)',
         data: chartDataPoints.length > 0 ? chartDataPoints : [0],
-        backgroundColor: 'rgba(141, 198, 63, 0.7)',
-        borderColor: 'rgba(141, 198, 63, 1)',
+        backgroundColor: 'rgba(30, 215, 96, 0.7)',
+        borderColor: 'rgba(30, 215, 96, 1)',
         borderWidth: 1,
       },
     ],

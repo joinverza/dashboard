@@ -41,7 +41,7 @@ const TRACKING_DATA = {
   verifier: {
     name: "Sarah Jenkins",
     role: "Senior Education Verifier",
-    organization: "Verza Global Verification",
+    organization: "Ontiver Global Verification",
     rating: 4.9,
     verifications: 1240,
     avatar: "https://i.pravatar.cc/150?u=sarah"
@@ -359,7 +359,7 @@ export default function VerificationStatusPage() {
                 <Button 
                   variant="outline" 
                   className="w-full justify-start gap-2"
-                  onClick={() => window.open(`mailto:support@verza.com?subject=Issue%20with%20Verification%20${encodeURIComponent(TRACKING_DATA.id)}`, "_self")}
+                  onClick={() => window.open(`mailto:support@ontiver.com?subject=Issue%20with%20Verification%20${encodeURIComponent(TRACKING_DATA.id)}`, "_self")}
                 >
                   <AlertCircle className="w-4 h-4" /> Report an Issue
                 </Button>

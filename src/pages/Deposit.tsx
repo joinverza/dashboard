@@ -63,8 +63,8 @@ async function ensurePaystackInlineLoaded(): Promise<void> {
 }
 
 const ASSETS = [
-  { id: "verza", name: "Verza Token", ticker: "VZT", icon: "https://verza.io/favicon.ico" },
-  { id: "zk-net", name: "Verza ZK Network", ticker: "VZK", icon: "/vite.svg" },
+  { id: "verza", name: "Ontiver Token", ticker: "VZT", icon: "https://verza.io/favicon.ico" },
+  { id: "zk-net", name: "Ontiver ZK Network", ticker: "VZK", icon: "/vite.svg" },
   { id: "usdm", name: "Mehen USD", ticker: "USDM", icon: "https://mehen.io/favicon.ico" },
 ];
 
@@ -155,7 +155,7 @@ export default function DepositPage() {
         </button>
         <div>
           <h1 className="text-3xl font-bold">Deposit Assets</h1>
-          <p className="text-muted-foreground mt-1">Add funds to your Verza wallet.</p>
+          <p className="text-muted-foreground mt-1">Add funds to your Ontiver wallet.</p>
         </div>
       </div>
 

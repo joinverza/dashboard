@@ -49,7 +49,7 @@ export default function VerifierHelp() {
                 <AccordionItem value="item-4">
                   <AccordionTrigger>How does the staking system work?</AccordionTrigger>
                   <AccordionContent>
-                    Verifiers must stake VERZA tokens to prove commitment and integrity. Higher stakes can unlock higher tier jobs and lower platform fees. If you act maliciously, your stake may be slashed.
+                    Verifiers must stake ONTIVER tokens to prove commitment and integrity. Higher stakes can unlock higher tier jobs and lower platform fees. If you act maliciously, your stake may be slashed.
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="item-5">

@@ -97,8 +97,8 @@ export default function EnterpriseDashboard() {
         label: 'Verifications',
         data: stats?.dailyBreakdown?.map((d: { count: number }) => d.count) || [],
         fill: true,
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(30, 215, 96, 0.12)',
+        borderColor: '#1ED760',
         tension: 0.4,
       },
     ],
@@ -117,7 +117,7 @@ export default function EnterpriseDashboard() {
         </div>
         <div className="flex gap-2">
           <Link href="/enterprise/verification/new">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-glow">
+            <Button className="bg-verza-emerald hover:bg-verza-kelly text-black shadow-glow">
               <FileCheck className="mr-2 h-4 w-4" /> New Verification
             </Button>
           </Link>
@@ -129,7 +129,7 @@ export default function EnterpriseDashboard() {
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Verifications</CardTitle>
-            <FileCheck className="h-4 w-4 text-blue-500" />
+            <FileCheck className="h-4 w-4 text-verza-emerald" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalVerifications.toLocaleString() || 0}</div>
@@ -211,8 +211,8 @@ export default function EnterpriseDashboard() {
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
               <Link href="/enterprise/bulk">
-                <Button variant="outline" className="w-full h-24 flex flex-col gap-2 hover:border-blue-500/50 hover:bg-blue-500/5">
-                  <Upload className="h-6 w-6 text-blue-500" />
+                <Button variant="outline" className="w-full h-24 flex flex-col gap-2 hover:border-verza-emerald/50 hover:bg-verza-emerald/5">
+                  <Upload className="h-6 w-6 text-verza-emerald" />
                   <span>Bulk Upload</span>
                 </Button>
               </Link>
@@ -237,7 +237,7 @@ export default function EnterpriseDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-blue-600/20 to-transparent border-blue-600/30">
+          <Card className="bg-gradient-to-br from-verza-emerald/20 to-transparent border-verza-emerald/30">
             <CardContent className="pt-6">
                <div className="flex flex-col gap-2">
                  <h3 className="font-bold text-lg">{licenseUsage?.planName ?? "Enterprise"} Plan</h3>
@@ -259,7 +259,7 @@ export default function EnterpriseDashboard() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Verifications</CardTitle>
           <Link href="/enterprise/requests">
-            <Button variant="ghost" size="sm" className="text-blue-500">View All <ArrowRight className="ml-1 h-4 w-4" /></Button>
+            <Button variant="ghost" size="sm" className="text-verza-emerald">View All <ArrowRight className="ml-1 h-4 w-4" /></Button>
           </Link>
         </CardHeader>
         <CardContent>
@@ -267,7 +267,7 @@ export default function EnterpriseDashboard() {
             {recentVerifications.length > 0 ? recentVerifications.map((req) => (
               <div key={req.verificationId} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-border/50 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors">
                 <div className="flex items-start gap-4">
-                  <div className="p-2 rounded-full bg-blue-500/10 text-blue-500 mt-1">
+                  <div className="p-2 rounded-full bg-verza-emerald/10 text-verza-emerald mt-1">
                     <Activity className="h-5 w-5" />
                   </div>
                   <div>

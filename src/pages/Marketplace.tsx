@@ -238,7 +238,7 @@ export default function Marketplace() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="glass-card p-0 rounded-2xl overflow-hidden group hover:shadow-[0_0_30px_-5px_rgba(141,198,63,0.2)] transition-all duration-300 border border-white/5"
+              className="glass-card p-0 rounded-2xl overflow-hidden group hover:shadow-[0_0_30px_-5px_rgba(30,215,96,0.2)] transition-all duration-300 border border-white/5"
             >
               <div className="h-32 bg-gradient-to-br from-verza-emerald/20 to-black relative">
                 <img 
@@ -395,7 +395,7 @@ export default function Marketplace() {
           <div className="space-y-2 max-w-xl">
             <h3 className="text-2xl font-bold text-white">Join the Global Verification Network</h3>
             <p className="text-gray-300">
-              Become a certified verifier on Verza and earn by verifying credentials for individuals and organizations worldwide.
+              Become a certified verifier on Ontiver and earn by verifying credentials for individuals and organizations worldwide.
             </p>
           </div>
           <Button 

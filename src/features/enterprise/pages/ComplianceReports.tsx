@@ -286,9 +286,9 @@ export default function ComplianceReports() {
               <ShieldCheck className="h-6 w-6" />
             </div>
             <div className="flex-1 text-center md:text-left">
-              <h3 className="text-lg font-semibold text-foreground">Verza Compliance Guarantee</h3>
+              <h3 className="text-lg font-semibold text-foreground">Ontiver Compliance Guarantee</h3>
               <p className="text-sm text-muted-foreground">
-                All verifications performed on the Verza platform are cryptographically signed and stored on the blockchain, ensuring 100% auditability and compliance with global data standards.
+                All verifications performed on the Ontiver platform are cryptographically signed and stored on the blockchain, ensuring 100% auditability and compliance with global data standards.
               </p>
             </div>
             <Button variant="outline" className="whitespace-nowrap">

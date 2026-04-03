@@ -37,7 +37,7 @@ const TRANSACTION = {
 export default function TransactionDetailPage() {
   const [, setLocation] = useLocation();
   useRoute("/app/wallet/transactions/:id");
-  const explorerBase = (import.meta.env.VITE_ZK_EXPLORER_URL as string | undefined) || "https://explorer.verza.com/tx";
+  const explorerBase = (import.meta.env.VITE_ZK_EXPLORER_URL as string | undefined) || "https://explorer.ontiver.com/tx";
   const explorerUrl = `${explorerBase.replace(/\/$/, "")}/${encodeURIComponent(TRANSACTION.id)}`;
   
   // In a real app, use the ID to fetch transaction details

@@ -60,8 +60,8 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
              gradient.addColorStop(1, getColor("--chart-1", 0));
           } catch {
              // Fallback for initial render or SSR
-             gradient.addColorStop(0, "rgba(141, 198, 63, 0.5)");
-             gradient.addColorStop(1, "rgba(141, 198, 63, 0)");
+             gradient.addColorStop(0, "rgba(30, 215, 96, 0.5)");
+             gradient.addColorStop(1, "rgba(30, 215, 96, 0)");
           }
           
           return gradient;
@@ -106,7 +106,7 @@ export default function OverviewChart({ data, chartType }: OverviewChartProps) {
       tooltip: {
         backgroundColor: "rgba(9, 9, 11, 0.8)", // Zinc-950 with opacity
         titleColor: "#fff",
-        bodyColor: "#8DC63F",
+        bodyColor: "#1ED760",
         borderColor: "rgba(255, 255, 255, 0.1)",
         borderWidth: 1,
         padding: 16,

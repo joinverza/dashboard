@@ -6,7 +6,7 @@ import {
   ShieldCheck,
   Globe
 } from "lucide-react";
-import versalogo from "@/assets/versalogoSVG.svg";
+import versalogo from "@/assets/ONTIVER white.svg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/AuthContext";
@@ -49,8 +49,8 @@ export default function EnterpriseSignupPage() {
         
         {/* Logo */}
         <div className="relative z-10 flex items-center justify-end gap-3">
-          <span className="text-xl font-bold tracking-tight text-white">Verza Portal</span>
-          <img src={versalogo} alt="Verza" className="h-8 w-8" />
+          <span className="text-xl font-bold tracking-tight text-white">Ontiver Portal</span>
+          <img src={versalogo} alt="Ontiver" className="h-8 w-8" />
         </div>
 
         {/* Hero Content */}
@@ -88,7 +88,7 @@ export default function EnterpriseSignupPage() {
         {/* Footer */}
         <div className="relative z-10 flex items-center justify-between text-xs text-zinc-500 uppercase tracking-widest font-medium">
           <span>Secure Enclave</span>
-          <span>© 2025 Verza Inc.</span>
+          <span>© 2025 Ontiver Inc.</span>
         </div>
       </div>
 
@@ -98,8 +98,8 @@ export default function EnterpriseSignupPage() {
           
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <img src={versalogo} alt="Verza" className="h-8 w-8" />
-            <span className="text-xl font-bold text-white">Verza Portal</span>
+            <img src={versalogo} alt="Ontiver" className="h-8 w-8" />
+            <span className="text-xl font-bold text-white">Ontiver Portal</span>
           </div>
 
           <div className="space-y-2 text-center lg:text-left">

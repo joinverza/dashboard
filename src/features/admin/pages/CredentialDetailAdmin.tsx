@@ -257,7 +257,7 @@ export default function CredentialDetailAdmin() {
                 <p className="text-xs text-muted-foreground mb-1">Network</p>
                 <p className="text-sm font-medium flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                  Verza ZK Network
+                  Ontiver ZK Network
                 </p>
               </div>
               <div>

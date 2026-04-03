@@ -7,7 +7,7 @@ import {
   FileKey,
   AlertTriangle
 } from "lucide-react";
-import versalogo from "@/assets/versalogoSVG.svg";
+import versalogo from "@/assets/ONTIVER white.svg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/AuthContext";
@@ -48,8 +48,8 @@ export default function AdminSignupPage() {
         
         {/* Logo */}
         <div className="relative z-10 flex items-center justify-end gap-3">
-          <span className="text-xl font-bold tracking-tight text-white">Verza Admin</span>
-          <img src={versalogo} alt="Verza" className="h-8 w-8 grayscale opacity-80" />
+          <span className="text-xl font-bold tracking-tight text-white">Ontiver Admin</span>
+          <img src={versalogo} alt="Ontiver" className="h-8 w-8 grayscale opacity-80" />
         </div>
 
         {/* Hero Content */}
@@ -90,7 +90,7 @@ export default function AdminSignupPage() {
             <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
             Internal Use Only
           </span>
-          <span>Verza Systems Inc.</span>
+          <span>Ontiver Systems Inc.</span>
         </div>
       </div>
 
@@ -100,7 +100,7 @@ export default function AdminSignupPage() {
           
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <img src={versalogo} alt="Verza" className="h-8 w-8" />
+            <img src={versalogo} alt="Ontiver" className="h-8 w-8" />
             <span className="text-xl font-bold text-white">Admin Portal</span>
           </div>
 
@@ -125,7 +125,7 @@ export default function AdminSignupPage() {
               <label className="text-sm font-medium text-zinc-400">Official Email</label>
               <Input 
                 type="email" 
-                placeholder="admin@verza.com"
+                placeholder="admin@ontiver.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-zinc-900/30 border-zinc-800 focus:border-red-500/50 h-11 text-white placeholder:text-zinc-700 transition-colors"

@@ -23,7 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 const ASSETS = [
   { id: "ada", name: "Cardano", ticker: "ADA", balance: 1240.50, price: 0.35 },
   { id: "usdm", name: "Mehen USD", ticker: "USDM", balance: 500.00, price: 1.00 },
-  { id: "verza", name: "Verza Token", ticker: "VERZA", balance: 5000.00, price: 0.05 }
+  { id: "verza", name: "Ontiver Token", ticker: "ONTIVER", balance: 5000.00, price: 0.05 }
 ];
 
 const RECENT_RECIPIENTS = [

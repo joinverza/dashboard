@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import versalogo from "@/assets/versalogoSVG.svg";
+import versalogo from "@/assets/ONTIVER white.svg";
 import { useTheme } from "@/contexts/ThemeContext";
 
 // Animation variants
@@ -84,8 +84,8 @@ export default function OnboardingPage() {
 
       {/* Header */}
       <div className="absolute top-8 left-8 flex items-center gap-2">
-        <img src={versalogo} alt="Verza" className="h-8 w-8" />
-        <span className="text-xl font-bold tracking-tight">Verza</span>
+        <img src={versalogo} alt="Ontiver" className="h-8 w-8" />
+        <span className="text-xl font-bold tracking-tight">Ontiver</span>
       </div>
 
       <div className="w-full max-w-lg z-10">
@@ -124,7 +124,7 @@ export default function OnboardingPage() {
                     <Shield className="w-10 h-10 text-black" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold mb-2">Welcome to Verza</h1>
+                    <h1 className="text-3xl font-bold mb-2">Welcome to Ontiver</h1>
                     <p className="text-gray-400 max-w-xs mx-auto">
                       Your decentralized identity journey starts here. Let's set up your profile to get you verified.
                     </p>
@@ -224,7 +224,7 @@ export default function OnboardingPage() {
               >
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold mb-2">Preferences</h2>
-                  <p className="text-gray-400 text-sm">Customize your Verza experience.</p>
+                  <p className="text-gray-400 text-sm">Customize your Ontiver experience.</p>
                 </div>
 
                 <div className="flex-1 space-y-6">

@@ -98,8 +98,8 @@ export const InitialLoader = ({
             <div 
               className="absolute inset-0" 
               style={{
-                backgroundImage: `linear-gradient(rgba(141, 198, 63, 0.1) 1px, transparent 1px),
-                                  linear-gradient(90deg, rgba(141, 198, 63, 0.1) 1px, transparent 1px)`,
+                backgroundImage: `linear-gradient(rgba(30, 215, 96, 0.1) 1px, transparent 1px),
+                                  linear-gradient(90deg, rgba(30, 215, 96, 0.1) 1px, transparent 1px)`,
                 backgroundSize: '40px 40px',
                 maskImage: 'radial-gradient(circle at center, black 40%, transparent 100%)'
               }}
@@ -116,9 +116,9 @@ export const InitialLoader = ({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0, y: -50 }}
-                  className="font-mono text-[#8DC63F] text-sm md:text-base w-full max-w-md"
+                  className="font-mono text-[#1ED760] text-sm md:text-base w-full max-w-md"
                 >
-                  <div className="border-l-2 border-[#8DC63F]/50 pl-4 space-y-1">
+                  <div className="border-l-2 border-[#1ED760]/50 pl-4 space-y-1">
                     {bootText.map((text, i) => (
                       <motion.div
                         key={`${i}-${text}`}
@@ -126,14 +126,14 @@ export const InitialLoader = ({
                         animate={{ opacity: 1, x: 0 }}
                         className="flex items-center gap-2"
                       >
-                        <span className="text-[#8DC63F]/50">{`>`}</span>
+                        <span className="text-[#1ED760]/50">{`>`}</span>
                         {text}
                       </motion.div>
                     ))}
                     <motion.div
                       animate={{ opacity: [0, 1, 0] }}
                       transition={{ duration: 0.5, repeat: Infinity }}
-                      className="w-3 h-4 bg-[#8DC63F] mt-2"
+                      className="w-3 h-4 bg-[#1ED760] mt-2"
                     />
                   </div>
                 </motion.div>
@@ -151,7 +151,7 @@ export const InitialLoader = ({
                 {/* Energy Rings - Delayed Entrance */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] -z-10">
                   <motion.div
-                    className="absolute inset-0 border border-[#8DC63F]/30 rounded-full"
+                    className="absolute inset-0 border border-[#1ED760]/30 rounded-full"
                     initial={{ scale: 0.5, opacity: 0 }}
                     animate={{ scale: [0.5, 1.1, 1], opacity: 1, rotate: 360 }}
                     transition={{ 
@@ -161,7 +161,7 @@ export const InitialLoader = ({
                     }}
                   />
                   <motion.div
-                    className="absolute inset-4 border border-[#8DC63F]/20 rounded-full border-dashed"
+                    className="absolute inset-4 border border-[#1ED760]/20 rounded-full border-dashed"
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1, rotate: -360 }}
                     transition={{ 
@@ -182,13 +182,13 @@ export const InitialLoader = ({
                   <div className="relative p-8">
                     {/* Inner Glow */}
                     <motion.div 
-                      className="absolute inset-0 bg-[#8DC63F] blur-[60px] opacity-10 rounded-full"
+                      className="absolute inset-0 bg-[#1ED760] blur-[60px] opacity-10 rounded-full"
                       animate={{ opacity: [0.1, 0.3, 0.1], scale: [0.9, 1.1, 0.9] }}
                       transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                     />
                     
                     {/* Logo with Metallic/Neon feel */}
-                    <Logo className="w-32 h-32 md:w-56 md:h-56 drop-shadow-[0_0_15px_rgba(141,198,63,0.3)] relative z-10" />
+                    <Logo className="w-32 h-32 md:w-56 md:h-56 drop-shadow-[0_0_15px_rgba(30,215,96,0.3)] relative z-10" />
                     
 
                   </div>
@@ -215,7 +215,7 @@ export const InitialLoader = ({
                 {[...Array(12)].map((_, i) => (
                   <motion.div
                     key={i}
-                    className="absolute w-0.5 h-0.5 bg-[#8DC63F] rounded-full"
+                    className="absolute w-0.5 h-0.5 bg-[#1ED760] rounded-full"
                     style={{
                       left: "50%",
                       top: "50%"
@@ -240,13 +240,13 @@ export const InitialLoader = ({
 
             {/* Bottom Status Bar */}
             <div className="absolute bottom-12 w-full max-w-xl px-4">
-               <div className="flex justify-between text-[#8DC63F]/60 text-xs font-mono mb-2">
+               <div className="flex justify-between text-[#1ED760]/60 text-xs font-mono mb-2">
                   <span>SYSTEM STATUS: {stage === "boot" ? "BOOTING" : "ONLINE"}</span>
                   <span>ID: VRZ-9902</span>
                </div>
-               <div className="h-0.5 w-full bg-[#8DC63F]/20 relative overflow-hidden">
+               <div className="h-0.5 w-full bg-[#1ED760]/20 relative overflow-hidden">
                  <motion.div
-                    className="absolute inset-y-0 left-0 bg-[#8DC63F]"
+                    className="absolute inset-y-0 left-0 bg-[#1ED760]"
                     initial={{ width: "0%" }}
                     animate={{ width: stage === "finishing" ? "100%" : stage === "core" ? "90%" : "30%" }}
                     transition={{ duration: 1 }}

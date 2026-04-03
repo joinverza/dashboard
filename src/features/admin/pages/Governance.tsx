@@ -27,7 +27,7 @@ const PROPOSALS = [
     votesFor: 65,
     votesAgainst: 35,
     endDate: "2025-04-01",
-    description: "Raise the minimum stake from 5000 VERZA to 10000 VERZA to ensure higher commitment."
+    description: "Raise the minimum stake from 5000 ONTIVER to 10000 ONTIVER to ensure higher commitment."
   },
   {
     id: "PROP-023",
@@ -139,7 +139,7 @@ export default function Governance() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Votes Cast</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12.5M VERZA</div>
+            <div className="text-2xl font-bold">12.5M ONTIVER</div>
             <p className="text-xs text-muted-foreground mt-1">+8% from last month</p>
           </CardContent>
         </Card>

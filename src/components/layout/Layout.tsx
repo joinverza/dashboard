@@ -198,7 +198,7 @@ export default function Layout({ children }: LayoutProps) {
               isOpen={isSupportChatOpen}
               onClose={() => setIsSupportChatOpen(false)}
               recipient={{
-                name: "Verza Support",
+                name: "Ontiver Support",
                 role: "Admin",
                 status: "online",
                 avatar: "https://github.com/shadcn.png"

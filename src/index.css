@@ -2,8 +2,8 @@
 
 @theme {
   /* Brand Colors */
-  --color-verza-forest: #1a2e05;
-  --color-verza-emerald: #8DC63F;
+  --color-verza-forest: #06140F;
+  --color-verza-emerald: #1ED760;
   --color-verza-lime: #a3e635;
   --color-verza-accent: #65a30d;
   --color-verza-black: #050505;
@@ -11,7 +11,7 @@
   --color-verza-platinum: #f3f4f6;
   --color-verza-mint: #bef264;
   --color-verza-gray: #9ca3af;
-  --color-verza-kelly: #4d7c0f;
+  --color-verza-kelly: #06140F;
 
   /* UI System Colors */
   --color-background: hsl(var(--background));
@@ -58,16 +58,16 @@
   --color-chart-5: hsl(var(--chart-5));
 
   /* Shadows */
-  --shadow-glow: 0 0 15px rgba(141, 198, 63, 0.3);
+  --shadow-glow: 0 0 15px rgba(30, 215, 96, 0.3);
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* LIGHT MODE - Premium Verza Theme */
+/* LIGHT MODE - Premium Ontiver Theme */
 :root {
   /* Brand Colors - Kept for reference/usage in other vars */
-  --verza-forest: #1a2e05;
-  --verza-emerald: #8DC63F;
+  --verza-forest: #06140F;
+  --verza-emerald: #1ED760;
   --verza-lime: #a3e635;
   --verza-accent: #65a30d;
   --verza-black: #050505;
@@ -75,7 +75,7 @@
   --verza-platinum: #f3f4f6;
   --verza-mint: #bef264;
   --verza-gray: #9ca3af;
-  --verza-kelly: #4d7c0f;
+  --verza-kelly: #06140F;
 
   /* UI System Colors */
   --background: 220 20% 98%;
@@ -130,7 +130,7 @@
   --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-  --shadow-glow: 0 0 15px rgba(141, 198, 63, 0.3);
+  --shadow-glow: 0 0 15px rgba(30, 215, 96, 0.3);
 
   /* Legacy / Compatibility Variables */
   --button-outline: rgba(0,0,0, .10);
@@ -157,8 +157,8 @@
 /* DARK MODE - God Mode */
 .dark {
   /* Brand Colors */
-  --verza-forest: #1a2e05;
-  --verza-emerald: #8DC63F;
+  --verza-forest: #06140F;
+  --verza-emerald: #1ED760;
   --verza-lime: #a3e635;
   --verza-accent: #65a30d;
   --verza-black: #000000;
@@ -166,7 +166,7 @@
   --verza-platinum: #e5e7eb;
   --verza-mint: #bef264;
   --verza-gray: #9ca3af;
-  --verza-kelly: #4d7c0f;
+  --verza-kelly: #06140F;
 
   /* UI System Colors */
   --background: 240 10% 4%; /* #09090b - Deepest Zinc */
@@ -219,7 +219,7 @@
   --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
   --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
   --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.5);
-  --shadow-glow: 0 0 20px rgba(141, 198, 63, 0.15);
+  --shadow-glow: 0 0 20px rgba(30, 215, 96, 0.15);
 
   /* Legacy / Compatibility Variables */
   --button-outline: rgba(255,255,255, .10);
@@ -238,17 +238,17 @@
     @apply font-sans antialiased bg-background text-foreground;
     /* Premium Background Mesh */
     background-image: 
-      radial-gradient(circle at 50% 0%, rgba(141, 198, 63, 0.03) 0%, transparent 50%),
-      radial-gradient(circle at 0% 50%, rgba(141, 198, 63, 0.02) 0%, transparent 40%),
-      radial-gradient(circle at 100% 100%, rgba(46, 66, 21, 0.05) 0%, transparent 40%);
+      radial-gradient(circle at 50% 0%, rgba(30, 215, 96, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 0% 50%, rgba(30, 215, 96, 0.02) 0%, transparent 40%),
+      radial-gradient(circle at 100% 100%, rgba(6, 20, 15, 0.05) 0%, transparent 40%);
     background-attachment: fixed;
   }
   
   .dark body {
     background-image: 
-      radial-gradient(circle at 50% 0%, rgba(141, 198, 63, 0.08) 0%, transparent 60%),
-      radial-gradient(circle at 0% 50%, rgba(141, 198, 63, 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 100% 100%, rgba(46, 66, 21, 0.1) 0%, transparent 50%);
+      radial-gradient(circle at 50% 0%, rgba(30, 215, 96, 0.08) 0%, transparent 60%),
+      radial-gradient(circle at 0% 50%, rgba(30, 215, 96, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 100% 100%, rgba(6, 20, 15, 0.1) 0%, transparent 50%);
   }
 }
 
@@ -284,7 +284,7 @@
 
   /* Typography Effects */
   .text-glow {
-    text-shadow: 0 0 20px rgba(141, 198, 63, 0.5);
+    text-shadow: 0 0 20px rgba(30, 215, 96, 0.5);
   }
   
   .text-shadow-sm {

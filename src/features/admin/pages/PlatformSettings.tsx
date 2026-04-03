@@ -46,7 +46,7 @@ export default function PlatformSettings() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Platform Name</Label>
-                <Input defaultValue="Verza" />
+                <Input defaultValue="Ontiver" />
               </div>
               <div className="space-y-2">
                 <Label>Support Email</Label>
@@ -54,7 +54,7 @@ export default function PlatformSettings() {
               </div>
               <div className="space-y-2">
                 <Label>Legal Entity Name</Label>
-                <Input defaultValue="Verza Decentralized Solutions Ltd." />
+                <Input defaultValue="Ontiver Decentralized Solutions Ltd." />
               </div>
               <div className="space-y-2">
                 <Label>Terms of Service URL</Label>
@@ -90,7 +90,7 @@ export default function PlatformSettings() {
                 <div className="space-y-2">
                   <Label>Verifier Stake Requirement</Label>
                   <Input type="number" defaultValue="5000" />
-                  <p className="text-xs text-muted-foreground">Minimum VERZA tokens to stake</p>
+                  <p className="text-xs text-muted-foreground">Minimum ONTIVER tokens to stake</p>
                 </div>
               </div>
             </CardContent>
@@ -145,7 +145,7 @@ export default function PlatformSettings() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="text-base">Cross-Chain Bridge</Label>
-                  <p className="text-sm text-muted-foreground">Enable bridging between Verza ZK and External Networks</p>
+                  <p className="text-sm text-muted-foreground">Enable bridging between Ontiver ZK and External Networks</p>
                 </div>
                 <Switch defaultChecked />
               </div>
@@ -211,7 +211,7 @@ export default function PlatformSettings() {
                   </div>
                   <div className="space-y-2">
                     <Label>Sender Name</Label>
-                    <Input defaultValue="Verza Notifications" />
+                    <Input defaultValue="Ontiver Notifications" />
                   </div>
                 </div>
               </div>
@@ -220,7 +220,7 @@ export default function PlatformSettings() {
                 <h3 className="font-medium">Templates</h3>
                 <div className="space-y-2">
                   <Label>Welcome Email Subject</Label>
-                  <Input defaultValue="Welcome to Verza - Verify with Confidence" />
+                  <Input defaultValue="Welcome to Ontiver - Verify with Confidence" />
                 </div>
                 <div className="space-y-2">
                   <Label>Verification Success Body</Label>

@@ -91,7 +91,7 @@ export default function CreateProposal() {
                       <Input placeholder="0x..." />
                     </div>
                     <div className="space-y-2">
-                      <Label>Amount (VERZA)</Label>
+                      <Label>Amount (ONTIVER)</Label>
                       <Input type="number" placeholder="10000" />
                     </div>
                   </div>

@@ -36,11 +36,11 @@ export default function ProposalDetail() {
   };
 
   const recentVotes = [
-    { voter: "Alice.eth", vote: "For", power: "50,000 VERZA", time: "2 hours ago" },
-    { voter: "Bob.eth", vote: "Against", power: "12,000 VERZA", time: "5 hours ago" },
-    { voter: "Charlie.eth", vote: "For", power: "100,000 VERZA", time: "1 day ago" },
-    { voter: "David.eth", vote: "Abstain", power: "5,000 VERZA", time: "1 day ago" },
-    { voter: "Eve.eth", vote: "For", power: "25,000 VERZA", time: "2 days ago" },
+    { voter: "Alice.eth", vote: "For", power: "50,000 ONTIVER", time: "2 hours ago" },
+    { voter: "Bob.eth", vote: "Against", power: "12,000 ONTIVER", time: "5 hours ago" },
+    { voter: "Charlie.eth", vote: "For", power: "100,000 ONTIVER", time: "1 day ago" },
+    { voter: "David.eth", vote: "Abstain", power: "5,000 ONTIVER", time: "1 day ago" },
+    { voter: "Eve.eth", vote: "For", power: "25,000 ONTIVER", time: "2 days ago" },
   ];
 
   const totalVotes = proposal.votesFor + proposal.votesAgainst + proposal.votesAbstain;

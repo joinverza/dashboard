@@ -69,7 +69,7 @@ const WALLET_ASSETS = [
   },
   {
     id: "verza",
-    name: "Verza Token",
+    name: "Ontiver Token",
     symbol: "VRZ",
     balance: "5,000.00",
     value: "3,959.50",
@@ -125,7 +125,7 @@ const TRANSACTIONS = [
 
 export default function WalletPage() {
   const [, setLocation] = useLocation();
-  const explorerBase = (import.meta.env.VITE_ZK_EXPLORER_URL as string | undefined) || "https://explorer.verza.com/tx";
+  const explorerBase = (import.meta.env.VITE_ZK_EXPLORER_URL as string | undefined) || "https://explorer.ontiver.com/tx";
   const [activeTab, setActiveTab] = useState("all");
   const [isSwapOpen, setIsSwapOpen] = useState(false);
   const [isBuyOpen, setIsBuyOpen] = useState(false);
