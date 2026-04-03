@@ -23,6 +23,7 @@ export interface DashboardEndpointMapping {
 export const apiManagementEndpointMappings: DashboardEndpointMapping[] = [
   { method: 'POST', endpoint: '/api/v1/banking/api-keys/create', pages: ['ApiManagement'], permission: 'api_keys:write' },
   { method: 'GET', endpoint: '/api/v1/banking/api-keys', pages: ['ApiManagement'], permission: 'api_keys:read' },
+  { method: 'GET', endpoint: '/api/v1/banking/api-keys/validate/current', pages: ['ApiManagement'], permission: 'api_keys:read' },
   { method: 'DELETE', endpoint: '/api/v1/banking/api-keys/{keyId}', pages: ['ApiManagement'], permission: 'api_keys:write' },
   { method: 'POST', endpoint: '/api/v1/banking/webhooks/register', pages: ['ApiManagement', 'Integrations', 'VerificationTools'], permission: 'webhooks:write' },
   { method: 'GET', endpoint: '/api/v1/banking/webhooks', pages: ['ApiManagement', 'Integrations', 'VerificationTools'], permission: 'webhooks:read' },
@@ -32,6 +33,9 @@ export const apiManagementEndpointMappings: DashboardEndpointMapping[] = [
 const toApiKeyCreateResult = (result: ApiKeyResponse): ApiKeyCreateResult => ({
   keyId: result.keyId || result.id,
   apiKey: result.apiKey || '',
+  keyPrefix: result.keyPrefix,
+  environment: result.environment,
+  name: result.name || result.keyName,
   permissions: result.permissions || result.scopes,
   createdAt: result.createdAt,
   expiresAt: result.expiresAt ?? null,
@@ -42,7 +46,7 @@ export const apiKeysService = {
     const created = await bankingService.createApiKey(payload);
     return toApiKeyCreateResult(created);
   },
-  list: async (): Promise<ApiKeyListItem[]> => bankingService.listApiKeys(),
+  list: async (environment?: 'production' | 'sandbox'): Promise<ApiKeyListItem[]> => bankingService.listApiKeys(environment),
   revoke: async (keyId: string): Promise<ApiKeyRevokeResult> => {
     await bankingService.revokeApiKey(keyId);
     return {

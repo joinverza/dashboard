@@ -32,6 +32,7 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
 import { TabHelpCard } from '@/components/shared/TabHelpCard';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -42,10 +43,13 @@ import type { ApiKeyResponse, ApiSecuritySettings, BankingRequestDiagnosticEvent
 
 const REQUEST_HISTORY_STORAGE_KEY = 'verza:banking:requestHistory';
 const API_SETTINGS_STORAGE_KEY = 'verza:api:settings';
+type ApiKeyEnvironment = 'production' | 'sandbox';
+type ApiKeyFilter = 'all' | ApiKeyEnvironment;
 
 export default function ApiManagement() {
   const { user, hasPermission } = useAuth();
   const [apiKeys, setApiKeys] = useState<ApiKeyResponse[]>([]);
+  const [filteredApiKeys, setFilteredApiKeys] = useState<ApiKeyResponse[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookResponse[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [pageError, setPageError] = useState('');
@@ -57,9 +61,15 @@ export default function ApiManagement() {
   const [isSubmittingWebhook, setIsSubmittingWebhook] = useState(false);
   const [newWebhookUrl, setNewWebhookUrl] = useState('');
   const [newWebhookEvents, setNewWebhookEvents] = useState<string[]>([]);
-  const [sandboxMode, setSandboxMode] = useState(true);
+  const [apiKeyFilter, setApiKeyFilter] = useState<ApiKeyFilter>('all');
+  const [createKeyEnvironment, setCreateKeyEnvironment] = useState<ApiKeyEnvironment>('production');
+  const [isCreateKeyDialogOpen, setIsCreateKeyDialogOpen] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [rawApiKey, setRawApiKey] = useState('');
+  const [latestCreatedKeyPrefix, setLatestCreatedKeyPrefix] = useState('');
+  const [latestCreatedKeyEnvironment, setLatestCreatedKeyEnvironment] = useState<ApiKeyEnvironment>('production');
+  const [isRevealDialogOpen, setIsRevealDialogOpen] = useState(false);
+  const [hasConfirmedCopy, setHasConfirmedCopy] = useState(false);
   const [rawApiKeyExpiresAt, setRawApiKeyExpiresAt] = useState<number | null>(null);
   const [requestHistory, setRequestHistory] = useState<BankingRequestDiagnosticEvent[]>([]);
   const [autoRotateSecrets, setAutoRotateSecrets] = useState(false);
@@ -72,8 +82,8 @@ export default function ApiManagement() {
   const [isCancellingRequestId, setIsCancellingRequestId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    void loadData(apiKeyFilter);
+  }, [apiKeyFilter]);
 
   useEffect(() => {
     try {
@@ -141,12 +151,18 @@ export default function ApiManagement() {
     }
   };
 
-  const loadData = async () => {
+  const loadData = async (filter: ApiKeyFilter) => {
     setIsLoadingData(true);
     setPageError('');
     try {
-      const [keys, hooks] = await Promise.all([apiKeysService.list(), webhooksService.list()]);
-      setApiKeys(keys);
+      const environmentFilter = filter === 'all' ? undefined : filter;
+      const [allKeys, keysByFilter, hooks] = await Promise.all([
+        apiKeysService.list(),
+        apiKeysService.list(environmentFilter),
+        webhooksService.list()
+      ]);
+      setApiKeys(allKeys);
+      setFilteredApiKeys(keysByFilter);
       setWebhooks(hooks);
     } catch (error) {
       const message = getBankingErrorMessage(error, 'Failed to load API management data');
@@ -176,15 +192,20 @@ export default function ApiManagement() {
     try {
       const created = await apiKeysService.create({
         keyName: trimmedName,
+        environment: createKeyEnvironment,
         permissions: ['api_keys:read', 'api_keys:write', 'webhooks:read', 'webhooks:write']
       });
       setNewKeyName('');
-      await loadData();
+      setIsCreateKeyDialogOpen(false);
+      await loadData(apiKeyFilter);
       toast.success('API Key created successfully');
       if (created.apiKey) {
         setRawApiKey(created.apiKey);
+        setLatestCreatedKeyPrefix(created.keyPrefix || '');
+        setLatestCreatedKeyEnvironment(created.environment || createKeyEnvironment);
+        setHasConfirmedCopy(false);
+        setIsRevealDialogOpen(true);
         setRawApiKeyExpiresAt(Date.now() + 30000);
-        void navigator.clipboard.writeText(created.apiKey);
       }
     } catch (error) {
       const message = getBankingErrorMessage(error, 'Failed to create API key');
@@ -200,6 +221,7 @@ export default function ApiManagement() {
     try {
       await apiKeysService.revoke(id);
       setApiKeys((current) => current.filter((item) => item.id !== id));
+      setFilteredApiKeys((current) => current.filter((item) => item.id !== id));
       toast.success('API Key revoked');
     } catch (error) {
       toast.error(getBankingErrorMessage(error, 'Failed to revoke API key'));
@@ -221,7 +243,7 @@ export default function ApiManagement() {
       });
       setNewWebhookUrl('');
       setNewWebhookEvents([]);
-      await loadData();
+      await loadData(apiKeyFilter);
       setIsWebhookDialogOpen(false);
       toast.success('Webhook registered successfully');
     } catch (error) {
@@ -285,8 +307,7 @@ export default function ApiManagement() {
     setIsRetryingRequestId(item.requestId);
     try {
       if (item.method === 'GET' && item.path.includes('/api-keys')) {
-        const keys = await apiKeysService.list();
-        setApiKeys(keys);
+        await loadData(apiKeyFilter);
       } else if (item.method === 'GET' && item.path.includes('/webhooks')) {
         const hooks = await webhooksService.list();
         setWebhooks(hooks);
@@ -319,16 +340,12 @@ export default function ApiManagement() {
 
   const requestHistoryRows = useMemo(() => requestHistory.slice(0, 20), [requestHistory]);
   const canViewApiKeys = hasPermission('api_keys:read') || user?.role === 'admin' || user?.role === 'manager' || user?.role === 'enterprise';
-  const getApiKeyEnvironment = (key: ApiKeyResponse): 'production' | 'sandbox' => {
+  const getApiKeyEnvironment = (key: ApiKeyResponse): ApiKeyEnvironment => {
     const explicit = String((key as ApiKeyResponse & { environment?: string }).environment ?? '').toLowerCase();
     if (explicit === 'production' || explicit === 'sandbox') return explicit;
     const hint = `${key.name} ${key.keyPrefix}`.toLowerCase();
     return hint.includes('sandbox') || hint.includes('test') || hint.includes('dev') ? 'sandbox' : 'production';
   };
-  const visibleApiKeys = useMemo(() => {
-    const filtered = apiKeys.filter((key) => (sandboxMode ? getApiKeyEnvironment(key) === 'sandbox' : getApiKeyEnvironment(key) === 'production'));
-    return filtered.length > 0 ? filtered : apiKeys;
-  }, [apiKeys, sandboxMode]);
   const productionKeyCount = useMemo(() => apiKeys.filter((key) => getApiKeyEnvironment(key) === 'production').length, [apiKeys]);
   const sandboxKeyCount = useMemo(() => apiKeys.filter((key) => getApiKeyEnvironment(key) === 'sandbox').length, [apiKeys]);
 
@@ -387,24 +404,32 @@ export default function ApiManagement() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border border-border/50">
             <Button 
-              variant={!sandboxMode ? "secondary" : "ghost"} 
+              variant={apiKeyFilter === 'all' ? 'secondary' : 'ghost'}
               size="sm" 
-              onClick={() => setSandboxMode(false)}
+              onClick={() => setApiKeyFilter('all')}
+              className="text-xs"
+            >
+              All
+            </Button>
+            <Button 
+              variant={apiKeyFilter === 'production' ? 'secondary' : 'ghost'}
+              size="sm" 
+              onClick={() => setApiKeyFilter('production')}
               className="text-xs"
             >
               Production
             </Button>
             <Button 
-              variant={sandboxMode ? "secondary" : "ghost"} 
+              variant={apiKeyFilter === 'sandbox' ? 'secondary' : 'ghost'} 
               size="sm" 
-              onClick={() => setSandboxMode(true)}
+              onClick={() => setApiKeyFilter('sandbox')}
               className="text-xs"
             >
               Sandbox
             </Button>
           </div>
           
-          <Dialog>
+          <Dialog open={isCreateKeyDialogOpen} onOpenChange={setIsCreateKeyDialogOpen}>
             <DialogTrigger asChild>
                 <Button className="gap-2 bg-verza-primary hover:bg-verza-primary/90">
                     <Plus className="h-4 w-4" />
@@ -428,6 +453,31 @@ export default function ApiManagement() {
                             onChange={(e) => setNewKeyName(e.target.value)}
                         />
                     </div>
+                    <div className="space-y-3">
+                      <Label>Environment</Label>
+                      <RadioGroup value={createKeyEnvironment} onValueChange={(value) => setCreateKeyEnvironment(value as ApiKeyEnvironment)}>
+                        <Label
+                          htmlFor="api-key-env-production"
+                          className="flex cursor-pointer items-start justify-between rounded-lg border p-3 hover:bg-muted/50"
+                        >
+                          <div className="space-y-1">
+                            <div className="text-sm font-medium">Production</div>
+                            <p className="text-xs text-muted-foreground">Production keys access live workflows.</p>
+                          </div>
+                          <RadioGroupItem id="api-key-env-production" value="production" />
+                        </Label>
+                        <Label
+                          htmlFor="api-key-env-sandbox"
+                          className="flex cursor-pointer items-start justify-between rounded-lg border p-3 hover:bg-muted/50"
+                        >
+                          <div className="space-y-1">
+                            <div className="text-sm font-medium">Sandbox</div>
+                            <p className="text-xs text-muted-foreground">Sandbox keys are for test and simulation workflows.</p>
+                          </div>
+                          <RadioGroupItem id="api-key-env-sandbox" value="sandbox" />
+                        </Label>
+                      </RadioGroup>
+                    </div>
                 </div>
                 <DialogFooter>
                     <Button onClick={handleCreateKey} disabled={!newKeyName || isCreatingKey}>
@@ -445,7 +495,7 @@ export default function ApiManagement() {
           <AlertDescription>
             <div className="flex items-center justify-between gap-2">
               <span>{pageError}</span>
-              <Button variant="outline" size="sm" onClick={loadData} disabled={isLoadingData}>
+              <Button variant="outline" size="sm" onClick={() => void loadData(apiKeyFilter)} disabled={isLoadingData}>
                 {isLoadingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                 Retry
               </Button>
@@ -453,24 +503,69 @@ export default function ApiManagement() {
           </AlertDescription>
         </Alert>
       )}
-      {rawApiKey && (
-        <Alert>
-          <Key className="h-4 w-4" />
-          <AlertTitle>New API key</AlertTitle>
-          <AlertDescription>
-            <div className="flex flex-col gap-2">
-              <div className="font-mono text-xs break-all">{rawApiKey}</div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-muted-foreground">This value clears automatically after 30 seconds.</span>
-                <Button size="sm" variant="outline" onClick={() => copyText(rawApiKey)} className="h-7 px-2">
-                  <Copy className="mr-1 h-3 w-3" />
-                  Copy
-                </Button>
-              </div>
+      <Dialog
+        open={isRevealDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !hasConfirmedCopy) return;
+          setIsRevealDialogOpen(open);
+          if (!open) {
+            setHasConfirmedCopy(false);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New API Key Created</DialogTitle>
+            <DialogDescription>
+              This key is shown once. Copy and store it now.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center gap-2">
+              <Badge variant={latestCreatedKeyEnvironment === 'production' ? 'destructive' : 'secondary'}>
+                {latestCreatedKeyEnvironment.toUpperCase()}
+              </Badge>
+              {latestCreatedKeyPrefix ? (
+                <Badge variant="outline" className="font-mono text-xs">
+                  {latestCreatedKeyPrefix}
+                </Badge>
+              ) : null}
             </div>
-          </AlertDescription>
-        </Alert>
-      )}
+            <div className="rounded-md border bg-muted/20 p-3 font-mono text-xs break-all">
+              {rawApiKey || 'Key expired. Please create a new key.'}
+            </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={async () => {
+                if (!rawApiKey) return;
+                await copyText(rawApiKey);
+                setHasConfirmedCopy(true);
+              }}
+              disabled={!rawApiKey}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              Copy API Key
+            </Button>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="confirm-key-copied"
+                checked={hasConfirmedCopy}
+                onCheckedChange={(checked) => setHasConfirmedCopy(Boolean(checked))}
+              />
+              <Label htmlFor="confirm-key-copied" className="text-sm">
+                I copied this key
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground">For security, this value clears automatically after 30 seconds.</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsRevealDialogOpen(false)} disabled={!hasConfirmedCopy}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {isLoadingData && (
         <Card>
           <CardContent className="py-8 flex justify-center">
@@ -524,7 +619,7 @@ export default function ApiManagement() {
         </Card>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className={!sandboxMode ? 'border-blue-500/40' : ''}>
+        <Card className={apiKeyFilter === 'production' ? 'border-blue-500/40' : ''}>
           <CardHeader>
             <CardTitle className="text-base">Production Environment</CardTitle>
             <CardDescription>Live credentials and traffic</CardDescription>
@@ -534,7 +629,7 @@ export default function ApiManagement() {
             <p className="text-xs text-muted-foreground">Active keys in production</p>
           </CardContent>
         </Card>
-        <Card className={sandboxMode ? 'border-blue-500/40' : ''}>
+        <Card className={apiKeyFilter === 'sandbox' ? 'border-blue-500/40' : ''}>
           <CardHeader>
             <CardTitle className="text-base">Sandbox Environment</CardTitle>
             <CardDescription>Testing and staging credentials</CardDescription>
@@ -756,6 +851,7 @@ export default function ApiManagement() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
+                        <TableHead>Environment</TableHead>
                         <TableHead>Key Prefix</TableHead>
                         <TableHead>Created</TableHead>
                         <TableHead>Last Used</TableHead>
@@ -764,7 +860,7 @@ export default function ApiManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {visibleApiKeys.map((key) => (
+                      {filteredApiKeys.map((key) => (
                         <TableRow key={key.id}>
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
@@ -772,12 +868,17 @@ export default function ApiManagement() {
                               {key.name}
                             </div>
                           </TableCell>
+                          <TableCell>
+                            <Badge variant={getApiKeyEnvironment(key) === 'production' ? 'destructive' : 'secondary'}>
+                              {getApiKeyEnvironment(key).toUpperCase()}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="font-mono text-xs">{key.keyPrefix}</TableCell>
                           <TableCell>{new Date(key.createdAt).toLocaleDateString()}</TableCell>
                           <TableCell>{key.lastUsed ? new Date(key.lastUsed).toLocaleDateString() : 'Never'}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">
-                              ACTIVE
+                            <Badge variant={String(key.status || 'active').toLowerCase() === 'revoked' ? 'destructive' : 'outline'}>
+                              {String(key.status || 'active').toUpperCase()}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
@@ -785,7 +886,7 @@ export default function ApiManagement() {
                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyText(key.keyPrefix || '')}>
                                 <Copy className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={loadData} disabled={isLoadingData}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => void loadData(apiKeyFilter)} disabled={isLoadingData}>
                                 <RefreshCw className="h-4 w-4" />
                               </Button>
                               <Button 
@@ -801,10 +902,12 @@ export default function ApiManagement() {
                           </TableCell>
                         </TableRow>
                       ))}
-                      {visibleApiKeys.length === 0 && (
+                      {filteredApiKeys.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
-                            No {sandboxMode ? 'sandbox' : 'production'} API keys found.
+                          <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
+                            {apiKeyFilter === 'all'
+                              ? 'No API keys found.'
+                              : `No ${apiKeyFilter} API keys found.`}
                           </TableCell>
                         </TableRow>
                       )}

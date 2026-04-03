@@ -360,9 +360,10 @@ export interface ApiKeyCreateRequest {
   scopes?: string[];
   keyName?: string;
   permissions?: string[];
+  environment?: 'production' | 'sandbox';
   expiresAt?: string | null;
-  ipWhitelist?: string[];
-  rateLimit?: number;
+  ipWhitelist?: string[] | null;
+  rateLimit?: number | null;
 }
 
 export interface ApiKeyResponse {
@@ -371,12 +372,13 @@ export interface ApiKeyResponse {
   name: string;
   keyName?: string;
   keyPrefix: string;
+  environment?: 'production' | 'sandbox';
   apiKey?: string;
   createdAt: string;
   expiresAt?: string | null;
   revokedAt?: string | null;
-  status?: string;
-  rateLimit?: number;
+  status?: 'active' | 'revoked' | string;
+  rateLimit?: number | null;
   lastUsed?: string;
   scopes: string[];
   permissions?: string[];
@@ -385,6 +387,9 @@ export interface ApiKeyResponse {
 export interface ApiKeyCreateResult {
   keyId: string;
   apiKey: string;
+  keyPrefix?: string;
+  environment?: 'production' | 'sandbox';
+  name?: string;
   permissions: string[];
   createdAt: string;
   expiresAt: string | null;

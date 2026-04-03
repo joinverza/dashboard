@@ -800,6 +800,7 @@ const apiKeyResponseSchema = z.object({
   keyId: z.string().min(1),
   keyName: z.string().min(1),
   permissions: z.array(z.string()),
+  environment: z.enum(['production', 'sandbox']).optional(),
   createdAt: z.string(),
   expiresAt: z.string().nullable().optional(),
   revokedAt: z.string().nullable().optional(),
@@ -842,6 +843,12 @@ const mapApiKey = (item: JsonRecord): ApiKeyResponse => ({
   name: String(item.keyName ?? item.name ?? ''),
   keyName: String(item.keyName ?? item.name ?? ''),
   keyPrefix: typeof item.keyPrefix === 'string' ? item.keyPrefix : '',
+  environment:
+    item.environment === 'sandbox' || item.environment === 'production'
+      ? item.environment
+      : typeof item.keyPrefix === 'string' && item.keyPrefix.toLowerCase().startsWith('sb_')
+        ? 'sandbox'
+        : 'production',
   apiKey: typeof item.apiKey === 'string' ? item.apiKey : undefined,
   permissions: Array.isArray(item.permissions) ? item.permissions.map(String) : [],
   scopes: Array.isArray(item.permissions) ? item.permissions.map(String) : [],
@@ -850,7 +857,7 @@ const mapApiKey = (item: JsonRecord): ApiKeyResponse => ({
   revokedAt: typeof item.revokedAt === 'string' ? item.revokedAt : null,
   status: typeof item.status === 'string' ? item.status : 'active',
   lastUsed: typeof item.lastUsed === 'string' ? item.lastUsed : undefined,
-  rateLimit: typeof item.rateLimit === 'number' ? item.rateLimit : undefined,
+  rateLimit: typeof item.rateLimit === 'number' ? item.rateLimit : null,
 });
 
 const mapAuditLog = (item: JsonRecord): AuditLogResponse => ({
@@ -1477,9 +1484,10 @@ export const bankingService = {
     const payload = {
       keyName: data.keyName || data.name || 'Frontend Integration Key',
       permissions: data.permissions || data.scopes || ['kyc:write', 'kyc:read'],
+      environment: data.environment || 'production',
       expiresAt: data.expiresAt || null,
-      ipWhitelist: data.ipWhitelist || [],
-      rateLimit: data.rateLimit,
+      ipWhitelist: data.ipWhitelist ?? [],
+      rateLimit: data.rateLimit ?? null,
     };
     const result = await request<JsonRecord>('POST', '/api-keys/create', payload, { allowBootstrapAdminToken: true });
     const mapped = mapApiKey(parseWithSchema(apiKeyResponseSchema, result, 'createApiKey response'));
@@ -1489,8 +1497,9 @@ export const bankingService = {
     return mapped;
   },
 
-  listApiKeys: async (): Promise<ApiKeyResponse[]> => {
-    const result = await request<JsonRecord>('GET', '/api-keys', undefined, { idempotent: false });
+  listApiKeys: async (environment?: 'production' | 'sandbox'): Promise<ApiKeyResponse[]> => {
+    const query = environment ? `?environment=${environment}` : '';
+    const result = await request<JsonRecord>('GET', `/api-keys${query}`, undefined, { idempotent: false });
     const items = Array.isArray(result.items) ? result.items : [];
     return items
       .filter(isRecord)
