@@ -305,7 +305,7 @@ export default function VerificationRequests() {
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalVerifications.toLocaleString() || "..."}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <span className="text-green-500 flex items-center mr-1">
+              <span className="text-verza-emerald flex items-center mr-1">
                 <ArrowUpRight className="h-3 w-3 mr-1" /> +12%
               </span>
               from last month
@@ -315,12 +315,12 @@ export default function VerificationRequests() {
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CheckCircle className="h-4 w-4 text-verza-emerald" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{successRate}%</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <span className="text-green-500 flex items-center mr-1">
+              <span className="text-verza-emerald flex items-center mr-1">
                 <ArrowUpRight className="h-3 w-3 mr-1" /> +2.1%
               </span>
               improvement
@@ -347,7 +347,7 @@ export default function VerificationRequests() {
           <CardContent>
             <div className="text-2xl font-bold">{stats ? (stats.averageTime / 60).toFixed(0) : "..."} min</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <span className="text-green-500 flex items-center mr-1">
+              <span className="text-verza-emerald flex items-center mr-1">
                 <ArrowUpRight className="h-3 w-3 mr-1" /> -30 min
               </span>
               faster than target
@@ -452,7 +452,7 @@ export default function VerificationRequests() {
                       <TableCell>{new Date(req.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={
-                          req.status === 'verified' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                          req.status === 'verified' ? 'bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20' :
                           req.status === 'pending' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
                           req.status === 'rejected' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
                           'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'

@@ -113,7 +113,7 @@ export default function EnterprisePricingPlans() {
           <span className={`text-sm ${!isAnnual ? 'font-bold' : 'text-muted-foreground'}`}>Monthly</span>
           <Switch checked={isAnnual} onCheckedChange={setIsAnnual} />
           <span className={`text-sm ${isAnnual ? 'font-bold' : 'text-muted-foreground'}`}>
-            Annually <span className="text-emerald-500 font-normal">(Save 20%)</span>
+            Annually <span className="text-verza-emerald font-normal">(Save 20%)</span>
           </span>
         </div>
       </div>
@@ -143,7 +143,7 @@ export default function EnterprisePricingPlans() {
               <div className="space-y-3">
                 {plan.features.map((feature) => (
                   <div key={feature} className="flex items-start gap-3 text-sm">
-                    <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                    <Check className="h-4 w-4 text-verza-emerald mt-0.5 shrink-0" />
                     <span>{feature}</span>
                   </div>
                 ))}

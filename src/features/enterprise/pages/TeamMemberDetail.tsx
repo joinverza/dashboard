@@ -111,7 +111,7 @@ export default function TeamMemberDetail() {
               <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                 {member.role}
               </Badge>
-              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+              <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">
                 {member.status}
               </Badge>
             </CardDescription>
@@ -155,7 +155,7 @@ export default function TeamMemberDetail() {
                   <div className="grid gap-4 md:grid-cols-2">
                     {member.permissions.map((perm, index) => (
                       <div key={index} className="flex items-center p-3 rounded-lg border bg-card/50">
-                        <CheckCircle className="mr-3 h-5 w-5 text-emerald-500" />
+                        <CheckCircle className="mr-3 h-5 w-5 text-verza-emerald" />
                         <span className="text-sm font-medium">{perm}</span>
                       </div>
                     ))}

@@ -41,11 +41,11 @@ export default function EnterpriseSignupPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#09090b] text-white selection:bg-blue-500/20 selection:text-blue-500">
+    <div className="min-h-screen w-full flex bg-[#09090b] text-white selection:bg-verza-emerald/20 selection:text-verza-emerald">
       {/* Right Panel - Brand & Vision (Moved to Right to alternate) */}
       <div className="hidden lg:flex w-1/2 relative bg-[#000000] overflow-hidden flex-col justify-between p-12 border-l border-white/5 order-2">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,_#001524_0%,_transparent_50%)]" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,_#002411_0%,_transparent_50%)]" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-verza-emerald/5 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
         
         {/* Logo */}
         <div className="relative z-10 flex items-center justify-end gap-3">
@@ -62,7 +62,7 @@ export default function EnterpriseSignupPage() {
           >
             <h1 className="text-5xl font-semibold tracking-tight leading-[1.1] mb-6 text-white">
               Join the network <br />
-              <span className="text-blue-500">of trust</span>
+              <span className="text-verza-emerald">of trust</span>
             </h1>
             <p className="text-lg text-zinc-400 leading-relaxed mb-8">
               Become a Verifier or Enterprise partner. Issue credentials, verify identities, and participate in the governance of the network.
@@ -77,7 +77,7 @@ export default function EnterpriseSignupPage() {
                 <div key={i} className="flex items-center gap-3 text-zinc-300">
                   <span className="text-sm font-medium">{item.text}</span>
                   <div className="h-8 w-8 rounded-full bg-zinc-900/50 border border-zinc-800 flex items-center justify-center shrink-0">
-                    <item.icon className="h-4 w-4 text-blue-500" />
+                    <item.icon className="h-4 w-4 text-verza-emerald" />
                   </div>
                 </div>
               ))}
@@ -115,7 +115,7 @@ export default function EnterpriseSignupPage() {
                 placeholder="Acme Corp"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
               />
             </div>
 
@@ -126,7 +126,7 @@ export default function EnterpriseSignupPage() {
                 placeholder="John Doe"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
               />
             </div>
 
@@ -137,7 +137,7 @@ export default function EnterpriseSignupPage() {
                 placeholder="name@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
               />
             </div>
 
@@ -148,7 +148,7 @@ export default function EnterpriseSignupPage() {
                 placeholder="Create a strong password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
               />
             </div>
 
@@ -159,7 +159,7 @@ export default function EnterpriseSignupPage() {
                 placeholder="US"
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
-                className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors uppercase"
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors uppercase"
               />
             </div>
             <div className="space-y-2">
@@ -169,13 +169,13 @@ export default function EnterpriseSignupPage() {
                 placeholder="REG-12345"
                 value={registrationNumber}
                 onChange={(e) => setRegistrationNumber(e.target.value)}
-                className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
               />
             </div>
 
             <Button 
               type="submit" 
-              className="w-full h-11 bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all mt-2"
+              className="w-full h-11 bg-verza-emerald hover:bg-verza-kelly text-black font-medium transition-all mt-2"
               disabled={isLoading}
             >
               {isLoading ? "Processing..." : "Generate Auth Key & Register"}
@@ -194,7 +194,7 @@ export default function EnterpriseSignupPage() {
           <p className="text-center text-sm text-zinc-400">
             Already have an auth key?{" "}
             <Link href="/portal/login">
-              <span className="text-blue-500 hover:text-blue-400 font-medium cursor-pointer transition-colors">
+              <span className="text-verza-emerald hover:text-verza-kelly font-medium cursor-pointer transition-colors">
                 Sign in to Portal
               </span>
             </Link>
@@ -212,11 +212,11 @@ export default function EnterpriseSignupPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="p-4 bg-zinc-900 rounded-lg border border-zinc-800 my-4">
-            <p className="font-mono text-lg text-blue-500 break-all text-center select-all">
+            <p className="font-mono text-lg text-verza-emerald break-all text-center select-all">
               {generatedKey}
             </p>
           </div>
-          <Button onClick={() => setShowKeyModal(false)} className="w-full bg-blue-600 hover:bg-blue-500">
+          <Button onClick={() => setShowKeyModal(false)} className="w-full bg-verza-emerald hover:bg-verza-kelly text-black">
             Close
           </Button>
         </DialogContent>

@@ -81,7 +81,7 @@ export default function Governance() {
       case 'active':
         return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20">Active Voting</Badge>;
       case 'passed':
-        return <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">Passed</Badge>;
+        return <Badge className="bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20 border-verza-emerald/20">Passed</Badge>;
       case 'rejected':
         return <Badge className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20">Rejected</Badge>;
       case 'executed':
@@ -196,7 +196,7 @@ export default function Governance() {
                         <TableCell className="w-[200px]">
                           <div className="space-y-1">
                             <div className="flex justify-between text-xs">
-                              <span className="text-green-500">{proposal.votesFor}% For</span>
+                              <span className="text-verza-emerald">{proposal.votesFor}% For</span>
                               <span className="text-red-500">{proposal.votesAgainst}% Against</span>
                             </div>
                             <Progress value={proposal.votesFor} className="h-1.5" />

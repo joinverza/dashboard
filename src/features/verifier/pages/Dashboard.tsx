@@ -101,8 +101,8 @@ export default function VerifierDashboard() {
         label: 'Verification Volume',
         data: stats?.dailyBreakdown?.map(d => d.count) || [],
         fill: true,
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        borderColor: '#10b981',
+        backgroundColor: 'rgba(30, 215, 96, 0.1)',
+        borderColor: '#1ED760',
         tension: 0.4,
       },
     ],
@@ -253,7 +253,7 @@ export default function VerifierDashboard() {
                    {(profile?.languages?.length ?? 0) === 1 ? "" : "s"}.
                  </p>
                  <Link href="/verifier/staking">
-                   <Button size="sm" className="mt-2 bg-verza-emerald text-white">View Staking</Button>
+                   <Button size="sm" className="mt-2 bg-verza-emerald text-black">View Staking</Button>
                  </Link>
                </div>
             </CardContent>
@@ -276,7 +276,7 @@ export default function VerifierDashboard() {
             ) : activeJobs.map((job) => (
               <div key={job.verificationId} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-border/50 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors">
                 <div className="flex items-start gap-4">
-                  <div className="p-2 rounded-full bg-blue-500/10 text-blue-500 mt-1">
+                  <div className="p-2 rounded-full bg-verza-emerald/10 text-verza-emerald mt-1">
                     <FileText className="h-5 w-5" />
                   </div>
                   <div>

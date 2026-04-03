@@ -93,7 +93,7 @@ export default function FinancialOverview() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-verza-emerald to-cyan-600 bg-clip-text text-transparent">
             Financial Overview
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -116,12 +116,12 @@ export default function FinancialOverview() {
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-emerald-500" />
+            <DollarSign className="h-4 w-4 text-verza-emerald" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">$124,500</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <ArrowUpRight className="h-3 w-3 text-emerald-500 mr-1" />
+              <ArrowUpRight className="h-3 w-3 text-verza-emerald mr-1" />
               +12.5% from last month
             </p>
           </CardContent>
@@ -134,7 +134,7 @@ export default function FinancialOverview() {
           <CardContent>
             <div className="text-2xl font-bold">$45,200</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <ArrowUpRight className="h-3 w-3 text-emerald-500 mr-1" />
+              <ArrowUpRight className="h-3 w-3 text-verza-emerald mr-1" />
               +8.2% from last month
             </p>
           </CardContent>
@@ -269,7 +269,7 @@ export default function FinancialOverview() {
                         <span className="text-xs text-muted-foreground">{tx.from || tx.to}</span>
                       </div>
                     </TableCell>
-                    <TableCell className={tx.amount.startsWith('+') ? 'text-green-500' : 'text-red-500'}>
+                    <TableCell className={tx.amount.startsWith('+') ? 'text-verza-emerald' : 'text-red-500'}>
                       {tx.amount}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">{tx.date}</TableCell>

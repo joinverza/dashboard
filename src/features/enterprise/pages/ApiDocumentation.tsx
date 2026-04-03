@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { apiReferenceSections } from '@/data/apiReference';
 
 const methodClassMap: Record<string, string> = {
-  GET: 'bg-green-500/10 text-green-500 border-green-500/20',
+  GET: 'bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20',
   POST: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
   PATCH: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
   DELETE: 'bg-red-500/10 text-red-500 border-red-500/20',
@@ -148,7 +148,7 @@ export default function ApiDocumentation() {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-base">Example Request</CardTitle>
                   <Button variant="ghost" size="icon" onClick={() => void handleCopy(curlSnippet)}>
-                    {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                    {copied ? <Check className="h-4 w-4 text-verza-emerald" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </CardHeader>
                 <CardContent>

@@ -128,7 +128,7 @@ export default function Analytics() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between space-y-0 pb-2">
               <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-verza-emerald" />
             </div>
             <div className="text-2xl font-bold">
               {isLoadingStats ? <Loader2 className="h-4 w-4 animate-spin" /> : 
@@ -195,8 +195,8 @@ export default function Analytics() {
 
             <Card className="bg-card/80 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-colors cursor-pointer group">
               <CardHeader>
-                <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                  <TrendingUp className="h-5 w-5 text-green-500" />
+                <div className="h-10 w-10 rounded-lg bg-verza-emerald/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="h-5 w-5 text-verza-emerald" />
                 </div>
                 <CardTitle>Verification Trends</CardTitle>
                 <CardDescription>Volume, success rates, and turnaround times</CardDescription>

@@ -115,7 +115,7 @@ export default function ContentModeration() {
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-between gap-2 border-t pt-4">
-                  <Button variant="ghost" className="w-full text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => toast.success("Content approved (Ignore)")}>
+                  <Button variant="ghost" className="w-full text-verza-emerald hover:text-green-700 hover:bg-green-50" onClick={() => toast.success("Content approved (Ignore)")}>
                     <Check className="h-4 w-4 mr-2" /> Ignore
                   </Button>
                   <Button variant="ghost" className="w-full text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => toast.error("Content removed and user warned")}>

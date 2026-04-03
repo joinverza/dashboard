@@ -29,7 +29,7 @@ export default function RevenueDrillDown() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-verza-emerald to-cyan-600 bg-clip-text text-transparent">
             Revenue Analytics
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -64,7 +64,7 @@ export default function RevenueDrillDown() {
           <CardContent>
             <div className="text-2xl font-bold">$124,500</div>
             <div className="flex items-center text-xs mt-1">
-              <span className="text-emerald-500 flex items-center font-medium">
+              <span className="text-verza-emerald flex items-center font-medium">
                 <ArrowUpRight className="h-3 w-3 mr-1" />
                 12.5%
               </span>
@@ -79,7 +79,7 @@ export default function RevenueDrillDown() {
           <CardContent>
             <div className="text-2xl font-bold">$42.50</div>
             <div className="flex items-center text-xs mt-1">
-              <span className="text-emerald-500 flex items-center font-medium">
+              <span className="text-verza-emerald flex items-center font-medium">
                 <ArrowUpRight className="h-3 w-3 mr-1" />
                 5.2%
               </span>
@@ -137,7 +137,7 @@ export default function RevenueDrillDown() {
                   <TableCell>{customer.type}</TableCell>
                   <TableCell>{customer.transactions}</TableCell>
                   <TableCell>{customer.revenue}</TableCell>
-                  <TableCell className={`text-right ${customer.growth.startsWith('+') ? 'text-emerald-500' : 'text-red-500'}`}>
+                  <TableCell className={`text-right ${customer.growth.startsWith('+') ? 'text-verza-emerald' : 'text-red-500'}`}>
                     {customer.growth}
                   </TableCell>
                 </TableRow>

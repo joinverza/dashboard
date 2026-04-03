@@ -105,7 +105,7 @@ export default function ComplianceReports() {
     switch (status) {
       case 'Compliant':
       case 'Certified':
-        return <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20"><CheckCircle className="w-3 h-3 mr-1" /> {status}</Badge>;
+        return <Badge className="bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20 border-verza-emerald/20"><CheckCircle className="w-3 h-3 mr-1" /> {status}</Badge>;
       case 'Pending':
         return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20"><Clock className="w-3 h-3 mr-1" /> Processing</Badge>;
       case 'Review Needed':
@@ -186,7 +186,7 @@ export default function ComplianceReports() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Compliance Score</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-500">98.5%</div>
+            <div className="text-2xl font-bold text-verza-emerald">98.5%</div>
             <p className="text-xs text-muted-foreground mt-1">Excellent status</p>
           </CardContent>
         </Card>

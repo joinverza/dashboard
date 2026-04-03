@@ -59,7 +59,7 @@ export default function Staking() {
                 <div className="mt-6 flex gap-8">
                     <div>
                         <p className="text-sm text-muted-foreground mb-1">APY</p>
-                        <p className="text-xl font-semibold text-green-500">8.5%</p>
+                        <p className="text-xl font-semibold text-verza-emerald">8.5%</p>
                     </div>
                     <div>
                         <p className="text-sm text-muted-foreground mb-1">Est. Monthly Reward</p>
@@ -191,12 +191,12 @@ export default function Staking() {
                         <TableRow>
                             <TableCell className="font-medium">Tier 1 (Novice)</TableCell>
                             <TableCell>1,000 ONTIVER</TableCell>
-                            <TableCell><Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Achieved</Badge></TableCell>
+                            <TableCell><Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">Achieved</Badge></TableCell>
                         </TableRow>
                         <TableRow>
                             <TableCell className="font-medium">Tier 2 (Pro)</TableCell>
                             <TableCell>10,000 ONTIVER</TableCell>
-                            <TableCell><Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Current</Badge></TableCell>
+                            <TableCell><Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">Current</Badge></TableCell>
                         </TableRow>
                         <TableRow>
                             <TableCell className="font-medium">Tier 3 (Authority)</TableCell>

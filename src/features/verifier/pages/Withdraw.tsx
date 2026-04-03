@@ -121,7 +121,7 @@ export default function VerifierWithdraw() {
                       <TableCell className="text-xs">{tx.date}</TableCell>
                       <TableCell className="font-medium">${tx.amount.toFixed(2)}</TableCell>
                       <TableCell className="text-right">
-                        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-[10px]">
+                        <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20 text-[10px]">
                           {tx.status}
                         </Badge>
                       </TableCell>

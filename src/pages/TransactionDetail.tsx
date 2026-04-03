@@ -85,7 +85,7 @@ export default function TransactionDetailPage() {
 
             <Badge variant="outline" className={cn(
               "px-3 py-1",
-              TRANSACTION.status === "confirmed" ? "bg-green-500/10 text-green-500 border-green-500/20" :
+              TRANSACTION.status === "confirmed" ? "bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20" :
               TRANSACTION.status === "pending" ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
               "bg-red-500/10 text-red-500 border-red-500/20"
             )}>

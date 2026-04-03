@@ -93,7 +93,7 @@ export default function AdminDashboard() {
   };
 
   const metrics = [
-    { label: "Total Verifications", value: stats?.totalVerifications || 0, icon: CheckCircle, color: "text-green-500" },
+    { label: "Total Verifications", value: stats?.totalVerifications || 0, icon: CheckCircle, color: "text-verza-emerald" },
     { label: "Pending Reviews", value: stats?.pending || 0, icon: Clock, color: "text-yellow-500" },
     { label: "Rejected", value: stats?.rejected || 0, icon: AlertTriangle, color: "text-red-500" },
     { label: "Active Verifiers", value: activeVerifiers, icon: Shield, color: "text-purple-500" },
@@ -135,7 +135,7 @@ export default function AdminDashboard() {
                 <p className="text-sm font-medium text-muted-foreground">{metric.label}</p>
                 <div className="flex items-baseline gap-2 mt-1">
                   <h3 className="text-2xl font-bold">{metric.value}</h3>
-                  {/* <span className="text-xs font-medium text-emerald-500">{metric.change}</span> */}
+                  {/* <span className="text-xs font-medium text-verza-emerald">{metric.change}</span> */}
                 </div>
               </div>
               <div className={`p-3 rounded-full bg-secondary/50 ${metric.color}`}>
@@ -195,7 +195,7 @@ export default function AdminDashboard() {
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-muted-foreground">{String(service.uptime)}</span>
                     <div className={`h-2.5 w-2.5 rounded-full ${
-                      service.status === "operational" ? "bg-green-500" :
+                      service.status === "operational" ? "bg-verza-emerald" :
                       service.status === "degraded" ? "bg-yellow-500" : "bg-red-500"
                     }`} />
                   </div>

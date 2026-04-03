@@ -52,7 +52,7 @@ export default function CredentialDetailAdmin() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             Credential {credential.id}
-            <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Valid</Badge>
+            <Badge className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">Valid</Badge>
           </h1>
           <p className="text-muted-foreground">
             Issued by {credential.issuer.name} to {credential.holder.name}
@@ -126,8 +126,8 @@ export default function CredentialDetailAdmin() {
 
                     <div className="mt-8 flex justify-between items-end">
                       <div className="flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-green-500" />
-                        <span className="text-sm font-medium text-green-500">Cryptographically Signed</span>
+                        <Shield className="h-5 w-5 text-verza-emerald" />
+                        <span className="text-sm font-medium text-verza-emerald">Cryptographically Signed</span>
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground">Credential ID</p>
@@ -162,7 +162,7 @@ export default function CredentialDetailAdmin() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 border rounded-md">
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <CheckCircle className="h-5 w-5 text-verza-emerald" />
                     <div>
                       <p className="font-medium text-sm">Signature Valid</p>
                       <p className="text-xs text-muted-foreground">Verified against issuer public key</p>
@@ -172,7 +172,7 @@ export default function CredentialDetailAdmin() {
                 </div>
                 <div className="flex items-center justify-between p-3 border rounded-md">
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <CheckCircle className="h-5 w-5 text-verza-emerald" />
                     <div>
                       <p className="font-medium text-sm">Not Revoked</p>
                       <p className="text-xs text-muted-foreground">Checked against revocation registry</p>
@@ -182,7 +182,7 @@ export default function CredentialDetailAdmin() {
                 </div>
                 <div className="flex items-center justify-between p-3 border rounded-md">
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <CheckCircle className="h-5 w-5 text-verza-emerald" />
                     <div>
                       <p className="font-medium text-sm">Schema Compliant</p>
                       <p className="text-xs text-muted-foreground">Valid against defined schema</p>
@@ -208,7 +208,7 @@ export default function CredentialDetailAdmin() {
                 </div>
                 <div>
                   <p className="font-medium">{credential.issuer.name}</p>
-                  <div className="flex items-center gap-1 text-xs text-green-500">
+                  <div className="flex items-center gap-1 text-xs text-verza-emerald">
                     <CheckCircle className="h-3 w-3" />
                     Verified Issuer
                   </div>
@@ -256,7 +256,7 @@ export default function CredentialDetailAdmin() {
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Network</p>
                 <p className="text-sm font-medium flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                  <span className="h-2 w-2 rounded-full bg-verza-emerald"></span>
                   Ontiver ZK Network
                 </p>
               </div>

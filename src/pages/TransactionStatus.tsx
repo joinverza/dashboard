@@ -47,7 +47,7 @@ export default function TransactionStatusPage() {
             transition={{ type: "spring", damping: 15 }}
             className={cn(
               "w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6",
-              isSuccess ? "bg-green-500/10 text-verza-emerald" : "bg-red-500/10 text-red-500"
+              isSuccess ? "bg-verza-emerald/10 text-verza-emerald" : "bg-red-500/10 text-red-500"
             )}
           >
             {isSuccess ? (

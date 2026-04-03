@@ -152,7 +152,7 @@ export default function VerifierManagement() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'active': return 'bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20';
       case 'pending': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
       case 'suspended': return 'bg-red-500/10 text-red-500 border-red-500/20';
       default: return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
@@ -292,7 +292,7 @@ export default function VerifierManagement() {
                   <div className="flex items-center gap-2">
                     <div className="w-16 h-2 bg-secondary rounded-full overflow-hidden">
                       <div 
-                        className={`h-full ${(verifier.reputation || 0) > 90 ? 'bg-green-500' : (verifier.reputation || 0) > 70 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                        className={`h-full ${(verifier.reputation || 0) > 90 ? 'bg-verza-emerald' : (verifier.reputation || 0) > 70 ? 'bg-yellow-500' : 'bg-red-500'}`}
                         style={{ width: `${verifier.reputation || 0}%` }}
                       />
                     </div>

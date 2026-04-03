@@ -67,7 +67,7 @@ export default function EnterpriseAnalytics() {
       datasets: [
         {
           data: [stats?.approved ?? 0, stats?.rejected ?? 0, stats?.pending ?? 0],
-          backgroundColor: ['#10b981', '#ef4444', '#f59e0b'],
+          backgroundColor: ['#1ED760', '#ef4444', '#f59e0b'],
         },
       ],
     }),
@@ -94,7 +94,7 @@ export default function EnterpriseAnalytics() {
           label: 'Average seconds',
           data: data?.processingTimes.map((item) => item.averageSeconds) ?? [],
           backgroundColor: 'rgba(16, 185, 129, 0.7)',
-          borderColor: '#10b981',
+          borderColor: '#1ED760',
         },
       ],
     }),
@@ -138,7 +138,7 @@ export default function EnterpriseAnalytics() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats?.totalVerifications.toLocaleString() || 0}</div>
-              <div className="flex items-center text-xs text-emerald-500 mt-1">
+              <div className="flex items-center text-xs text-verza-emerald mt-1">
                 <ArrowUpRight className="h-3 w-3 mr-1" /> Live request volume
               </div>
             </CardContent>
@@ -149,7 +149,7 @@ export default function EnterpriseAnalytics() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{successRate}%</div>
-              <div className="flex items-center text-xs text-emerald-500 mt-1">
+              <div className="flex items-center text-xs text-verza-emerald mt-1">
                 <ArrowUpRight className="h-3 w-3 mr-1" /> Approved / total
               </div>
             </CardContent>

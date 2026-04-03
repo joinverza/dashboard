@@ -57,7 +57,7 @@ export default function ProposalDetail() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             {proposal.title}
-            <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Passed</Badge>
+            <Badge className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">Passed</Badge>
           </h1>
           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
             <span className="flex items-center gap-1">
@@ -98,12 +98,12 @@ export default function ProposalDetail() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <CheckCircle className="h-4 w-4 text-verza-emerald" />
                         For
                       </span>
                       <span className="font-medium">{forPercentage}% ({proposal.votesFor.toLocaleString()})</span>
                     </div>
-                    <Progress value={forPercentage} className="h-2 bg-muted [&>div]:bg-green-500" />
+                    <Progress value={forPercentage} className="h-2 bg-muted [&>div]:bg-verza-emerald" />
                   </div>
 
                   <div className="space-y-2">
@@ -152,7 +152,7 @@ export default function ProposalDetail() {
                       <TableCell className="font-medium">{vote.voter}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={
-                          vote.vote === 'For' ? 'text-green-500 border-green-500/20' :
+                          vote.vote === 'For' ? 'text-verza-emerald border-verza-emerald/20' :
                           vote.vote === 'Against' ? 'text-red-500 border-red-500/20' :
                           'text-gray-500 border-gray-500/20'
                         }>

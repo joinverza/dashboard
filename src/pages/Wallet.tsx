@@ -65,7 +65,7 @@ const WALLET_ASSETS = [
     value: "15,000.00",
     change24h: 0.01,
     isPositive: true,
-    color: "from-green-400 to-emerald-600"
+    color: "from-verza-emerald to-verza-kelly"
   },
   {
     id: "verza",
@@ -191,7 +191,7 @@ export default function WalletPage() {
                 <div className={cn(
                   "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border",
                   asset.isPositive 
-                    ? "text-green-400 bg-green-500/10 border-green-500/20" 
+                    ? "text-verza-emerald bg-verza-emerald/10 border-verza-emerald/20" 
                     : "text-red-400 bg-red-500/10 border-red-500/20"
                 )}>
                   {asset.isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -292,7 +292,7 @@ export default function WalletPage() {
                   </td>
                   <td className={cn(
                     "px-6 py-4 whitespace-nowrap text-sm font-medium",
-                    tx.amount.startsWith("+") ? "text-green-400" : "text-foreground"
+                    tx.amount.startsWith("+") ? "text-verza-emerald" : "text-foreground"
                   )}>
                     {tx.amount}
                   </td>
@@ -300,7 +300,7 @@ export default function WalletPage() {
                     <span className={cn(
                       "px-2 py-1 rounded-full text-xs font-medium border",
                       tx.status === "Completed" 
-                        ? "bg-green-500/10 text-green-400 border-green-500/20"
+                        ? "bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20"
                         : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
                     )}>
                       {tx.status}

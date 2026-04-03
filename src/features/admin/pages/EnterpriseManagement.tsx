@@ -122,7 +122,7 @@ export default function EnterpriseManagement() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'active': return 'bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20';
       case 'warning': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
       case 'suspended': return 'bg-red-500/10 text-red-500 border-red-500/20';
       default: return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
@@ -261,7 +261,7 @@ export default function EnterpriseManagement() {
                       <span>Usage</span>
                       <span className={ent.apiUsage > 90 ? 'text-red-500' : 'text-muted-foreground'}>{ent.apiUsage}%</span>
                     </div>
-                    <Progress value={ent.apiUsage} className="h-2" indicatorClassName={ent.apiUsage > 90 ? 'bg-red-500' : ent.apiUsage > 75 ? 'bg-yellow-500' : 'bg-green-500'} />
+                    <Progress value={ent.apiUsage} className="h-2" indicatorClassName={ent.apiUsage > 90 ? 'bg-red-500' : ent.apiUsage > 75 ? 'bg-yellow-500' : 'bg-verza-emerald'} />
                   </div>
                 </TableCell>
                 <TableCell>

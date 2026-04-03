@@ -159,7 +159,7 @@ export default function ErrorLogs() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={
-                        log.status === 'resolved' ? 'text-green-500 border-green-500/20' : 
+                        log.status === 'resolved' ? 'text-verza-emerald border-verza-emerald/20' : 
                         log.status === 'investigating' ? 'text-blue-500 border-blue-500/20' : 
                         'text-red-500 border-red-500/20'
                       }>
@@ -172,7 +172,7 @@ export default function ErrorLogs() {
                           <Eye className="h-4 w-4" />
                         </Button>
                         {log.status !== 'resolved' && (
-                          <Button variant="ghost" size="icon" title="Mark Resolved" className="text-green-500 hover:text-green-600" onClick={() => toast.success(`Error ${log.id} marked as resolved`)}>
+                          <Button variant="ghost" size="icon" title="Mark Resolved" className="text-verza-emerald hover:text-verza-emerald" onClick={() => toast.success(`Error ${log.id} marked as resolved`)}>
                             <CheckCircle className="h-4 w-4" />
                           </Button>
                         )}

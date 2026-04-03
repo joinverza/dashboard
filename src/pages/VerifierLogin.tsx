@@ -45,10 +45,10 @@ export default function VerifierLoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#09090b] text-white selection:bg-emerald-500/20 selection:text-emerald-500">
+    <div className="min-h-screen w-full flex bg-[#09090b] text-white selection:bg-verza-emerald/20 selection:text-verza-emerald">
       <div className="hidden lg:flex w-1/2 relative bg-[#000000] overflow-hidden flex-col justify-between p-12 border-l border-white/5 order-2">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,_#002417_0%,_transparent_50%)]" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-verza-emerald/5 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
 
         <div className="relative z-10 flex items-center justify-end gap-3">
           <span className="text-xl font-bold tracking-tight text-white">Verifier Portal</span>
@@ -63,7 +63,7 @@ export default function VerifierLoginPage() {
           >
             <h1 className="text-5xl font-semibold tracking-tight leading-[1.1] mb-6 text-white">
               Verifier <br />
-              <span className="text-emerald-500">operations hub</span>
+              <span className="text-verza-emerald">operations hub</span>
             </h1>
             <p className="text-lg text-zinc-400 leading-relaxed mb-8">
               Review verification requests, process credentials, and manage verifier operations with secure access controls.
@@ -78,7 +78,7 @@ export default function VerifierLoginPage() {
                 <div key={i} className="flex items-center gap-3 text-zinc-300">
                   <span className="text-sm font-medium">{item.text}</span>
                   <div className="h-8 w-8 rounded-full bg-zinc-900/50 border border-zinc-800 flex items-center justify-center shrink-0">
-                    <item.icon className="h-4 w-4 text-emerald-500" />
+                    <item.icon className="h-4 w-4 text-verza-emerald" />
                   </div>
                 </div>
               ))}
@@ -112,7 +112,7 @@ export default function VerifierLoginPage() {
                 placeholder="verifier@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
               />
             </div>
 
@@ -123,7 +123,7 @@ export default function VerifierLoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
               />
             </div>
 
@@ -136,7 +136,7 @@ export default function VerifierLoginPage() {
                   placeholder="Enter verifier auth key"
                   value={authKey}
                   onChange={(e) => setAuthKey(e.target.value)}
-                  className="pl-10 bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors font-mono"
+                  className="pl-10 bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors font-mono"
                 />
               </div>
             </div>
@@ -167,7 +167,7 @@ export default function VerifierLoginPage() {
                   placeholder={mfaMethod === "totp" ? "123456" : "Enter recovery code"}
                   value={mfaCode}
                   onChange={(e) => setMfaCode(e.target.value)}
-                  className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors font-mono"
+                  className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors font-mono"
                 />
                 {mfaError ? <p className="text-sm text-red-400">{mfaError}</p> : null}
               </div>
@@ -175,7 +175,7 @@ export default function VerifierLoginPage() {
 
             <Button
               type="submit"
-              className="w-full h-11 bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition-all"
+              className="w-full h-11 bg-verza-emerald hover:bg-verza-emerald text-white font-medium transition-all"
               disabled={isLoading}
             >
               {isLoading ? "Authenticating..." : mfaChallenge ? (mfaMethod === "totp" ? "Verify TOTP" : "Verify Recovery Code") : "Access Verifier Dashboard"}
@@ -194,7 +194,7 @@ export default function VerifierLoginPage() {
           <p className="text-center text-sm text-zinc-400">
             Need a verifier account?{" "}
             <Link href="/verifier/signup">
-              <span className="text-emerald-500 hover:text-emerald-400 font-medium cursor-pointer transition-colors">
+              <span className="text-verza-emerald hover:text-verza-emerald font-medium cursor-pointer transition-colors">
                 Register verifier
               </span>
             </Link>

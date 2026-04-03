@@ -178,7 +178,7 @@ export default function VerificationsPage() {
                       <Input type="file" className="hidden" id="doc-upload" onChange={e => handleFileChange(e, setDocImage, 'image')} accept="image/*" />
                       <Label htmlFor="doc-upload" className="cursor-pointer"><span className="text-primary font-medium">Click to upload</span> or drag and drop</Label>
                     </div>
-                    {docImage && <div className="mt-2 text-xs text-green-500 flex items-center"><CheckCircle className="h-3 w-3 mr-1" />Image loaded</div>}
+                    {docImage && <div className="mt-2 text-xs text-verza-emerald flex items-center"><CheckCircle className="h-3 w-3 mr-1" />Image loaded</div>}
                   </div>
                   <div className="flex gap-2 pt-4">
                     <Button onClick={() => executeRequest(() => bankingService.verifyDocument({ documentImage: docImage, documentType: docType, issuingCountry: docCountry.trim().toUpperCase(), useOcr: true }))} disabled={loading} className="flex-1">Verify Authenticity</Button>
@@ -202,7 +202,7 @@ export default function VerificationsPage() {
                     <Label>Liveness Video Upload</Label>
                     <Input type="file" accept="video/*" onChange={handleVideoFileChange} />
                     <p className="text-xs text-muted-foreground">Video files must be 25MB or smaller.</p>
-                    {bioVideoInline && <div className="text-xs text-green-500 flex items-center"><CheckCircle className="h-3 w-3 mr-1" />{bioVideoFileName || 'Video loaded'}</div>}
+                    {bioVideoInline && <div className="text-xs text-verza-emerald flex items-center"><CheckCircle className="h-3 w-3 mr-1" />{bioVideoFileName || 'Video loaded'}</div>}
                   </div>
                   <div className="space-y-2"><Label>Liveness Video URL</Label><Input value={bioVideoUrl} onChange={e => setBioVideoUrl(e.target.value)} placeholder="https://cdn.example.com/liveness.mp4" /></div>
                   <div className="flex gap-2 pt-4">

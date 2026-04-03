@@ -57,8 +57,8 @@ export default function Dashboard() {
         label: "Verified Identities",
         value: verifiedCount,
         icon: FileCheck,
-        color: "text-emerald-400",
-        bg: "bg-emerald-400/10",
+        color: "text-verza-emerald",
+        bg: "bg-verza-emerald/10",
       },
       {
         label: "Pending Verifications",
@@ -227,7 +227,7 @@ export default function Dashboard() {
                         <div
                           className={`w-2 h-2 rounded-full ${
                             verification.status === "verified"
-                              ? "bg-emerald-400"
+                              ? "bg-verza-emerald"
                               : verification.status === "rejected"
                                 ? "bg-red-400"
                                 : "bg-amber-400"
@@ -241,7 +241,7 @@ export default function Dashboard() {
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium border ${
                           verification.status === "verified"
-                            ? "bg-emerald-400/10 border-emerald-400/20 text-emerald-400"
+                            ? "bg-verza-emerald/10 border-verza-emerald/20 text-verza-emerald"
                             : verification.status === "rejected"
                               ? "bg-red-400/10 border-red-400/20 text-red-400"
                               : "bg-amber-400/10 border-amber-400/20 text-amber-400"

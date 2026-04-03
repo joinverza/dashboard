@@ -92,7 +92,7 @@ export default function CredentialDetailPage() {
   const timeline = [
     { id: 1, title: "Credential Issued", date: "May 20, 2023 10:00 AM", icon: FileText, color: "text-blue-400" },
     { id: 2, title: "Uploaded to Ontiver", date: "May 21, 2023 09:15 AM", icon: Upload, color: "text-purple-400" },
-    { id: 3, title: "AI Pre-Screening Passed", date: "May 21, 2023 09:17 AM", icon: ShieldCheck, color: "text-green-400" },
+    { id: 3, title: "AI Pre-Screening Passed", date: "May 21, 2023 09:17 AM", icon: ShieldCheck, color: "text-verza-emerald" },
     { id: 4, title: "Verifier Assigned", date: "May 21, 2023 10:00 AM", icon: User, color: "text-orange-400" },
     { id: 5, title: "Verification Complete", date: "May 21, 2023 02:30 PM", icon: CheckCircle2, color: "text-verza-emerald" },
     { id: 6, title: "Anchored to Blockchain", date: "May 21, 2023 02:35 PM", icon: LinkIcon, color: "text-indigo-400" }
@@ -124,7 +124,7 @@ export default function CredentialDetailPage() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">{credential.title}</h1>
-              <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/20 gap-1">
+              <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20 gap-1">
                 <CheckCircle2 className="w-3 h-3" /> Verified
               </Badge>
             </div>
@@ -340,7 +340,7 @@ export default function CredentialDetailPage() {
                       <td className="px-4 py-3">
                         <Badge variant="outline" className={cn(
                           "text-xs",
-                          share.status === "Active" ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-secondary text-muted-foreground"
+                          share.status === "Active" ? "bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20" : "bg-secondary text-muted-foreground"
                         )}>
                           {share.status}
                         </Badge>

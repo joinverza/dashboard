@@ -53,7 +53,7 @@ const data = {
     {
       label: 'Reputation Score',
       data: [4.2, 4.3, 4.5, 4.6, 4.8, 4.9],
-      borderColor: '#10b981',
+      borderColor: '#1ED760',
       backgroundColor: 'rgba(16, 185, 129, 0.5)',
       tension: 0.4,
     },

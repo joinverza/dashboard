@@ -126,7 +126,7 @@ export default function VerifierDetail() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold">{verifier.name}</h1>
-              <Badge className={verifier.status === 'active' ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-yellow-500/10 text-yellow-500"}>
+              <Badge className={verifier.status === 'active' ? "bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20" : "bg-yellow-500/10 text-yellow-500"}>
                 {verifier.status.charAt(0).toUpperCase() + verifier.status.slice(1)}
               </Badge>
               {verifier.verificationLevel && (
@@ -198,7 +198,7 @@ export default function VerifierDetail() {
                 <div className="p-4 rounded-lg bg-secondary/20 border border-border/50">
                   <div className="text-sm text-muted-foreground mb-1">Active Credentials</div>
                   <div className="text-2xl font-bold flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <CheckCircle className="h-5 w-5 text-verza-emerald" />
                     {verifier.stats?.active?.toLocaleString() || '-'}
                   </div>
                 </div>
@@ -269,7 +269,7 @@ export default function VerifierDetail() {
                       <TableCell>{cred.user}</TableCell>
                       <TableCell>{cred.date}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={cred.status === 'Active' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}>
+                        <Badge variant="outline" className={cred.status === 'Active' ? 'bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}>
                           {cred.status}
                         </Badge>
                       </TableCell>

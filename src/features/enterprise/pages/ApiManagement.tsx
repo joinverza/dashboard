@@ -503,7 +503,7 @@ export default function ApiManagement() {
           <CardContent>
             <div className="text-2xl font-bold">124ms</div>
             <div className="flex items-center gap-1 mt-1">
-              <span className="text-green-500 text-xs font-medium flex items-center">
+              <span className="text-verza-emerald text-xs font-medium flex items-center">
                 <CheckCircle className="h-3 w-3 mr-1" /> Healthy
               </span>
               <span className="text-xs text-muted-foreground">Global edge network</span>
@@ -776,7 +776,7 @@ export default function ApiManagement() {
                           <TableCell>{new Date(key.createdAt).toLocaleDateString()}</TableCell>
                           <TableCell>{key.lastUsed ? new Date(key.lastUsed).toLocaleDateString() : 'Never'}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                            <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">
                               ACTIVE
                             </Badge>
                           </TableCell>

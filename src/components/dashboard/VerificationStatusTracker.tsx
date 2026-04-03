@@ -58,7 +58,7 @@ export default function VerificationStatusTracker() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-bold text-white">Active Verifications</h2>
         <Link href="/app/credentials">
-            <span className="text-xs text-[#00FF87] hover:underline cursor-pointer">Manage</span>
+            <span className="text-xs text-verza-emerald hover:underline cursor-pointer">Manage</span>
         </Link>
       </div>
 
@@ -91,7 +91,7 @@ export default function VerificationStatusTracker() {
                 <Clock className="w-3 h-3" /> {formatDate(item.updatedAt)}
               </span>
               <Link href={`/app/verification-status/${item.verificationId}`}>
-                <button className="text-xs flex items-center gap-1 text-white hover:text-[#00FF87] transition-colors">
+                <button className="text-xs flex items-center gap-1 text-white hover:text-verza-emerald transition-colors">
                   View Details <ArrowRight className="w-3 h-3" />
                 </button>
               </Link>

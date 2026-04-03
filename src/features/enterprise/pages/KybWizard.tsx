@@ -144,7 +144,7 @@ export default function KybWizard() {
           {STEP_ORDER.map((step) => (
             <div key={step} className="flex items-center justify-between rounded-md border p-3">
               <div className="flex items-center gap-2">
-                {isDone(step) ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <ArrowRight className="h-4 w-4 text-muted-foreground" />}
+                {isDone(step) ? <CheckCircle2 className="h-4 w-4 text-verza-emerald" /> : <ArrowRight className="h-4 w-4 text-muted-foreground" />}
                 <span className="font-medium capitalize">{step}</span>
                 {results[step] ? <span className="text-xs text-muted-foreground">status: {results[step]}</span> : null}
               </div>

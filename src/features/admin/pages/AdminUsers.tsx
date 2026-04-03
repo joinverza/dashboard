@@ -150,7 +150,7 @@ export default function AdminUsers() {
                       <TableCell>
                         <Badge 
                           variant={admin.status === 'active' ? 'default' : 'secondary'}
-                          className={admin.status === 'active' ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' : ''}
+                          className={admin.status === 'active' ? 'bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20' : ''}
                         >
                           {admin.status}
                         </Badge>

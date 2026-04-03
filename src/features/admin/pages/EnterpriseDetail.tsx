@@ -77,7 +77,7 @@ export default function EnterpriseDetail() {
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold">{MOCK_ENTERPRISE.name}</h1>
               <Badge className="bg-purple-500/10 text-purple-500 border-purple-500/20">{MOCK_ENTERPRISE.plan}</Badge>
-              <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Active</Badge>
+              <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">Active</Badge>
             </div>
             <div className="flex flex-col gap-1 mt-1 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
@@ -133,7 +133,7 @@ export default function EnterpriseDetail() {
                 <div className="p-4 rounded-lg bg-secondary/20 border border-border/50">
                   <div className="text-sm text-muted-foreground mb-1">API Calls (Monthly)</div>
                   <div className="text-2xl font-bold flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-green-500" />
+                    <Activity className="h-5 w-5 text-verza-emerald" />
                     {MOCK_ENTERPRISE.stats.apiCalls}
                   </div>
                 </div>
@@ -204,7 +204,7 @@ export default function EnterpriseDetail() {
                       <TableCell>{member.role}</TableCell>
                       <TableCell>{member.email}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={member.status === 'Active' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-gray-500/10 text-gray-500 border-gray-500/20'}>
+                        <Badge variant="outline" className={member.status === 'Active' ? 'bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20' : 'bg-gray-500/10 text-gray-500 border-gray-500/20'}>
                           {member.status}
                         </Badge>
                       </TableCell>
@@ -243,7 +243,7 @@ export default function EnterpriseDetail() {
                       <TableCell>{bill.invoice}</TableCell>
                       <TableCell>{bill.amount}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                        <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">
                           {bill.status}
                         </Badge>
                       </TableCell>

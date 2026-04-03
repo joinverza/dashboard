@@ -133,7 +133,7 @@ export default function UserManagement() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active': return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Active</Badge>;
+      case 'active': return <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">Active</Badge>;
       case 'suspended': return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Suspended</Badge>;
       case 'banned': return <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">Banned</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;

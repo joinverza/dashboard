@@ -470,7 +470,7 @@ export default function SettingsPage() {
                       </div>
                       <div className="flex items-center gap-6">
                         <span className="font-medium">{item.amount}</span>
-                        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                        <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">
                           {item.status}
                         </Badge>
                         <Button 
@@ -514,7 +514,7 @@ export default function SettingsPage() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="font-semibold">{key.name}</span>
-                        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-[10px] h-5">
+                        <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20 text-[10px] h-5">
                           {key.status}
                         </Badge>
                       </div>

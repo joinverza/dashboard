@@ -83,7 +83,7 @@ export default function SystemMonitor() {
                 ? "border-red-500/50 text-red-500 bg-red-500/10"
                 : degradedCount > 0
                   ? "border-yellow-500/50 text-yellow-500 bg-yellow-500/10"
-                  : "border-green-500/50 text-green-500 bg-green-500/10"
+                  : "border-verza-emerald/50 text-verza-emerald bg-verza-emerald/10"
             }`}
           >
             <CheckCircle className="w-3 h-3 mr-2" />
@@ -135,7 +135,7 @@ export default function SystemMonitor() {
                   <div className="text-sm text-muted-foreground">Primitive Runtime</div>
                   <div className="text-xl font-bold">{data?.modelStatus?.status ?? "Unknown"}</div>
                 </div>
-                <Wifi className="h-6 w-6 text-green-500" />
+                <Wifi className="h-6 w-6 text-verza-emerald" />
               </CardContent>
             </Card>
           </div>

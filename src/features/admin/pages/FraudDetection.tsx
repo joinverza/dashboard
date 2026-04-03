@@ -228,7 +228,7 @@ export default function FraudDetection() {
                         <Badge variant="outline" className={
                           alert.status === 'pending' ? 'text-red-500 border-red-500/20' : 
                           alert.status === 'reviewing' ? 'text-orange-500 border-orange-500/20' : 
-                          'text-green-500 border-green-500/20'
+                          'text-verza-emerald border-verza-emerald/20'
                         }>
                           {alert.status}
                         </Badge>
@@ -241,7 +241,7 @@ export default function FraudDetection() {
                           <Button variant="ghost" size="icon" title="Reject" className="text-red-500 hover:text-red-600" onClick={() => toast.success(`Alert ${alert.id} rejected`)}>
                             <XCircle className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" title="Approve (False Positive)" className="text-green-500 hover:text-green-600" onClick={() => toast.success(`Alert ${alert.id} marked as false positive`)}>
+                          <Button variant="ghost" size="icon" title="Approve (False Positive)" className="text-verza-emerald hover:text-verza-emerald" onClick={() => toast.success(`Alert ${alert.id} marked as false positive`)}>
                             <CheckCircle className="h-4 w-4" />
                           </Button>
                         </div>

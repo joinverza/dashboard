@@ -59,7 +59,7 @@ export default function CostAnalysis() {
           <CardContent>
             <div className="text-2xl font-bold">$2,525.00</div>
             <div className="flex items-center text-xs text-muted-foreground mt-1">
-              <span className="text-emerald-500 flex items-center mr-1">
+              <span className="text-verza-emerald flex items-center mr-1">
                 <ArrowDownRight className="h-3 w-3" /> 2.1%
               </span> 
               vs last month
@@ -93,13 +93,13 @@ export default function CostAnalysis() {
           <CardContent>
             <div className="text-2xl font-bold">$0.45</div>
             <div className="flex items-center text-xs text-muted-foreground mt-1">
-              <span className="text-emerald-500 flex items-center mr-1">
+              <span className="text-verza-emerald flex items-center mr-1">
                 <ArrowDownRight className="h-3 w-3" /> 12%
               </span> 
               vs industry avg
             </div>
              <div className="mt-4 flex items-center gap-2">
-                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">Optimized</Badge>
+                <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">Optimized</Badge>
              </div>
           </CardContent>
         </Card>
@@ -163,7 +163,7 @@ export default function CostAnalysis() {
                   <TableCell>{tx.amount}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={
-                        tx.status === 'Paid' ? 'bg-emerald-500/10 text-emerald-500' : 
+                        tx.status === 'Paid' ? 'bg-verza-emerald/10 text-verza-emerald' : 
                         tx.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500' :
                         'bg-blue-500/10 text-blue-500'
                     }>

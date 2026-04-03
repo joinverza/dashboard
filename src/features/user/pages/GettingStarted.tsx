@@ -27,8 +27,8 @@ export default function GettingStarted() {
       title: "Credentials",
       icon: FileBadge,
       description: "Manage your identity documents and verifiable credentials in one secure place.",
-      color: "text-emerald-400",
-      bg: "bg-emerald-400/10",
+      color: "text-verza-emerald",
+      bg: "bg-verza-emerald/10",
     },
     {
       title: "Marketplace",

@@ -240,7 +240,7 @@ export default function WithdrawPage() {
               animate={{ opacity: 1, scale: 1 }}
               className="flex flex-col items-center justify-center py-20 text-center space-y-6"
             >
-              <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mb-2">
+              <div className="w-20 h-20 rounded-full bg-verza-emerald/10 flex items-center justify-center mb-2">
                 <CheckCircle2 className="w-10 h-10 text-verza-emerald" />
               </div>
               <div>

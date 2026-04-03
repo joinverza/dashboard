@@ -72,7 +72,7 @@ export default function TeamManagement() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+      case 'active': return 'bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20';
       case 'away': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
       case 'invited': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
       case 'suspended': return 'bg-red-500/10 text-red-500 border-red-500/20';

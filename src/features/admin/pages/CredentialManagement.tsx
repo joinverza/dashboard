@@ -97,7 +97,7 @@ export default function CredentialManagement() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'valid':
-        return <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">Valid</Badge>;
+        return <Badge className="bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20 border-verza-emerald/20">Valid</Badge>;
       case 'revoked':
         return <Badge className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20">Revoked</Badge>;
       case 'expired':

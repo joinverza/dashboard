@@ -221,7 +221,7 @@ export default function EnterpriseIntegrations() {
                   <div className="font-bold text-xl text-black">{integration.name.substring(0, 2)}</div>
                 </div>
                 {integration.status === 'connected' && (
-                  <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20">Connected</Badge>
+                  <Badge className="bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20">Connected</Badge>
                 )}
                 {integration.status === 'disconnected' && (
                   <Badge variant="outline" className="text-muted-foreground">Available</Badge>
@@ -337,7 +337,7 @@ export default function EnterpriseIntegrations() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <span className={`h-2 w-2 rounded-full ${webhook.isActive ? 'bg-emerald-500' : 'bg-yellow-500'}`} />
+                    <span className={`h-2 w-2 rounded-full ${webhook.isActive ? 'bg-verza-emerald' : 'bg-yellow-500'}`} />
                     <span className="text-sm text-muted-foreground capitalize">{webhook.isActive ? 'Active' : 'Inactive'}</span>
                   </div>
                   <Button variant="ghost" size="icon" onClick={() => handleDeleteWebhook(webhook.id)} disabled={activeWebhookId === webhook.id}>

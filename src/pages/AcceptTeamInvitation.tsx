@@ -50,7 +50,7 @@ export default function AcceptTeamInvitation() {
             />
           </div>
           {status === 'success' && (
-            <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">
+            <div className="rounded-md border border-verza-emerald/40 bg-verza-emerald/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" />
                 <span>{message}</span>

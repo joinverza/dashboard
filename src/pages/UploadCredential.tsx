@@ -332,13 +332,13 @@ export default function UploadCredentialPage() {
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-500" /> No glare or shadows
+                    <CheckCircle2 className="w-4 h-4 text-verza-emerald" /> No glare or shadows
                   </div>
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-500" /> All corners visible
+                    <CheckCircle2 className="w-4 h-4 text-verza-emerald" /> All corners visible
                   </div>
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-500" /> Text is legible
+                    <CheckCircle2 className="w-4 h-4 text-verza-emerald" /> Text is legible
                   </div>
                 </div>
               </div>
@@ -390,15 +390,15 @@ export default function UploadCredentialPage() {
               <div className="w-full max-w-md space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span>OCR Extraction</span>
-                  {scanProgress > 30 ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Loader2 className="w-4 h-4 animate-spin" />}
+                  {scanProgress > 30 ? <CheckCircle2 className="w-4 h-4 text-verza-emerald" /> : <Loader2 className="w-4 h-4 animate-spin" />}
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span>Security Feature Check</span>
-                  {scanProgress > 60 ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Loader2 className="w-4 h-4 animate-spin" />}
+                  {scanProgress > 60 ? <CheckCircle2 className="w-4 h-4 text-verza-emerald" /> : <Loader2 className="w-4 h-4 animate-spin" />}
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span>Fraud Detection</span>
-                  {scanProgress > 90 ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Loader2 className="w-4 h-4 animate-spin" />}
+                  {scanProgress > 90 ? <CheckCircle2 className="w-4 h-4 text-verza-emerald" /> : <Loader2 className="w-4 h-4 animate-spin" />}
                 </div>
               </div>
             </motion.div>
@@ -413,7 +413,7 @@ export default function UploadCredentialPage() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <div className="flex gap-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 items-start">
+              <div className="flex gap-4 p-4 bg-verza-emerald/10 border border-verza-emerald/20 rounded-lg text-verza-emerald items-start">
                 <ShieldCheck className="w-6 h-6 mt-1 flex-shrink-0" />
                 <div>
                   <h4 className="font-semibold">Document Passed Pre-Screening</h4>
@@ -512,7 +512,7 @@ export default function UploadCredentialPage() {
                 <Button 
                   size="lg" 
                   onClick={handleSubmit}
-                  className="bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-900/20"
+                  className="bg-verza-emerald hover:bg-green-700 text-white shadow-lg shadow-green-900/20"
                 >
                   Confirm & Submit <CheckCircle2 className="w-4 h-4 ml-2" />
                 </Button>

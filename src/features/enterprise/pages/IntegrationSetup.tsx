@@ -212,13 +212,13 @@ export default function EnterpriseIntegrationSetup() {
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Testing Connection...
                 </h4>
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center text-emerald-500">
+                  <div className="flex items-center text-verza-emerald">
                     <Check className="mr-2 h-4 w-4" /> Authentication successful
                   </div>
-                  <div className="flex items-center text-emerald-500">
+                  <div className="flex items-center text-verza-emerald">
                     <Check className="mr-2 h-4 w-4" /> Field mapping verified
                   </div>
-                  <div className="flex items-center text-emerald-500">
+                  <div className="flex items-center text-verza-emerald">
                     <Check className="mr-2 h-4 w-4" /> Write permission confirmed
                   </div>
                 </div>

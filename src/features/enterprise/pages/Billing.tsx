@@ -127,7 +127,7 @@ export default function EnterpriseBilling() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Current Plan</CardTitle>
-              <Badge className="bg-emerald-500/10 text-emerald-500">Active</Badge>
+              <Badge className="bg-verza-emerald/10 text-verza-emerald">Active</Badge>
             </div>
             <CardDescription>
               You are currently on the <span className="font-semibold text-foreground capitalize">{currentPlan} Plan</span>.
@@ -145,13 +145,13 @@ export default function EnterpriseBilling() {
                 <span className="font-medium">5,000 / month</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Check className="h-4 w-4 text-emerald-500" /> API Access
+                <Check className="h-4 w-4 text-verza-emerald" /> API Access
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Check className="h-4 w-4 text-emerald-500" /> 5 Team Members
+                <Check className="h-4 w-4 text-verza-emerald" /> 5 Team Members
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Check className="h-4 w-4 text-emerald-500" /> Standard Support
+                <Check className="h-4 w-4 text-verza-emerald" /> Standard Support
               </div>
             </div>
 
@@ -292,7 +292,7 @@ export default function EnterpriseBilling() {
                   <TableCell>{invoice.date}</TableCell>
                   <TableCell>{invoice.amount}</TableCell>
                   <TableCell>
-                    <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20">{invoice.status}</Badge>
+                    <Badge className="bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20">{invoice.status}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" onClick={() => toast.success(`Invoice ${invoice.id} download started.`)}>

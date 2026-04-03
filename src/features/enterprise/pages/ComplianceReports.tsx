@@ -75,7 +75,7 @@ export default function ComplianceReports() {
       case 'Compliant':
       case 'Certified':
       case 'Ready':
-        return <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20">{status}</Badge>;
+        return <Badge className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20 hover:bg-verza-emerald/20">{status}</Badge>;
       case 'Review Needed':
       case 'Pending':
         return <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/20">{status}</Badge>;
@@ -170,7 +170,7 @@ export default function ComplianceReports() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-emerald-500" />
+              <CheckCircle className="h-5 w-5 text-verza-emerald" />
               <div className="text-2xl font-bold">Fully Compliant</div>
             </div>
             <p className="text-xs text-muted-foreground mt-1">Last audit passed on Oct 15, 2023</p>

@@ -89,7 +89,7 @@ export default function VerificationDetail() {
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold tracking-tight">Request {verification.verificationId}</h1>
             <Badge className={
-              verification.status === 'verified' ? "bg-green-500/10 text-green-500 border-green-500/20" :
+              verification.status === 'verified' ? "bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20" :
               verification.status === 'rejected' ? "bg-red-500/10 text-red-500 border-red-500/20" :
               "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
             }>
@@ -111,7 +111,7 @@ export default function VerificationDetail() {
                 <XCircle className="mr-2 h-4 w-4" /> Reject
               </Button>
               <Button 
-                className="bg-green-600 hover:bg-green-700" 
+                className="bg-verza-emerald hover:bg-green-700" 
                 onClick={() => handleStatusUpdate('verified')}
               >
                 <CheckCircle className="mr-2 h-4 w-4" /> Approve
@@ -209,10 +209,10 @@ export default function VerificationDetail() {
             <CardContent>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Risk Score</span>
-                <span className="text-sm font-bold text-green-500">Low</span>
+                <span className="text-sm font-bold text-verza-emerald">Low</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 w-[15%]" />
+                <div className="h-full bg-verza-emerald w-[15%]" />
               </div>
               <p className="text-xs text-muted-foreground mt-4">
                 Automated risk assessment based on provided data and global watchlists.

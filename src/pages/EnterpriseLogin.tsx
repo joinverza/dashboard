@@ -50,11 +50,11 @@ export default function EnterpriseLoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#09090b] text-white selection:bg-blue-500/20 selection:text-blue-500">
+    <div className="min-h-screen w-full flex bg-[#09090b] text-white selection:bg-verza-emerald/20 selection:text-verza-emerald">
       {/* Right Panel - Brand & Vision */}
       <div className="hidden lg:flex w-1/2 relative bg-[#000000] overflow-hidden flex-col justify-between p-12 border-l border-white/5 order-2">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,_#001524_0%,_transparent_50%)]" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,_#002411_0%,_transparent_50%)]" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-verza-emerald/5 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
         
         {/* Logo */}
         <div className="relative z-10 flex items-center justify-end gap-3">
@@ -71,7 +71,7 @@ export default function EnterpriseLoginPage() {
           >
             <h1 className="text-5xl font-semibold tracking-tight leading-[1.1] mb-6 text-white">
               Secure access for <br />
-              <span className="text-blue-500">partners & admins</span>
+              <span className="text-verza-emerald">partners & admins</span>
             </h1>
             <p className="text-lg text-zinc-400 leading-relaxed mb-8">
               Manage verifications, issuance, and enterprise governance from a unified secure enclave.
@@ -86,7 +86,7 @@ export default function EnterpriseLoginPage() {
                 <div key={i} className="flex items-center gap-3 text-zinc-300">
                   <span className="text-sm font-medium">{item.text}</span>
                   <div className="h-8 w-8 rounded-full bg-zinc-900/50 border border-zinc-800 flex items-center justify-center shrink-0">
-                    <item.icon className="h-4 w-4 text-blue-500" />
+                    <item.icon className="h-4 w-4 text-verza-emerald" />
                   </div>
                 </div>
               ))}
@@ -124,7 +124,7 @@ export default function EnterpriseLoginPage() {
                 placeholder="admin@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
               />
             </div>
 
@@ -135,7 +135,7 @@ export default function EnterpriseLoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
               />
             </div>
 
@@ -148,7 +148,7 @@ export default function EnterpriseLoginPage() {
                   placeholder="Enter your generated auth key"
                   value={authKey}
                   onChange={(e) => setAuthKey(e.target.value)}
-                  className="pl-10 bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors font-mono"
+                  className="pl-10 bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors font-mono"
                 />
               </div>
             </div>
@@ -179,7 +179,7 @@ export default function EnterpriseLoginPage() {
                   placeholder={mfaMethod === "totp" ? "123456" : "Enter recovery code"}
                   value={mfaCode}
                   onChange={(e) => setMfaCode(e.target.value)}
-                  className="bg-zinc-900/50 border-zinc-800 focus:border-blue-500/50 h-11 text-white placeholder:text-zinc-600 transition-colors font-mono"
+                  className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors font-mono"
                 />
                 {mfaError ? <p className="text-sm text-red-400">{mfaError}</p> : null}
               </div>
@@ -187,7 +187,7 @@ export default function EnterpriseLoginPage() {
 
             <Button 
               type="submit" 
-              className="w-full h-11 bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all"
+              className="w-full h-11 bg-white text-black hover:bg-zinc-200 font-medium transition-all"
               disabled={isLoading}
             >
               {isLoading ? "Authenticating..." : mfaChallenge ? (mfaMethod === "totp" ? "Verify TOTP" : "Verify Recovery Code") : "Access Portal"}
@@ -206,7 +206,7 @@ export default function EnterpriseLoginPage() {
           <p className="text-center text-sm text-zinc-400">
             Need an enterprise account?{" "}
             <Link href="/portal/signup">
-              <span className="text-blue-500 hover:text-blue-400 font-medium cursor-pointer transition-colors">
+              <span className="text-verza-emerald hover:text-verza-kelly font-medium cursor-pointer transition-colors">
                 Apply for access
               </span>
             </Link>

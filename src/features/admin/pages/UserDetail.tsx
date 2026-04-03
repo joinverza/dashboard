@@ -60,7 +60,7 @@ export default function UserDetail() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold">{MOCK_USER.name}</h1>
-              <Badge className="bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20">Active</Badge>
+              <Badge className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20 hover:bg-verza-emerald/20">Active</Badge>
             </div>
             <div className="flex flex-col gap-1 mt-1 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
@@ -118,7 +118,7 @@ export default function UserDetail() {
                 <div className="p-4 rounded-lg bg-secondary/20 border border-border/50">
                   <div className="text-sm text-muted-foreground mb-1">Verifications</div>
                   <div className="text-2xl font-bold flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-green-500" />
+                    <Shield className="h-5 w-5 text-verza-emerald" />
                     {MOCK_USER.stats.verifications}
                   </div>
                 </div>
@@ -208,7 +208,7 @@ export default function UserDetail() {
                        </div>
                      </div>
                      <div className="flex items-center gap-3">
-                       <Badge variant={cred.status === 'active' ? 'default' : 'secondary'} className={cred.status === 'active' ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' : ''}>
+                       <Badge variant={cred.status === 'active' ? 'default' : 'secondary'} className={cred.status === 'active' ? 'bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20' : ''}>
                          {cred.status}
                        </Badge>
                        <Button variant="ghost" size="sm" onClick={() => setLocation(`/admin/credentials/${cred.id}`)}>
@@ -237,8 +237,8 @@ export default function UserDetail() {
                 ].map((tx, i) => (
                   <div key={i} className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-secondary/10">
                     <div className="flex items-center gap-4">
-                       <div className={`h-10 w-10 rounded-full flex items-center justify-center ${tx.amount.startsWith('+') ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-                         <CreditCard className={`h-5 w-5 ${tx.amount.startsWith('+') ? 'text-green-500' : 'text-red-500'}`} />
+                       <div className={`h-10 w-10 rounded-full flex items-center justify-center ${tx.amount.startsWith('+') ? 'bg-verza-emerald/10' : 'bg-red-500/10'}`}>
+                         <CreditCard className={`h-5 w-5 ${tx.amount.startsWith('+') ? 'text-verza-emerald' : 'text-red-500'}`} />
                        </div>
                        <div>
                          <p className="font-medium">{tx.desc}</p>
@@ -246,7 +246,7 @@ export default function UserDetail() {
                        </div>
                     </div>
                     <div className="text-right">
-                      <p className={`font-bold ${tx.amount.startsWith('+') ? 'text-green-500' : 'text-foreground'}`}>{tx.amount}</p>
+                      <p className={`font-bold ${tx.amount.startsWith('+') ? 'text-verza-emerald' : 'text-foreground'}`}>{tx.amount}</p>
                       <span className="text-xs text-muted-foreground capitalize">{tx.status}</span>
                     </div>
                   </div>

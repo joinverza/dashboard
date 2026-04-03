@@ -101,7 +101,7 @@ export default function Disputes() {
       case 'in_review':
         return <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border-yellow-500/20">In Review</Badge>;
       case 'resolved':
-        return <Badge variant="default" className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">Resolved</Badge>;
+        return <Badge variant="default" className="bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20 border-verza-emerald/20">Resolved</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -237,7 +237,7 @@ export default function Disputes() {
                                 Contact Parties
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-green-500" onClick={() => toast.success("Dispute resolved")}>
+                              <DropdownMenuItem className="text-verza-emerald" onClick={() => toast.success("Dispute resolved")}>
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Resolve Dispute
                               </DropdownMenuItem>
