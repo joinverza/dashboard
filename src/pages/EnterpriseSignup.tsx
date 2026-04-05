@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { 
   Building2,
@@ -11,22 +12,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/AuthContext";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function EnterpriseSignupPage() {
   const { signup, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
   const [password, setPassword] = useState("");
   const [countryCode, setCountryCode] = useState("US");
   const [registrationNumber, setRegistrationNumber] = useState("");
-  const [showKeyModal, setShowKeyModal] = useState(false);
-  const [generatedKey, setGeneratedKey] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    const generatedAuthKey = await signup({
+    await signup({
       role: "enterprise",
       organizationName: company,
       contactName: name,
@@ -36,8 +35,7 @@ export default function EnterpriseSignupPage() {
       registrationNumber,
       consentAccepted: true,
     });
-    setGeneratedKey(generatedAuthKey);
-    setShowKeyModal(true);
+    setLocation("/portal/login");
   };
 
   return (
@@ -202,25 +200,6 @@ export default function EnterpriseSignupPage() {
         </div>
       </div>
 
-      {/* Auth Key Modal */}
-      <Dialog open={showKeyModal} onOpenChange={setShowKeyModal}>
-        <DialogContent className="bg-[#09090b] border-zinc-800 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-xl">Authentication Key Generated</DialogTitle>
-            <DialogDescription className="text-zinc-400">
-              Please save this key securely. You will need it to log in.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="p-4 bg-zinc-900 rounded-lg border border-zinc-800 my-4">
-            <p className="font-mono text-lg text-verza-emerald break-all text-center select-all">
-              {generatedKey}
-            </p>
-          </div>
-          <Button onClick={() => setShowKeyModal(false)} className="w-full bg-verza-emerald hover:bg-verza-kelly text-black">
-            Close
-          </Button>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

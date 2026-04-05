@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { 
   ShieldCheck,
@@ -12,21 +13,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/AuthContext";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function AdminSignupPage() {
   const { signup, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [department, setDepartment] = useState("");
   const [authorizationCode, setAuthorizationCode] = useState("");
-  const [showKeyModal, setShowKeyModal] = useState(false);
-  const [generatedMasterKey, setGeneratedMasterKey] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    const generatedAuthKey = await signup({
+    await signup({
       role: "admin",
       fullName: name,
       email,
@@ -35,8 +34,7 @@ export default function AdminSignupPage() {
       authorizationCode,
       consentAccepted: true,
     });
-    setGeneratedMasterKey(generatedAuthKey);
-    setShowKeyModal(true);
+    setLocation("/admin/login");
   };
 
   return (
@@ -197,25 +195,6 @@ export default function AdminSignupPage() {
         </div>
       </div>
 
-      {/* Master Key Modal */}
-      <Dialog open={showKeyModal} onOpenChange={setShowKeyModal}>
-        <DialogContent className="bg-[#050505] border-red-900/20 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-xl text-red-500">Master Key Generated</DialogTitle>
-            <DialogDescription className="text-zinc-500">
-              This is your permanent root access key. It cannot be recovered if lost.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="p-4 bg-red-950/10 rounded-lg border border-red-900/20 my-4">
-            <p className="font-mono text-lg text-red-500 break-all text-center select-all">
-              {generatedMasterKey}
-            </p>
-          </div>
-          <Button onClick={() => setShowKeyModal(false)} className="w-full bg-red-600 hover:bg-red-500 text-white">
-            Close
-          </Button>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

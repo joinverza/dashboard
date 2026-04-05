@@ -1,34 +1,32 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { ShieldCheck, KeyRound, UserPlus, Lock } from "lucide-react";
+import { ShieldCheck, KeyRound, Lock } from "lucide-react";
 import versalogo from "@/assets/ONTIVER white.svg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/AuthContext";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function UserSignupPage() {
   const { signup, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showKeyModal, setShowKeyModal] = useState(false);
-  const [generatedAuthKey, setGeneratedAuthKey] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const generatedKey = await signup({
+      await signup({
         role: "user",
         fullName,
         email,
         password,
         consentAccepted: true,
       });
-      setGeneratedAuthKey(generatedKey);
-      setShowKeyModal(true);
+      setLocation("/login");
     } catch {
       return;
     }
@@ -158,35 +156,6 @@ export default function UserSignupPage() {
         </div>
       </div>
 
-      <Dialog open={showKeyModal} onOpenChange={setShowKeyModal}>
-        <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-800 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-xl">Save Your User Auth Key</DialogTitle>
-            <DialogDescription className="text-zinc-400">
-              Keep this key secure. You will need it every time you sign in.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="p-4 rounded-lg bg-zinc-950 border border-zinc-800">
-              <p className="text-xs text-zinc-500 mb-2 uppercase tracking-wide">Generated Auth Key</p>
-              <p className="font-mono text-sm text-verza-emerald break-all">{generatedAuthKey}</p>
-            </div>
-
-            <p className="text-sm text-zinc-400">
-              This key cannot be recovered once lost. Store it in your password manager before continuing.
-            </p>
-          </div>
-
-          <Button
-            onClick={() => (window.location.href = "/login")}
-            className="w-full bg-verza-emerald text-black hover:bg-verza-kelly"
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Continue to Login
-          </Button>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

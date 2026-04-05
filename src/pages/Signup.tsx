@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { 
   Github,
@@ -13,23 +14,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/AuthContext";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function SignupPage() {
   const { signup, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [organizationName, setOrganizationName] = useState("");
   const [verificationLicenseId, setVerificationLicenseId] = useState("");
   const [jurisdiction, setJurisdiction] = useState("");
-  const [showKeyModal, setShowKeyModal] = useState(false);
-  const [generatedAuthKey, setGeneratedAuthKey] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const generatedKey = await signup({
+      await signup({
         role: "verifier",
         organizationName,
         contactName: name,
@@ -39,8 +38,7 @@ export default function SignupPage() {
         jurisdiction,
         consentAccepted: true,
       });
-      setGeneratedAuthKey(generatedKey);
-      setShowKeyModal(true);
+      setLocation("/verifier/login");
     } catch {
       return;
     }
@@ -222,24 +220,6 @@ export default function SignupPage() {
           </p>
         </div>
       </div>
-      <Dialog open={showKeyModal} onOpenChange={setShowKeyModal}>
-        <DialogContent className="bg-[#09090b] border-zinc-800 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-xl">Auth Key Generated</DialogTitle>
-            <DialogDescription className="text-zinc-400">
-              Save this key now. You need it during login.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="p-4 bg-zinc-900 rounded-lg border border-zinc-800 my-4">
-            <p className="font-mono text-lg text-verza-emerald break-all text-center select-all">
-              {generatedAuthKey}
-            </p>
-          </div>
-          <Button onClick={() => setShowKeyModal(false)} className="w-full bg-white text-black hover:bg-zinc-200">
-            Close
-          </Button>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
