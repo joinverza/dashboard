@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/AuthContext";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function AdminSignupPage() {
   const { signup, isLoading } = useAuth();
@@ -22,10 +23,12 @@ export default function AdminSignupPage() {
   const [password, setPassword] = useState("");
   const [department, setDepartment] = useState("");
   const [authorizationCode, setAuthorizationCode] = useState("");
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [generatedAuthKey, setGeneratedAuthKey] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signup({
+    const key = await signup({
       role: "admin",
       fullName: name,
       email,
@@ -34,7 +37,8 @@ export default function AdminSignupPage() {
       authorizationCode,
       consentAccepted: true,
     });
-    setLocation("/admin/login");
+    setGeneratedAuthKey(key);
+    setShowKeyModal(true);
   };
 
   return (
@@ -194,6 +198,41 @@ export default function AdminSignupPage() {
           </p>
         </div>
       </div>
+      <Dialog open={showKeyModal} onOpenChange={setShowKeyModal}>
+        <DialogContent className="bg-[#050505] border-red-900/20 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-red-500">Copy Your Auth Key</DialogTitle>
+            <DialogDescription className="text-zinc-500">
+              This key is required for login. Copy and store it securely before continuing.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-4 bg-red-950/10 rounded-lg border border-red-900/20 my-4">
+            <p className="font-mono text-sm text-red-400 break-all text-center select-all">
+              {generatedAuthKey}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-zinc-700 text-zinc-200"
+              onClick={() => {
+                if (!generatedAuthKey) return;
+                void navigator.clipboard.writeText(generatedAuthKey);
+              }}
+            >
+              Copy key
+            </Button>
+            <Button
+              type="button"
+              className="bg-red-600 hover:bg-red-500 text-white"
+              onClick={() => setLocation("/admin/login")}
+            >
+              Continue to Login
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

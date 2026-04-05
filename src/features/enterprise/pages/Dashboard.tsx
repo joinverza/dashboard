@@ -116,7 +116,7 @@ export default function EnterpriseDashboard() {
           <p className="text-muted-foreground">Overview of your verification operations and team performance.</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/enterprise/verification/new">
+          <Link href="/enterprise/requests">
             <Button className="bg-verza-emerald hover:bg-verza-kelly text-black shadow-glow">
               <FileCheck className="mr-2 h-4 w-4" /> New Verification
             </Button>
