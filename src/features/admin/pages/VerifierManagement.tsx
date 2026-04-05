@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from 'framer-motion';
 import { 
   Search, Filter, MoreVertical, Eye, Ban, 
@@ -32,106 +33,42 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLocation } from 'wouter';
-import { bankingService } from '@/services/bankingService';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 import type { Verifier } from '@/types/banking';
 
 export default function VerifierManagement() {
+  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedVerifiers, setSelectedVerifiers] = useState<string[]>([]);
-  const [verifiers, setVerifiers] = useState<Verifier[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const verifiersQuery = useQuery({
+    queryKey: ["admin", "verifiers", searchTerm, statusFilter],
+    queryFn: () =>
+      bankingService.getVerifiers({
+        status: statusFilter === "all" ? undefined : statusFilter,
+        search: searchTerm || undefined,
+      }),
+  });
 
-  useEffect(() => {
-    const fetchVerifiers = async () => {
-      try {
-        const data = await bankingService.getVerifiers();
-        setVerifiers(data);
-      } catch (error) {
-        console.error("Failed to fetch verifiers", error);
-        // Fallback to mock data
-        setVerifiers([
-          {
-            id: '1',
-            name: 'VeriTech Solutions',
-            email: 'contact@veritech.com',
-            role: 'verifier',
-            organizationName: 'VeriTech Solutions Inc.',
-            credentialsIssued: 15420,
-            reputation: 98,
-            status: 'active',
-            lastActive: '2 mins ago',
-            verificationLevel: 'Gold',
-            joinedAt: '2023-01-15'
-          },
-          {
-            id: '2',
-            name: 'John Doe Notary',
-            email: 'john@doe.com',
-            role: 'verifier',
-            credentialsIssued: 342,
-            reputation: 95,
-            status: 'active',
-            lastActive: '1 hour ago',
-            verificationLevel: 'Silver',
-            joinedAt: '2023-02-20'
-          },
-          {
-            id: '3',
-            name: 'Global ID Services',
-            email: 'info@globalid.com',
-            role: 'verifier',
-            organizationName: 'Global ID Services Ltd',
-            credentialsIssued: 45210,
-            reputation: 99,
-            status: 'active',
-            lastActive: '5 mins ago',
-            verificationLevel: 'Platinum',
-            joinedAt: '2023-03-10'
-          },
-          {
-            id: '4',
-            name: 'QuickVerify Inc.',
-            email: 'support@quickverify.com',
-            role: 'verifier',
-            organizationName: 'QuickVerify Inc.',
-            credentialsIssued: 120,
-            reputation: 85,
-            status: 'pending',
-            lastActive: '1 day ago',
-            verificationLevel: 'Bronze',
-            joinedAt: '2023-04-05'
-          },
-          {
-            id: '5',
-            name: 'Suspicious Verifier',
-            email: 'sus@picious.com',
-            role: 'verifier',
-            credentialsIssued: 15,
-            reputation: 40,
-            status: 'suspended',
-            lastActive: '1 week ago',
-            verificationLevel: 'None',
-            joinedAt: '2023-01-20'
-          },
-        ]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchVerifiers();
-  }, []);
+  const suspendMutation = useMutation({
+    mutationFn: (verifierId: string) => bankingService.updateVerifierStatus(verifierId, "suspended"),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin", "verifiers"] });
+      toast.success("Verifier suspended.");
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to suspend verifier")),
+  });
 
   // Filter Logic
-  const filteredVerifiers = verifiers.filter(verifier => {
+  const filteredVerifiers: Verifier[] = useMemo(() => (verifiersQuery.data ?? []).filter(verifier => {
     const matchesSearch = verifier.name.toLowerCase().includes(searchTerm.toLowerCase());
     const isOrg = !!verifier.organizationName;
     const matchesType = typeFilter === 'all' || (typeFilter === 'organization' ? isOrg : !isOrg);
     const matchesStatus = statusFilter === 'all' || verifier.status === statusFilter;
     return matchesSearch && matchesType && matchesStatus;
-  });
+  }), [verifiersQuery.data, searchTerm, typeFilter, statusFilter]);
 
   // Selection Logic
   const toggleSelection = (id: string) => {
@@ -159,7 +96,7 @@ export default function VerifierManagement() {
     }
   };
 
-  if (isLoading) {
+  if (verifiersQuery.isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -181,7 +118,7 @@ export default function VerifierManagement() {
         <div className="flex gap-2">
           {selectedVerifiers.length > 0 && (
             <Button variant="destructive" onClick={() => {
-              toast.success(`${selectedVerifiers.length} verifiers suspended`);
+              selectedVerifiers.forEach((id) => suspendMutation.mutate(id));
               setSelectedVerifiers([]);
             }}>
               Suspend Selected ({selectedVerifiers.length})
@@ -232,6 +169,7 @@ export default function VerifierManagement() {
       </div>
 
       <div className="rounded-md border border-border/50 bg-card/80 backdrop-blur-sm overflow-hidden">
+        {verifiersQuery.error ? <div className="text-sm text-red-400 p-4">{getBankingErrorMessage(verifiersQuery.error, "Failed to load verifiers.")}</div> : null}
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -321,7 +259,7 @@ export default function VerifierManagement() {
                         <Shield className="mr-2 h-4 w-4" /> Audit Logs
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => toast.warning("Verifier suspended")}>
+                      <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => suspendMutation.mutate(verifier.id)}>
                         <Ban className="mr-2 h-4 w-4" /> Suspend
                       </DropdownMenuItem>
                     </DropdownMenuContent>

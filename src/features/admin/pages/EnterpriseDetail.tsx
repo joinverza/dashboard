@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
+import { useQueries } from '@tanstack/react-query';
 import { 
   Building, Mail, Calendar, 
-  CreditCard, FileText,
-  Activity, ExternalLink, RefreshCw, Ban, Users, Key, ArrowLeft
+  CreditCard,
+  Activity, ExternalLink, RefreshCw, Ban, Users, Key, ArrowLeft, Loader2
 } from 'lucide-react';
-import { useLocation } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,41 +22,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-const MOCK_ENTERPRISE = {
-  id: '1',
-  name: 'Acme Corp',
-  email: 'admin@acme.com',
-  did: 'did:verza:ent:1234567890',
-  plan: 'Enterprise',
-  status: 'active',
-  joinedDate: 'Nov 15, 2022',
-  lastActive: 'Today, 10:45 AM',
-  description: 'Leading provider of widget solutions for the global market.',
-  website: 'https://acme.com',
-  location: 'New York, NY',
-  stats: {
-    users: 125,
-    apiCalls: '1.2M',
-    storage: '450GB',
-    spent: '$24,500'
-  }
-};
-
-const TEAM_MEMBERS = [
-  { id: 1, name: 'John Smith', role: 'Admin', email: 'john@acme.com', status: 'Active' },
-  { id: 2, name: 'Sarah Jones', role: 'Developer', email: 'sarah@acme.com', status: 'Active' },
-  { id: 3, name: 'Mike Brown', role: 'Viewer', email: 'mike@acme.com', status: 'Inactive' },
-];
-
-const BILLING_HISTORY = [
-  { id: 1, date: 'Oct 01, 2023', amount: '$2,500.00', status: 'Paid', invoice: 'INV-2023-001' },
-  { id: 2, date: 'Sep 01, 2023', amount: '$2,500.00', status: 'Paid', invoice: 'INV-2023-002' },
-  { id: 3, date: 'Aug 01, 2023', amount: '$2,500.00', status: 'Paid', invoice: 'INV-2023-003' },
-];
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 
 export default function EnterpriseDetail() {
+  const [match, params] = useRoute("/admin/enterprises/:id");
   const [, setLocation] = useLocation();
+  if (!match) return null;
+  const [enterpriseQuery, teamQuery] = useQueries({
+    queries: [
+      { queryKey: ["admin", "enterprise", params.id], queryFn: () => bankingService.getEnterpriseDetail(params.id) },
+      { queryKey: ["admin", "enterprise", params.id, "team"], queryFn: () => bankingService.listEnterpriseTeamMembers(params.id) },
+    ],
+  });
+  if (enterpriseQuery.isLoading) return <div className="h-[50vh] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (enterpriseQuery.error || !enterpriseQuery.data) return <div className="text-sm text-red-400">{getBankingErrorMessage(enterpriseQuery.error, "Failed to load enterprise details.")}</div>;
+  const enterprise = enterpriseQuery.data;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -70,23 +52,23 @@ export default function EnterpriseDetail() {
       <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between bg-card/80 backdrop-blur-sm border border-border/50 p-6 rounded-lg">
         <div className="flex items-center gap-4">
           <Avatar className="h-20 w-20 border-4 border-background rounded">
-            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${MOCK_ENTERPRISE.name}`} />
+            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${enterprise.name}`} />
             <AvatarFallback>AC</AvatarFallback>
           </Avatar>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">{MOCK_ENTERPRISE.name}</h1>
-              <Badge className="bg-purple-500/10 text-purple-500 border-purple-500/20">{MOCK_ENTERPRISE.plan}</Badge>
-              <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">Active</Badge>
+              <h1 className="text-2xl font-bold">{enterprise.name}</h1>
+              <Badge className="bg-purple-500/10 text-purple-500 border-purple-500/20">{enterprise.plan}</Badge>
+              <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">{enterprise.status}</Badge>
             </div>
             <div className="flex flex-col gap-1 mt-1 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <Building className="h-3 w-3" /> {MOCK_ENTERPRISE.location}
+                <Building className="h-3 w-3" /> {enterprise.location ?? "-"}
                 <span className="mx-1">•</span>
-                <Mail className="h-3 w-3" /> {MOCK_ENTERPRISE.email}
+                <Mail className="h-3 w-3" /> {enterprise.email ?? "-"}
               </div>
               <div className="flex items-center gap-2 font-mono text-xs">
-                <Activity className="h-3 w-3" /> Last active: {MOCK_ENTERPRISE.lastActive}
+                <Activity className="h-3 w-3" /> Last active: {enterprise.lastActive ?? "-"}
               </div>
             </div>
           </div>
@@ -94,7 +76,7 @@ export default function EnterpriseDetail() {
         
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => {
-            window.open(MOCK_ENTERPRISE.website, '_blank');
+            if (enterprise.website) window.open(enterprise.website, '_blank');
             toast.success("Website opened in new tab");
           }}>
             <ExternalLink className="mr-2 h-4 w-4" /> Visit Website
@@ -127,28 +109,28 @@ export default function EnterpriseDetail() {
                   <div className="text-sm text-muted-foreground mb-1">Total Users</div>
                   <div className="text-2xl font-bold flex items-center gap-2">
                     <Users className="h-5 w-5 text-blue-500" />
-                    {MOCK_ENTERPRISE.stats.users}
+                    {enterprise.users}
                   </div>
                 </div>
                 <div className="p-4 rounded-lg bg-secondary/20 border border-border/50">
                   <div className="text-sm text-muted-foreground mb-1">API Calls (Monthly)</div>
                   <div className="text-2xl font-bold flex items-center gap-2">
                     <Activity className="h-5 w-5 text-verza-emerald" />
-                    {MOCK_ENTERPRISE.stats.apiCalls}
+                    {enterprise.stats?.apiCalls ?? "-"}
                   </div>
                 </div>
                 <div className="p-4 rounded-lg bg-secondary/20 border border-border/50">
                   <div className="text-sm text-muted-foreground mb-1">Storage Used</div>
                   <div className="text-2xl font-bold flex items-center gap-2">
                     <Key className="h-5 w-5 text-yellow-500" />
-                    {MOCK_ENTERPRISE.stats.storage}
+                    {enterprise.stats?.storage ?? "-"}
                   </div>
                 </div>
                 <div className="p-4 rounded-lg bg-secondary/20 border border-border/50">
                   <div className="text-sm text-muted-foreground mb-1">Lifetime Value</div>
                   <div className="text-2xl font-bold flex items-center gap-2">
                     <CreditCard className="h-5 w-5 text-purple-500" />
-                    {MOCK_ENTERPRISE.stats.spent}
+                    {enterprise.stats?.spent ?? "-"}
                   </div>
                 </div>
               </CardContent>
@@ -161,13 +143,13 @@ export default function EnterpriseDetail() {
               <CardContent className="space-y-4">
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">About</div>
-                  <p className="text-sm mt-1">{MOCK_ENTERPRISE.description}</p>
+                  <p className="text-sm mt-1">{enterprise.description ?? "No description provided."}</p>
                 </div>
                 <Separator />
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Joined Date</div>
                   <div className="flex items-center gap-2 mt-1">
-                    <Calendar className="h-4 w-4" /> {MOCK_ENTERPRISE.joinedDate}
+                    <Calendar className="h-4 w-4" /> {enterprise.joinedDate ?? "-"}
                   </div>
                 </div>
                 <Separator />
@@ -198,13 +180,13 @@ export default function EnterpriseDetail() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {TEAM_MEMBERS.map((member) => (
+                  {(teamQuery.data ?? []).map((member) => (
                     <TableRow key={member.id}>
                       <TableCell className="font-medium">{member.name}</TableCell>
                       <TableCell>{member.role}</TableCell>
                       <TableCell>{member.email}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={member.status === 'Active' ? 'bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20' : 'bg-gray-500/10 text-gray-500 border-gray-500/20'}>
+                        <Badge variant="outline" className={member.status === 'active' ? 'bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20' : 'bg-gray-500/10 text-gray-500 border-gray-500/20'}>
                           {member.status}
                         </Badge>
                       </TableCell>
@@ -237,23 +219,9 @@ export default function EnterpriseDetail() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {BILLING_HISTORY.map((bill) => (
-                    <TableRow key={bill.id}>
-                      <TableCell>{bill.date}</TableCell>
-                      <TableCell>{bill.invoice}</TableCell>
-                      <TableCell>{bill.amount}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">
-                          {bill.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">Billing history API endpoint not yet available in this build.</TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
             </CardContent>

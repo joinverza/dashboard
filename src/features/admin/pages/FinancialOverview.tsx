@@ -1,7 +1,6 @@
-import { 
-  DollarSign, TrendingUp, CreditCard, Wallet, 
-  ArrowUpRight, ArrowDownRight, Download, Calendar
-} from 'lucide-react';
+import { useState } from "react";
+import { useQueries } from "@tanstack/react-query";
+import { ArrowDownRight, ArrowUpRight, Calendar, CreditCard, DollarSign, Download, Loader2, TrendingUp, Wallet } from 'lucide-react';
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +21,8 @@ import {
   BarElement,
 } from 'chart.js';
 import { Line, Pie, Bar } from 'react-chartjs-2';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { bankingService, getBankingErrorMessage } from "@/services/bankingService";
 
 ChartJS.register(
   CategoryScale,
@@ -37,57 +38,27 @@ ChartJS.register(
 );
 
 export default function FinancialOverview() {
-  // const [dateRange, setDateRange] = useState('30d');
+  const [range, setRange] = useState("30d");
+  const [overviewQuery, txQuery] = useQueries({
+    queries: [
+      { queryKey: ["admin", "financial", "overview", range], queryFn: () => bankingService.getFinancialOverview(range) },
+      { queryKey: ["admin", "financial", "treasury-transactions"], queryFn: () => bankingService.getTreasuryTransactions({ page: 1, limit: 10 }) },
+    ],
+  });
 
-  // Mock Data
+  const overview = overviewQuery.data;
   const revenueData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    datasets: [
-      {
-        label: 'Revenue',
-        data: [12000, 19000, 15000, 22000, 28000, 35000],
-        borderColor: 'rgb(99, 102, 241)',
-        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-        fill: true,
-        tension: 0.4,
-      },
-    ],
+    labels: (overview?.revenueTrend ?? []).map((i) => i.period),
+    datasets: [{ label: 'Revenue', data: (overview?.revenueTrend ?? []).map((i) => i.value), borderColor: 'rgb(99, 102, 241)', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.4 }],
   };
-
   const sourceData = {
-    labels: ['Transaction Fees', 'Subscriptions', 'Premium Features', 'Consulting'],
-    datasets: [
-      {
-        data: [45, 25, 20, 10],
-        backgroundColor: [
-          'rgba(99, 102, 241, 0.8)',
-          'rgba(168, 85, 247, 0.8)',
-          'rgba(236, 72, 153, 0.8)',
-          'rgba(34, 197, 94, 0.8)',
-        ],
-        borderWidth: 0,
-      },
-    ],
+    labels: (overview?.sourceBreakdown ?? []).map((i) => i.source),
+    datasets: [{ data: (overview?.sourceBreakdown ?? []).map((i) => i.percentage), backgroundColor: ['rgba(99, 102, 241, 0.8)', 'rgba(168, 85, 247, 0.8)', 'rgba(236, 72, 153, 0.8)', 'rgba(34, 197, 94, 0.8)'], borderWidth: 0 }],
   };
-
   const regionData = {
-    labels: ['North America', 'Europe', 'Asia Pacific', 'LatAm', 'Other'],
-    datasets: [
-      {
-        label: 'Revenue by Region',
-        data: [45000, 32000, 28000, 12000, 5000],
-        backgroundColor: 'rgba(99, 102, 241, 0.6)',
-        borderRadius: 4,
-      },
-    ],
+    labels: (overview?.regionalBreakdown ?? []).map((i) => i.region),
+    datasets: [{ label: 'Revenue by Region', data: (overview?.regionalBreakdown ?? []).map((i) => i.value), backgroundColor: 'rgba(99, 102, 241, 0.6)', borderRadius: 4 }],
   };
-
-  const treasuryTx = [
-    { id: 'TX-9821', type: 'Deposit', amount: '+ 50,000 ONTIVER', from: 'Staking Pool', date: '2 hours ago' },
-    { id: 'TX-9820', type: 'Withdrawal', amount: '- 12,500 ONTIVER', to: 'Grant Payout', date: '1 day ago' },
-    { id: 'TX-9819', type: 'Fee Collection', amount: '+ 2,450 ONTIVER', from: 'Platform Fees', date: '1 day ago' },
-    { id: 'TX-9818', type: 'Withdrawal', amount: '- 5,000 ONTIVER', to: 'Operational Costs', date: '2 days ago' },
-  ];
 
   return (
     <div className="space-y-6">
@@ -101,16 +72,25 @@ export default function FinancialOverview() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Calendar className="h-4 w-4 mr-2" />
-            Last 30 Days
-          </Button>
+          <Select value={range} onValueChange={setRange}>
+            <SelectTrigger className="w-[160px]"><Calendar className="h-4 w-4 mr-2" /><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">Last 7 Days</SelectItem>
+              <SelectItem value="30d">Last 30 Days</SelectItem>
+              <SelectItem value="90d">Last 90 Days</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="outline" onClick={() => toast.success("Financial report exported")}>
             <Download className="h-4 w-4 mr-2" />
             Export Report
           </Button>
         </div>
       </div>
+
+      {overviewQuery.isLoading ? <div className="flex justify-center py-12"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div> : null}
+      {overviewQuery.error ? <div className="text-sm text-red-400">{getBankingErrorMessage(overviewQuery.error, "Failed to load financial overview.")}</div> : null}
+      {!overviewQuery.isLoading && !overviewQuery.error && overview ? (
+      <>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
@@ -119,7 +99,7 @@ export default function FinancialOverview() {
             <DollarSign className="h-4 w-4 text-verza-emerald" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$124,500</div>
+            <div className="text-2xl font-bold">${overview.totalRevenue.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
               <ArrowUpRight className="h-3 w-3 text-verza-emerald mr-1" />
               +12.5% from last month
@@ -132,7 +112,7 @@ export default function FinancialOverview() {
             <TrendingUp className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,200</div>
+            <div className="text-2xl font-bold">${overview.recurringRevenue.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
               <ArrowUpRight className="h-3 w-3 text-verza-emerald mr-1" />
               +8.2% from last month
@@ -145,7 +125,7 @@ export default function FinancialOverview() {
             <CreditCard className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$892,100</div>
+            <div className="text-2xl font-bold">${overview.escrowBalance.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">
               142 Active Escrows
             </p>
@@ -157,7 +137,7 @@ export default function FinancialOverview() {
             <Wallet className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2.5M ONTIVER</div>
+            <div className="text-2xl font-bold">${overview.treasuryBalance.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
               <ArrowDownRight className="h-3 w-3 text-red-500 mr-1" />
               -2.1% (Grant Payouts)
@@ -261,18 +241,18 @@ export default function FinancialOverview() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {treasuryTx.map((tx) => (
-                  <TableRow key={tx.id}>
+                {(txQuery.data?.items ?? []).map((tx) => (
+                  <TableRow key={tx.transactionId}>
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-medium">{tx.type}</span>
-                        <span className="text-xs text-muted-foreground">{tx.from || tx.to}</span>
+                        <span className="text-xs text-muted-foreground">{tx.reference ?? "-"}</span>
                       </div>
                     </TableCell>
-                    <TableCell className={tx.amount.startsWith('+') ? 'text-verza-emerald' : 'text-red-500'}>
-                      {tx.amount}
+                    <TableCell className={tx.direction === "in" ? 'text-verza-emerald' : 'text-red-500'}>
+                      {tx.direction === "in" ? "+" : "-"} {tx.amount.toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-right text-muted-foreground">{tx.date}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{new Date(tx.createdAt).toLocaleString()}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -280,6 +260,8 @@ export default function FinancialOverview() {
           </CardContent>
         </Card>
       </div>
+      </>
+      ) : null}
     </div>
   );
 }

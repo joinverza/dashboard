@@ -1,13 +1,39 @@
 import { motion } from "framer-motion";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { MessageSquare, BookOpen, Video, Users } from "lucide-react";
+import { MessageSquare, BookOpen, Video, Users, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { bankingService, getBankingErrorMessage } from "@/services/bankingService";
 
 export default function VerifierHelp() {
+  const queryClient = useQueryClient();
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [search, setSearch] = useState("");
+  const [articlesQuery, ticketsQuery] = useQueries({
+    queries: [
+      { queryKey: ["verifier", "support", "articles", search], queryFn: () => bankingService.listSupportArticles({ search: search || undefined }) },
+      { queryKey: ["verifier", "support", "tickets"], queryFn: () => bankingService.listSupportTickets({ page: 1, limit: 5 }) },
+    ],
+  });
+
+  const createTicketMutation = useMutation({
+    mutationFn: () => bankingService.createSupportTicket({ subject, message }),
+    onSuccess: async () => {
+      toast.success("Support ticket created.");
+      setSubject("");
+      setMessage("");
+      await queryClient.invalidateQueries({ queryKey: ["verifier", "support", "tickets"] });
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to create support ticket")),
+  });
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -27,37 +53,16 @@ export default function VerifierHelp() {
               <CardDescription>Common questions about the verification process.</CardDescription>
             </CardHeader>
             <CardContent>
+              <Input placeholder="Search help articles..." value={search} onChange={(e) => setSearch(e.target.value)} className="mb-4" />
+              {articlesQuery.isLoading ? <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> : null}
+              {articlesQuery.error ? <div className="text-sm text-red-400 mb-4">{getBankingErrorMessage(articlesQuery.error, "Failed to load support articles.")}</div> : null}
               <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="item-1">
-                  <AccordionTrigger>How do I increase my reputation score?</AccordionTrigger>
-                  <AccordionContent>
-                    Your reputation score is calculated based on accuracy, speed, and client reviews. Consistently completing jobs on time with high accuracy and receiving positive feedback will improve your score over time.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-2">
-                  <AccordionTrigger>When do I get paid for completed jobs?</AccordionTrigger>
-                  <AccordionContent>
-                    Payments are held in escrow and released immediately upon successful completion of a verification job. You can withdraw your earnings to your connected wallet at any time from the Earnings page.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-3">
-                  <AccordionTrigger>What happens if I reject a document?</AccordionTrigger>
-                  <AccordionContent>
-                    If you reject a document, you must provide a valid reason. The requester will be notified and can resubmit. Justified rejections do not negatively impact your reputation score.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-4">
-                  <AccordionTrigger>How does the staking system work?</AccordionTrigger>
-                  <AccordionContent>
-                    Verifiers must stake ONTIVER tokens to prove commitment and integrity. Higher stakes can unlock higher tier jobs and lower platform fees. If you act maliciously, your stake may be slashed.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-5">
-                  <AccordionTrigger>Can I take a break from verifying?</AccordionTrigger>
-                  <AccordionContent>
-                    Yes, you can enable "Vacation Mode" in your Profile Settings. This will pause new job assignments without affecting your reputation or standing.
-                  </AccordionContent>
-                </AccordionItem>
+                {(articlesQuery.data ?? []).map((article) => (
+                  <AccordionItem key={article.articleId} value={article.articleId}>
+                    <AccordionTrigger>{article.title}</AccordionTrigger>
+                    <AccordionContent>{article.content}</AccordionContent>
+                  </AccordionItem>
+                ))}
               </Accordion>
             </CardContent>
           </Card>
@@ -102,22 +107,32 @@ export default function VerifierHelp() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="subject">Subject</Label>
-                <Input id="subject" placeholder="Brief description of the issue" />
+                <Input id="subject" placeholder="Brief description of the issue" value={subject} onChange={(e) => setSubject(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="message">Message</Label>
-                <Textarea id="message" placeholder="Describe your issue in detail..." className="min-h-[120px]" />
+                <Textarea id="message" placeholder="Describe your issue in detail..." className="min-h-[120px]" value={message} onChange={(e) => setMessage(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="attachments">Attachments (Optional)</Label>
                 <Input id="attachments" type="file" className="text-xs" />
               </div>
-              <Button className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow">
+              <Button className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow" onClick={() => createTicketMutation.mutate()} disabled={createTicketMutation.isPending || !subject || !message}>
                 <MessageSquare className="mr-2 h-4 w-4" /> Send Ticket
               </Button>
               <p className="text-xs text-center text-muted-foreground">
                 Average response time: &lt; 24 hours
               </p>
+              <div className="pt-2 border-t border-border/50 space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Recent tickets</p>
+                {ticketsQuery.isLoading ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : null}
+                {(ticketsQuery.data?.items ?? []).map((ticket) => (
+                  <div key={ticket.ticketId} className="text-xs flex justify-between">
+                    <span className="truncate">{ticket.subject}</span>
+                    <span className="uppercase">{ticket.status}</span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>

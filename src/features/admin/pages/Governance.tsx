@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, Filter, Clock, Plus, ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2, Plus, Search } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,68 +14,25 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-
-// Mock Data
-const PROPOSALS = [
-  {
-    id: "PROP-024",
-    title: "Increase Verifier Stake Requirement",
-    type: "Parameter Change",
-    proposer: "Admin Team",
-    status: "active",
-    votesFor: 65,
-    votesAgainst: 35,
-    endDate: "2025-04-01",
-    description: "Raise the minimum stake from 5000 ONTIVER to 10000 ONTIVER to ensure higher commitment."
-  },
-  {
-    id: "PROP-023",
-    title: "Add Polygon Network Support",
-    type: "Feature",
-    proposer: "Dev Guild",
-    status: "passed",
-    votesFor: 88,
-    votesAgainst: 12,
-    endDate: "2025-03-10",
-    description: "Integrate Polygon POS chain for lower cost credential anchoring."
-  },
-  {
-    id: "PROP-022",
-    title: "Reduce Platform Fee to 1%",
-    type: "Fee Adjustment",
-    proposer: "Community DAO",
-    status: "rejected",
-    votesFor: 42,
-    votesAgainst: 58,
-    endDate: "2025-02-28",
-    description: "Lower the platform fee from 2.5% to 1% to attract more enterprise volume."
-  },
-  {
-    id: "PROP-021",
-    title: "Emergency Security Patch v2.1",
-    type: "Emergency",
-    proposer: "Core Devs",
-    status: "executed",
-    votesFor: 100,
-    votesAgainst: 0,
-    endDate: "2025-02-15",
-    description: "Deploy critical security fix for the verification escrow contract."
-  }
-];
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 
 export default function Governance() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState('active');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredProposals = PROPOSALS.filter(p => {
-    const matchesTab = activeTab === 'all' || p.status === activeTab;
-    const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          p.id.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesTab && matchesSearch;
+  const proposalsQuery = useQuery({
+    queryKey: ["admin", "governance", activeTab],
+    queryFn: () => bankingService.listGovernanceProposals({ status: activeTab === "all" ? undefined : activeTab, page: 1, limit: 100 }),
   });
+
+  const filteredProposals = useMemo(() => {
+    const rows = proposalsQuery.data?.items ?? [];
+    const query = searchTerm.toLowerCase();
+    return rows.filter((p) => p.title.toLowerCase().includes(query) || p.proposalId.toLowerCase().includes(query));
+  }, [proposalsQuery.data, searchTerm]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -113,11 +71,7 @@ export default function Governance() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
-          <Button className="bg-indigo-600 hover:bg-indigo-700">
+          <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => setLocation('/admin/governance/create')}>
             <Plus className="h-4 w-4 mr-2" />
             Create Proposal
           </Button>
@@ -130,7 +84,7 @@ export default function Governance() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Active Proposals</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">{(proposalsQuery.data?.items ?? []).filter((i) => i.status === "active").length}</div>
             <p className="text-xs text-muted-foreground mt-1">Ending within 7 days</p>
           </CardContent>
         </Card>
@@ -139,8 +93,10 @@ export default function Governance() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Votes Cast</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12.5M ONTIVER</div>
-            <p className="text-xs text-muted-foreground mt-1">+8% from last month</p>
+            <div className="text-2xl font-bold">
+              {(proposalsQuery.data?.items ?? []).reduce((sum, p) => sum + p.votesFor + p.votesAgainst + (p.votesAbstain ?? 0), 0).toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Votes across loaded proposals</p>
           </CardContent>
         </Card>
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
@@ -148,8 +104,17 @@ export default function Governance() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Participation Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">42%</div>
-            <p className="text-xs text-muted-foreground mt-1">Of circulating supply</p>
+            <div className="text-2xl font-bold">
+              {Math.round(
+                ((proposalsQuery.data?.items ?? []).reduce((sum, p) => sum + p.votesFor, 0) /
+                  Math.max(
+                    1,
+                    (proposalsQuery.data?.items ?? []).reduce((sum, p) => sum + p.votesFor + p.votesAgainst + (p.votesAbstain ?? 0), 0),
+                  )) *
+                  100,
+              )}%
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">For-vote share in loaded dataset</p>
           </CardContent>
         </Card>
       </div>
@@ -168,8 +133,12 @@ export default function Governance() {
               <TabsTrigger value="all">All History</TabsTrigger>
             </TabsList>
 
-            <TabsContent value={activeTab} className="mt-0">
-              <div className="rounded-md border">
+          <div className="rounded-md border">
+            {proposalsQuery.isLoading ? (
+              <div className="flex justify-center py-12"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div>
+            ) : proposalsQuery.error ? (
+              <div className="py-8 px-4 text-sm text-red-400">{getBankingErrorMessage(proposalsQuery.error, "Failed to load proposals.")}</div>
+            ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -182,12 +151,16 @@ export default function Governance() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredProposals.map((proposal) => (
-                      <TableRow key={proposal.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setLocation(`/admin/governance/${proposal.id}`)}>
+                    {filteredProposals.map((proposal) => {
+                      const totalVotes = proposal.votesFor + proposal.votesAgainst + (proposal.votesAbstain ?? 0);
+                      const forPct = totalVotes > 0 ? Math.round((proposal.votesFor / totalVotes) * 100) : 0;
+                      const againstPct = totalVotes > 0 ? Math.round((proposal.votesAgainst / totalVotes) * 100) : 0;
+                      return (
+                      <TableRow key={proposal.proposalId} className="cursor-pointer hover:bg-muted/50" onClick={() => setLocation(`/admin/governance/${proposal.proposalId}`)}>
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">{proposal.title}</span>
-                            <span className="text-xs text-muted-foreground">{proposal.id} • by {proposal.proposer}</span>
+                            <span className="text-xs text-muted-foreground">{proposal.proposalId} • by {proposal.proposer}</span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -196,16 +169,15 @@ export default function Governance() {
                         <TableCell className="w-[200px]">
                           <div className="space-y-1">
                             <div className="flex justify-between text-xs">
-                              <span className="text-verza-emerald">{proposal.votesFor}% For</span>
-                              <span className="text-red-500">{proposal.votesAgainst}% Against</span>
+                              <span className="text-verza-emerald">{forPct}% For</span>
+                              <span className="text-red-500">{againstPct}% Against</span>
                             </div>
-                            <Progress value={proposal.votesFor} className="h-1.5" />
+                            <Progress value={forPct} className="h-1.5" />
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 text-sm">
-                            <Clock className="h-3 w-3 text-muted-foreground" />
-                            {proposal.endDate}
+                            {new Date(proposal.votingEndsAt).toLocaleDateString()}
                           </div>
                         </TableCell>
                         <TableCell>{getStatusBadge(proposal.status)}</TableCell>
@@ -215,11 +187,11 @@ export default function Governance() {
                           </Button>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )})}
                   </TableBody>
                 </Table>
-              </div>
-            </TabsContent>
+            )}
+          </div>
           </Tabs>
         </CardContent>
       </Card>

@@ -1,260 +1,169 @@
-import { useState } from 'react';
-import { 
-  Search, 
-  Filter, 
-  MoreVertical, 
-  Eye, 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle,
-  MessageSquare,
-  UserCheck,
-  Clock
-} from 'lucide-react';
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, CheckCircle, Eye, Loader2, Search, UserCheck } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-// Mock Data
-const MOCK_DISPUTES = [
-  {
-    id: "DSP-2025-001",
-    type: "Verification Quality",
-    filer: "John Doe",
-    against: "SecureVerify Inc.",
-    date: "2025-03-15",
-    status: "open",
-    assignedTo: null,
-    priority: "high"
-  },
-  {
-    id: "DSP-2025-002",
-    type: "Payment Issue",
-    filer: "Alice Smith",
-    against: "FastCheck Ltd.",
-    date: "2025-03-14",
-    status: "in_review",
-    assignedTo: "Admin User",
-    priority: "medium"
-  },
-  {
-    id: "DSP-2025-003",
-    type: "Data Privacy",
-    filer: "Robert Johnson",
-    against: "Global ID Verifiers",
-    date: "2025-03-10",
-    status: "resolved",
-    assignedTo: "Admin User",
-    priority: "high"
-  },
-  {
-    id: "DSP-2025-004",
-    type: "Service Not Delivered",
-    filer: "Sarah Williams",
-    against: "Quick Verify",
-    date: "2025-03-12",
-    status: "open",
-    assignedTo: null,
-    priority: "low"
-  }
-];
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { bankingService, getBankingErrorMessage } from "@/services/bankingService";
 
 export default function Disputes() {
+  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('open');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("open");
 
-  const filteredDisputes = MOCK_DISPUTES.filter(dispute => {
-    const matchesSearch = 
-      dispute.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dispute.filer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dispute.against.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    if (activeTab === 'all') return matchesSearch;
-    return matchesSearch && dispute.status === activeTab;
+  const disputesQuery = useQuery({
+    queryKey: ["admin", "disputes", activeTab],
+    queryFn: () => bankingService.listDisputes({ status: activeTab === "all" ? undefined : activeTab, page: 1, limit: 100 }),
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'open':
-        return <Badge variant="destructive" className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20">Open</Badge>;
-      case 'in_review':
-        return <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border-yellow-500/20">In Review</Badge>;
-      case 'resolved':
-        return <Badge variant="default" className="bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20 border-verza-emerald/20">Resolved</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
+  const assignSelfMutation = useMutation({
+    mutationFn: (disputeId: string) => bankingService.assignDispute(disputeId, "current_admin"),
+    onSuccess: async () => {
+      toast.success("Dispute assigned.");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "disputes"] });
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to assign dispute")),
+  });
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'text-red-500';
-      case 'medium': return 'text-yellow-500';
-      case 'low': return 'text-blue-500';
-      default: return 'text-muted-foreground';
-    }
+  const resolveMutation = useMutation({
+    mutationFn: (disputeId: string) => bankingService.resolveDispute(disputeId, { resolution: "reject", notes: "Resolved by admin queue action" }),
+    onSuccess: async () => {
+      toast.success("Dispute resolved.");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "disputes"] });
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to resolve dispute")),
+  });
+
+  const rows = disputesQuery.data?.items ?? [];
+  const filteredRows = useMemo(
+    () =>
+      rows.filter((item) => {
+        const q = searchTerm.toLowerCase();
+        return (
+          item.disputeId.toLowerCase().includes(q) ||
+          item.filedBy.toLowerCase().includes(q) ||
+          item.against.toLowerCase().includes(q) ||
+          item.type.toLowerCase().includes(q)
+        );
+      }),
+    [rows, searchTerm],
+  );
+
+  const badgeForStatus = (status: string) => {
+    if (status === "open") return <Badge variant="destructive">Open</Badge>;
+    if (status === "in_review") return <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">In Review</Badge>;
+    if (status === "resolved") return <Badge className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">Resolved</Badge>;
+    return <Badge variant="outline">{status}</Badge>;
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-            Dispute Resolution
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage and resolve conflicts between users and verifiers
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">Dispute Resolution</h1>
+          <p className="text-muted-foreground mt-1">Live dispute queue backed by `/disputes` APIs.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
-          <Button variant="default" className="bg-blue-600 hover:bg-blue-700" onClick={() => toast.success("Auto-assign process started")}>
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Auto-Assign
-          </Button>
-        </div>
+        <Button variant="outline" onClick={() => void disputesQuery.refetch()} disabled={disputesQuery.isFetching}>
+          {disputesQuery.isFetching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+          Refresh
+        </Button>
       </div>
 
       <Card className="bg-card/80 backdrop-blur-sm border-border/50">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <CardTitle>Disputes Overview</CardTitle>
-            <div className="relative w-64">
+            <div className="relative w-full md:w-72">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search disputes..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+              <Input placeholder="Search disputes..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Tabs defaultValue="open" onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-4">
-              <TabsTrigger value="all">All Disputes</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="open">Open</TabsTrigger>
               <TabsTrigger value="in_review">In Review</TabsTrigger>
               <TabsTrigger value="resolved">Resolved</TabsTrigger>
             </TabsList>
+          </Tabs>
 
-            <TabsContent value={activeTab} className="mt-0">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
+          {disputesQuery.isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            </div>
+          ) : disputesQuery.error ? (
+            <div className="text-sm text-red-400">{getBankingErrorMessage(disputesQuery.error, "Failed to load disputes.")}</div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Dispute ID</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Parties</TableHead>
+                    <TableHead>Filed</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Assigned</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredRows.length === 0 ? (
                     <TableRow>
-                      <TableHead>Dispute ID</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Parties Involved</TableHead>
-                      <TableHead>Filed Date</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Assigned To</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-10">No disputes found.</TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredDisputes.map((dispute) => (
-                      <TableRow key={dispute.id}>
-                        <TableCell className="font-medium">{dispute.id}</TableCell>
+                  ) : (
+                    filteredRows.map((dispute) => (
+                      <TableRow key={dispute.disputeId}>
+                        <TableCell className="font-medium">{dispute.disputeId}</TableCell>
                         <TableCell>{dispute.type}</TableCell>
                         <TableCell>
-                          <div className="flex flex-col text-sm">
-                            <span className="font-medium text-blue-400">{dispute.filer}</span>
-                            <span className="text-muted-foreground text-xs">vs {dispute.against}</span>
+                          <div className="text-sm">
+                            <div>{dispute.filedBy}</div>
+                            <div className="text-muted-foreground">vs {dispute.against}</div>
                           </div>
                         </TableCell>
+                        <TableCell>{new Date(dispute.filedAt).toLocaleDateString()}</TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-3 w-3 text-muted-foreground" />
-                            {dispute.date}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className={`flex items-center gap-1 font-medium ${getPriorityColor(dispute.priority)}`}>
+                          <span className="inline-flex items-center gap-1 text-sm">
                             <AlertTriangle className="h-3 w-3" />
-                            {dispute.priority.charAt(0).toUpperCase() + dispute.priority.slice(1)}
-                          </div>
+                            {dispute.priority}
+                          </span>
                         </TableCell>
-                        <TableCell>{getStatusBadge(dispute.status)}</TableCell>
-                        <TableCell>
-                          {dispute.assignedTo ? (
-                            <div className="flex items-center gap-2">
-                              <div className="h-6 w-6 rounded-full bg-blue-500/20 flex items-center justify-center text-xs text-blue-500">
-                                {dispute.assignedTo.charAt(0)}
-                              </div>
-                              <span className="text-sm">{dispute.assignedTo}</span>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground italic">Unassigned</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => setLocation(`/admin/disputes/${dispute.id}`)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toast.success("Dispute assigned to you")}>
-                                <UserCheck className="mr-2 h-4 w-4" />
-                                Assign to Me
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toast.info("Message dialog opened")}>
-                                <MessageSquare className="mr-2 h-4 w-4" />
-                                Contact Parties
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-verza-emerald" onClick={() => toast.success("Dispute resolved")}>
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Resolve Dispute
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-500" onClick={() => toast.error("Dispute closed without action")}>
-                                <XCircle className="mr-2 h-4 w-4" />
-                                Close Without Action
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                        <TableCell>{badgeForStatus(dispute.status)}</TableCell>
+                        <TableCell>{dispute.assignedTo ?? "Unassigned"}</TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button size="sm" variant="outline" onClick={() => setLocation(`/admin/disputes/${dispute.disputeId}`)}>
+                            <Eye className="h-3 w-3 mr-1" />
+                            View
+                          </Button>
+                          <Button size="sm" variant="outline" disabled={assignSelfMutation.isPending} onClick={() => assignSelfMutation.mutate(dispute.disputeId)}>
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            Assign
+                          </Button>
+                          {dispute.status !== "resolved" ? (
+                            <Button size="sm" onClick={() => resolveMutation.mutate(dispute.disputeId)} disabled={resolveMutation.isPending}>
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Resolve
+                            </Button>
+                          ) : null}
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
-          </Tabs>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

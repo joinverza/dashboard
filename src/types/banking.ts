@@ -1279,3 +1279,355 @@ export interface ApiReferenceSection {
   title: string;
   endpoints: ApiReferenceEndpoint[];
 }
+
+export interface DisputeRecord {
+  disputeId: string;
+  type: string;
+  status: "open" | "in_review" | "resolved" | "closed";
+  priority: "low" | "medium" | "high" | "critical";
+  filedBy: string;
+  against: string;
+  filedAt: string;
+  assignedTo?: string;
+  summary?: string;
+}
+
+export interface DisputeTimelineEvent {
+  eventId: string;
+  eventType: string;
+  actor: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface DisputeEvidenceItem {
+  id: string;
+  name: string;
+  url?: string;
+  mimeType?: string;
+  sizeBytes?: number;
+}
+
+export interface DisputeDetailRecord extends DisputeRecord {
+  description?: string;
+  filedByProfile?: {
+    name: string;
+    email?: string;
+    role?: string;
+    avatarUrl?: string;
+  };
+  againstProfile?: {
+    name: string;
+    email?: string;
+    role?: string;
+    avatarUrl?: string;
+  };
+  evidence: DisputeEvidenceItem[];
+  timeline: DisputeTimelineEvent[];
+}
+
+export interface DisputeResolveBody {
+  resolution: "approve_refund" | "reject" | "partial";
+  notes: string;
+  refundAmount?: number;
+}
+
+export interface GovernanceProposal {
+  proposalId: string;
+  title: string;
+  summary: string;
+  type: string;
+  status: "active" | "passed" | "rejected" | "executed" | "draft";
+  proposer: string;
+  votesFor: number;
+  votesAgainst: number;
+  votesAbstain?: number;
+  createdAt: string;
+  votingEndsAt: string;
+}
+
+export interface GovernanceVote {
+  voter: string;
+  vote: "for" | "against" | "abstain";
+  power: number;
+  createdAt: string;
+}
+
+export interface GovernanceProposalDetail extends GovernanceProposal {
+  changes?: Record<string, unknown>[];
+  timeline?: Array<{ date: string; event: string }>;
+  recentVotes?: GovernanceVote[];
+}
+
+export interface GovernanceProposalCreateBody {
+  title: string;
+  summary: string;
+  type: string;
+  changes: Record<string, unknown>[];
+  votingEndsAt: string;
+}
+
+export interface FinancialOverviewResponse {
+  totalRevenue: number;
+  recurringRevenue: number;
+  escrowBalance: number;
+  treasuryBalance: number;
+  revenueTrend: Array<{ period: string; value: number }>;
+  sourceBreakdown: Array<{ source: string; percentage: number; value?: number }>;
+  regionalBreakdown: Array<{ region: string; value: number }>;
+}
+
+export interface RevenueCustomerItem {
+  customerId: string;
+  name: string;
+  type: string;
+  transactions: number;
+  revenue: number;
+  growthPercent: number;
+}
+
+export interface FinancialTransactionRecord {
+  transactionId: string;
+  type: string;
+  amount: number;
+  direction: "in" | "out";
+  reference?: string;
+  createdAt: string;
+}
+
+export interface ModerationItem {
+  contentId: string;
+  contentType: string;
+  author: string;
+  content: string;
+  reason: string;
+  severity: "low" | "medium" | "high" | "critical";
+  status: "pending" | "approved" | "removed";
+  reportedAt: string;
+}
+
+export interface ModerationRule {
+  ruleId: string;
+  name: string;
+  enabled: boolean;
+  mode?: string;
+  description?: string;
+}
+
+export interface ModerationActionBody {
+  action: "approve" | "remove" | "warn";
+  notes?: string;
+}
+
+export interface VerifierReputationSummary {
+  score: number;
+  percentile?: number;
+  trend: Array<{ period: string; score: number }>;
+  breakdown: Array<{ metric: string; value: number }>;
+}
+
+export interface VerifierReviewItem {
+  reviewId: string;
+  reviewer: string;
+  rating: number;
+  credentialType?: string;
+  comment: string;
+  helpfulCount?: number;
+  createdAt: string;
+  reply?: string | null;
+}
+
+export interface VerifierEarningsSummary {
+  availableBalance: number;
+  pendingBalance: number;
+  totalEarned: number;
+  currency: string;
+  periodBreakdown: Array<{ period: string; amount: number }>;
+}
+
+export interface VerifierWithdrawalRecord {
+  withdrawalId: string;
+  amount: number;
+  currency: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  destinationId?: string;
+  transactionHash?: string;
+  createdAt: string;
+}
+
+export interface VerifierWithdrawalCreateBody {
+  amount: number;
+  currency: string;
+  destinationId: string;
+}
+
+export interface VerifierStakingTier {
+  tier: string;
+  requiredStake: number;
+  achieved: boolean;
+}
+
+export interface VerifierStakingHistoryItem {
+  stakeEventId: string;
+  action: string;
+  amount: number;
+  status: string;
+  createdAt: string;
+}
+
+export interface VerifierStakingOverview {
+  stakedAmount: number;
+  availableAmount: number;
+  apy: number;
+  estimatedMonthlyReward: number;
+  unstakePeriodDays: number;
+  currentTier: string;
+  nextTier?: string;
+  nextTierRequiredStake?: number;
+  tiers: VerifierStakingTier[];
+}
+
+export interface VerifierStakeActionBody {
+  amount: number;
+}
+
+export interface SupportArticle {
+  articleId: string;
+  title: string;
+  category: string;
+  content: string;
+}
+
+export interface SupportTicketCreateBody {
+  subject: string;
+  message: string;
+  attachments?: string[];
+}
+
+export interface SupportTicketRecord {
+  ticketId: string;
+  subject: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface CredentialRegistryItem {
+  credentialId: string;
+  type: string;
+  holderName: string;
+  issuerName: string;
+  status: "valid" | "revoked" | "expired" | "pending";
+  issuedAt: string;
+  expiresAt?: string | null;
+}
+
+export interface CredentialDetailRecord {
+  credentialId: string;
+  type: string;
+  schema?: string;
+  status: string;
+  issuedAt: string;
+  expiresAt?: string | null;
+  txHash?: string;
+  network?: string;
+  holder: { name: string; did?: string; email?: string };
+  issuer: { name: string; did?: string; verified?: boolean };
+  claims: Record<string, string>;
+}
+
+export interface EnterpriseSummary {
+  enterpriseId: string;
+  name: string;
+  plan: string;
+  users: number;
+  apiUsagePercent: number;
+  status: string;
+  billingStatus?: string;
+  lastActive?: string;
+}
+
+export interface EnterpriseDetailRecord extends EnterpriseSummary {
+  email?: string;
+  did?: string;
+  website?: string;
+  location?: string;
+  description?: string;
+  joinedDate?: string;
+  stats?: {
+    apiCalls?: string;
+    storage?: string;
+    spent?: string;
+  };
+}
+
+export interface EnterpriseTeamMember {
+  id: string;
+  name: string;
+  role: string;
+  email: string;
+  status: string;
+}
+
+export interface ErrorLogRecord {
+  errorId: string;
+  timestamp: string;
+  service: string;
+  severity: "critical" | "error" | "warning" | "info";
+  message: string;
+  status: "open" | "investigating" | "resolved";
+}
+
+export interface AdminUserStats {
+  credentials?: number;
+  verifications?: number;
+  spent?: string;
+}
+
+export interface AdminUserDetailRecord extends User {
+  did?: string;
+  stats?: AdminUserStats;
+}
+
+export interface UserActivityRecord {
+  id: string;
+  action: string;
+  timestamp: string;
+  ip?: string;
+  type?: string;
+  details?: string;
+}
+
+export interface UserCredentialSummary {
+  credentialId: string;
+  type: string;
+  issuer: string;
+  issuedAt: string;
+  status: string;
+}
+
+export interface UserTransactionSummary {
+  transactionId: string;
+  category: string;
+  description: string;
+  amount: number;
+  currency: string;
+  direction: "in" | "out";
+  status: string;
+  createdAt: string;
+}
+
+export interface VerifierIssuedCredentialRecord {
+  credentialId: string;
+  type: string;
+  recipient: string;
+  issuedAt: string;
+  status: string;
+}
+
+export interface VerifierReviewRecord {
+  reviewId: string;
+  reviewer: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}

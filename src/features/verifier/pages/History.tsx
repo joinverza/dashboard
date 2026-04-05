@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Download, Search, Filter, Eye, Star, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -14,45 +15,33 @@ import {
     TableRow,
   } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { bankingService } from "@/services/bankingService";
-import type { VerificationRequestResponse } from "@/types/banking";
+import { bankingService, getBankingErrorMessage } from "@/services/bankingService";
 import { toast } from "sonner";
 
 export default function History() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
-  const [history, setHistory] = useState<VerificationRequestResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchHistory = async () => {
-      setIsLoading(true);
-      try {
-        const data = await bankingService.getVerificationRequests();
-        // Filter for completed jobs (verified or rejected)
-        const completedJobs = data.filter(job => 
-          job.status === 'verified' || job.status === 'rejected'
-        );
-        setHistory(completedJobs);
-      } catch (error) {
-        console.error("Failed to fetch history", error);
-        toast.error("Failed to load history");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchHistory();
-  }, []);
-
-  const filteredHistory = history.filter(item => {
-    const requesterName = item.details?.firstName ? `${item.details.firstName} ${item.details.lastName}` : 'Unknown';
-    const type = item.type || 'Verification';
-    
-    const matchesSearch = requesterName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          type.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === "all" || type === filterType;
-    return matchesSearch && matchesType;
+  const [historyQuery, earningsQuery, reviewsQuery] = useQueries({
+    queries: [
+      { queryKey: ["verifier", "history", "requests"], queryFn: () => bankingService.getVerificationRequests({ limit: 500 }) },
+      { queryKey: ["verifier", "history", "earnings"], queryFn: () => bankingService.getVerifierEarningsSummary("90d") },
+      { queryKey: ["verifier", "history", "reviews"], queryFn: () => bankingService.listVerifierReviews({ page: 1, limit: 100 }) },
+    ],
   });
+
+  const history = (historyQuery.data ?? []).filter((job) => job.status === "verified" || job.status === "rejected");
+
+  const filteredHistory = useMemo(
+    () =>
+      history.filter((item) => {
+        const requesterName = item.details?.firstName ? `${item.details.firstName} ${item.details.lastName}` : "Unknown";
+        const type = item.type || "Verification";
+        const matchesSearch = requesterName.toLowerCase().includes(searchTerm.toLowerCase()) || type.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesType = filterType === "all" || type === filterType;
+        return matchesSearch && matchesType;
+      }),
+    [history, searchTerm, filterType],
+  );
 
   // Calculate stats
   const totalJobs = history.length;
@@ -63,9 +52,13 @@ export default function History() {
     return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
   }).length;
   
-  const totalEarnings = history.filter(j => j.status === 'verified').length * 15.00; // Mock $15 per verified job
+  const totalEarnings = earningsQuery.data?.totalEarned ?? 0;
+  const avgRating =
+    (reviewsQuery.data?.items?.length ?? 0) > 0
+      ? (reviewsQuery.data?.items ?? []).reduce((sum, r) => sum + r.rating, 0) / (reviewsQuery.data?.items?.length ?? 1)
+      : 0;
 
-  if (isLoading) {
+  if (historyQuery.isLoading || earningsQuery.isLoading || reviewsQuery.isLoading) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -88,6 +81,8 @@ export default function History() {
             <Download className="mr-2 h-4 w-4" /> Export CSV
         </Button>
       </div>
+      {historyQuery.error ? <div className="text-sm text-red-400">{getBankingErrorMessage(historyQuery.error, "Failed to load verifier history.")}</div> : null}
+      {earningsQuery.error ? <div className="text-sm text-red-400">{getBankingErrorMessage(earningsQuery.error, "Failed to load earnings summary.")}</div> : null}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -113,7 +108,7 @@ export default function History() {
             <CardContent className="p-6">
                 <p className="text-sm text-muted-foreground font-medium">Avg Rating</p>
                 <div className="flex items-center gap-1 mt-1">
-                    <span className="text-2xl font-bold">4.9</span>
+                    <span className="text-2xl font-bold">{avgRating.toFixed(1)}</span>
                     <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
                 </div>
             </CardContent>

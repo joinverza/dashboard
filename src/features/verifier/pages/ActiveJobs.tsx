@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Clock, FileText, MessageSquare, MoreHorizontal, Search, Filter, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,45 +19,49 @@ import { bankingService } from "@/services/bankingService";
 import type { VerificationRequestResponse } from "@/types/banking";
 import { toast } from "sonner";
 import { Link } from "wouter";
+import { getBankingErrorMessage } from "@/services/bankingService";
 
 export default function ActiveJobs() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("in_progress");
   const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
-  const [jobs, setJobs] = useState<VerificationRequestResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchJobs = async () => {
-      setIsLoading(true);
-      try {
-        // In a real app, we would filter by the current verifier's ID
-        const allRequests = await bankingService.getVerificationRequests();
-        // Filter for jobs that are likely "active" for a verifier
-        const activeRequests = allRequests.filter(req => 
-          ['pending', 'in_progress', 'review_needed'].includes(req.status)
-        );
-        setJobs(activeRequests);
-      } catch (error) {
-        console.error("Failed to fetch active jobs", error);
-        toast.error("Failed to load active jobs");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchJobs();
-  }, []);
-
-  const filteredJobs = jobs.filter(job => {
-    if (activeTab === "in_progress") return job.status === "in_progress" || job.status === "pending";
-    if (activeTab === "pending_review") return job.status === "review_needed";
-    if (activeTab === "overdue") {
-      const createdAt = new Date(job.createdAt);
-      const now = new Date();
-      const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-      return diffInHours > 24 && (job.status === 'pending' || job.status === 'in_progress' || job.status === 'review_needed');
-    }
-    return true;
+  const [search, setSearch] = useState("");
+  const jobsQuery = useQuery({
+    queryKey: ["verifier", "jobs", "active"],
+    queryFn: () => bankingService.getVerificationRequests({ limit: 300 }),
   });
+
+  const updateBulkMutation = useMutation({
+    mutationFn: async (payload: { ids: string[]; status: VerificationRequestResponse["status"] }) =>
+      Promise.all(payload.ids.map((id) => bankingService.updateVerificationStatus(id, payload.status))),
+    onSuccess: async () => {
+      toast.success("Job statuses updated.");
+      setSelectedJobs([]);
+      await queryClient.invalidateQueries({ queryKey: ["verifier", "jobs"] });
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to update selected jobs")),
+  });
+
+  const filteredJobs = useMemo(() => {
+    const jobs = (jobsQuery.data ?? []).filter((req) => ["pending", "in_progress", "review_needed"].includes(req.status));
+    return jobs.filter((job) => {
+      const requesterName = job.details?.firstName ? `${job.details.firstName} ${job.details.lastName}` : "";
+      const matchesSearch =
+        !search ||
+        job.verificationId.toLowerCase().includes(search.toLowerCase()) ||
+        requesterName.toLowerCase().includes(search.toLowerCase());
+      if (!matchesSearch) return false;
+      if (activeTab === "in_progress") return job.status === "in_progress" || job.status === "pending";
+      if (activeTab === "pending_review") return job.status === "review_needed";
+      if (activeTab === "overdue") {
+        const createdAt = new Date(job.createdAt);
+        const now = new Date();
+        const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+        return diffInHours > 24 && (job.status === "pending" || job.status === "in_progress" || job.status === "review_needed");
+      }
+      return true;
+    });
+  }, [jobsQuery.data, activeTab, search]);
 
   const toggleSelectAll = () => {
     if (selectedJobs.length === filteredJobs.length) {
@@ -74,7 +79,7 @@ export default function ActiveJobs() {
     }
   };
 
-  if (isLoading) {
+  if (jobsQuery.isLoading) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -96,8 +101,24 @@ export default function ActiveJobs() {
         {selectedJobs.length > 0 && (
           <div className="flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-lg animate-in fade-in">
             <span className="text-sm font-medium">{selectedJobs.length} selected</span>
-            <Button size="sm" variant="ghost" className="text-verza-emerald hover:text-verza-emerald hover:bg-verza-emerald/10">Mark Complete</Button>
-            <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-500/10">Cancel Jobs</Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-verza-emerald hover:text-verza-emerald hover:bg-verza-emerald/10"
+              disabled={updateBulkMutation.isPending}
+              onClick={() => updateBulkMutation.mutate({ ids: selectedJobs, status: "verified" })}
+            >
+              Mark Complete
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+              disabled={updateBulkMutation.isPending}
+              onClick={() => updateBulkMutation.mutate({ ids: selectedJobs, status: "rejected" })}
+            >
+              Cancel Jobs
+            </Button>
           </div>
         )}
       </div>
@@ -106,7 +127,7 @@ export default function ActiveJobs() {
       <div className="flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search active jobs..." className="pl-9 bg-card/50" />
+            <Input placeholder="Search active jobs..." className="pl-9 bg-card/50" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <div className="flex gap-2 w-full md:w-auto">
              <Select defaultValue="all">
@@ -129,6 +150,7 @@ export default function ActiveJobs() {
       </div>
 
       <Tabs defaultValue="in_progress" onValueChange={setActiveTab} className="w-full">
+        {jobsQuery.error ? <div className="text-sm text-red-400 mb-3">{getBankingErrorMessage(jobsQuery.error, "Failed to load active jobs.")}</div> : null}
         <div className="flex items-center justify-between mb-6">
           <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
             <TabsTrigger value="in_progress">In Progress</TabsTrigger>

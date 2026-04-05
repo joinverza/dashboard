@@ -1,8 +1,6 @@
-import { 
-  ArrowLeft, Calendar, User, CheckCircle, XCircle, 
-  MinusCircle, Play
-} from 'lucide-react';
-import { useLocation } from "wouter";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { ArrowLeft, Calendar, CheckCircle, Loader2, MinusCircle, Play, User, XCircle } from 'lucide-react';
+import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,41 +10,39 @@ import { Separator } from '@/components/ui/separator';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
+import { bankingService, getBankingErrorMessage } from "@/services/bankingService";
 
 export default function ProposalDetail() {
+  const [match, params] = useRoute("/admin/governance/:id");
   const [, setLocation] = useLocation();
-  const proposal = {
-    id: "PROP-023",
-    title: "Add Polygon Network Support",
-    type: "Feature",
-    proposer: "Dev Guild",
-    status: "passed",
-    votesFor: 880000,
-    votesAgainst: 120000,
-    votesAbstain: 50000,
-    startDate: "2025-03-01",
-    endDate: "2025-03-10",
-    description: "Integrate Polygon POS chain for lower cost credential anchoring. This will allow users to choose between Midnight (privacy-focused) and Polygon (cost-effective) for their credentials.",
-    timeline: [
-      { date: "2025-03-01", event: "Proposal Created" },
-      { date: "2025-03-01", event: "Voting Started" },
-      { date: "2025-03-10", event: "Voting Ended" },
-      { date: "2025-03-10", event: "Passed" }
-    ]
-  };
+  if (!match) return null;
 
-  const recentVotes = [
-    { voter: "Alice.eth", vote: "For", power: "50,000 ONTIVER", time: "2 hours ago" },
-    { voter: "Bob.eth", vote: "Against", power: "12,000 ONTIVER", time: "5 hours ago" },
-    { voter: "Charlie.eth", vote: "For", power: "100,000 ONTIVER", time: "1 day ago" },
-    { voter: "David.eth", vote: "Abstain", power: "5,000 ONTIVER", time: "1 day ago" },
-    { voter: "Eve.eth", vote: "For", power: "25,000 ONTIVER", time: "2 days ago" },
-  ];
+  const proposalQuery = useQuery({
+    queryKey: ["admin", "governance", params.id],
+    queryFn: () => bankingService.getGovernanceProposal(params.id),
+  });
 
-  const totalVotes = proposal.votesFor + proposal.votesAgainst + proposal.votesAbstain;
+  const executeMutation = useMutation({
+    mutationFn: () => bankingService.executeGovernanceProposal(params.id),
+    onSuccess: () => toast.success("Proposal execution queued."),
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to execute proposal")),
+  });
+
+  if (proposalQuery.isLoading) {
+    return <div className="h-[50vh] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+  if (proposalQuery.error || !proposalQuery.data) {
+    return <div className="text-sm text-red-400">{getBankingErrorMessage(proposalQuery.error, "Failed to load proposal.")}</div>;
+  }
+
+  const proposal = proposalQuery.data;
+  const recentVotes = proposal.recentVotes ?? [];
+  const abstainVotes = proposal.votesAbstain ?? 0;
+
+  const totalVotes = proposal.votesFor + proposal.votesAgainst + abstainVotes;
   const forPercentage = Math.round((proposal.votesFor / totalVotes) * 100);
   const againstPercentage = Math.round((proposal.votesAgainst / totalVotes) * 100);
-  const abstainPercentage = Math.round((proposal.votesAbstain / totalVotes) * 100);
+  const abstainPercentage = Math.round((abstainVotes / totalVotes) * 100);
 
   return (
     <div className="space-y-6">
@@ -66,14 +62,14 @@ export default function ProposalDetail() {
             </span>
             <span className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              Ends {proposal.endDate}
+              Ends {new Date(proposal.votingEndsAt).toLocaleDateString()}
             </span>
-            <span className="font-mono text-xs border px-1 rounded">{proposal.id}</span>
+            <span className="font-mono text-xs border px-1 rounded">{proposal.proposalId}</span>
           </div>
         </div>
         <div className="ml-auto">
           {proposal.status === 'passed' && (
-            <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => toast.success("Proposal execution queued")}>
+            <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => executeMutation.mutate()} disabled={executeMutation.isPending}>
               <Play className="h-4 w-4 mr-2" />
               Execute Proposal
             </Button>
@@ -89,7 +85,7 @@ export default function ProposalDetail() {
             </CardHeader>
             <CardContent>
               <p className="leading-relaxed">
-                {proposal.description}
+                {proposal.summary}
               </p>
               
               <div className="mt-8">
@@ -123,7 +119,7 @@ export default function ProposalDetail() {
                         <MinusCircle className="h-4 w-4 text-gray-500" />
                         Abstain
                       </span>
-                      <span className="font-medium">{abstainPercentage}% ({proposal.votesAbstain.toLocaleString()})</span>
+                      <span className="font-medium">{abstainPercentage}% ({abstainVotes.toLocaleString()})</span>
                     </div>
                     <Progress value={abstainPercentage} className="h-2 bg-muted [&>div]:bg-gray-500" />
                   </div>
@@ -147,23 +143,25 @@ export default function ProposalDetail() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentVotes.map((vote, index) => (
-                    <TableRow key={index}>
+                  {recentVotes.length === 0 ? (
+                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No votes recorded.</TableCell></TableRow>
+                  ) : recentVotes.map((vote, index) => (
+                    <TableRow key={`${vote.voter}-${index}`}>
                       <TableCell className="font-medium">{vote.voter}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={
-                          vote.vote === 'For' ? 'text-verza-emerald border-verza-emerald/20' :
-                          vote.vote === 'Against' ? 'text-red-500 border-red-500/20' :
+                          vote.vote === 'for' ? 'text-verza-emerald border-verza-emerald/20' :
+                          vote.vote === 'against' ? 'text-red-500 border-red-500/20' :
                           'text-gray-500 border-gray-500/20'
                         }>
                           {vote.vote}
                         </Badge>
                       </TableCell>
-                      <TableCell>{vote.power}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">{vote.time}</TableCell>
+                      <TableCell>{vote.power.toLocaleString()}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{new Date(vote.createdAt).toLocaleString()}</TableCell>
                     </TableRow>
                   ))}
-                </TableBody>
+              </TableBody>
               </Table>
             </CardContent>
           </Card>
@@ -177,7 +175,7 @@ export default function ProposalDetail() {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Proposal ID</p>
-                <p className="font-mono text-sm">{proposal.id}</p>
+                <p className="font-mono text-sm">{proposal.proposalId}</p>
               </div>
               <Separator />
               <div>
@@ -192,11 +190,11 @@ export default function ProposalDetail() {
               <Separator />
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Start Date</p>
-                <p className="text-sm font-medium">{proposal.startDate}</p>
+                <p className="text-sm font-medium">{new Date(proposal.createdAt).toLocaleDateString()}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">End Date</p>
-                <p className="text-sm font-medium">{proposal.endDate}</p>
+                <p className="text-sm font-medium">{new Date(proposal.votingEndsAt).toLocaleDateString()}</p>
               </div>
             </CardContent>
           </Card>
@@ -207,7 +205,7 @@ export default function ProposalDetail() {
             </CardHeader>
             <CardContent>
               <div className="relative border-l border-muted ml-2 space-y-6 pb-2">
-                {proposal.timeline.map((item, index) => (
+                {(proposal.timeline ?? []).map((item, index) => (
                   <div key={index} className="ml-6 relative">
                     <div className="absolute -left-[29px] top-1 h-3 w-3 rounded-full border-2 border-primary bg-background" />
                     <p className="text-sm font-medium">{item.event}</p>

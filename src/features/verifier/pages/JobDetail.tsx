@@ -1,4 +1,5 @@
 import { useRoute } from "wouter";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { 
   ArrowLeft, 
@@ -17,37 +18,34 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { useState, useEffect } from "react";
-import { bankingService } from "@/services/bankingService";
+import { bankingService, getBankingErrorMessage } from "@/services/bankingService";
 import type { VerificationStatusResponse } from "@/types/banking";
 import { toast } from "sonner";
 
 export default function JobDetail() {
   const [, params] = useRoute("/verifier/jobs/:id");
   const id = params?.id;
-  
-  const [job, setJob] = useState<VerificationStatusResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!id) return;
+  const jobQuery = useQuery({
+    queryKey: ["verifier", "job", id],
+    queryFn: () => bankingService.getVerificationStatus(id ?? ""),
+    enabled: Boolean(id),
+  });
 
-    const fetchJob = async () => {
-      setIsLoading(true);
-      try {
-        const data = await bankingService.getVerificationStatus(id);
-        setJob(data);
-      } catch (error) {
-        console.error("Failed to fetch job details", error);
-        toast.error("Failed to load job details");
-      } finally {
-        setIsLoading(false);
+  const statusMutation = useMutation({
+    mutationFn: (newStatus: VerificationStatusResponse["status"]) =>
+      bankingService.updateVerificationStatus(id ?? "", newStatus),
+    onSuccess: (updated) => {
+      jobQuery.refetch();
+      toast.success(`Job status updated to ${updated.status.replace("_", " ")}`);
+      if (updated.status === "verified" || updated.status === "rejected") {
+        setTimeout(() => { window.location.href = "/verifier/completed"; }, 1000);
       }
-    };
-    fetchJob();
-  }, [id]);
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to update job status")),
+  });
 
-  if (isLoading) {
+  if (jobQuery.isLoading) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -55,36 +53,24 @@ export default function JobDetail() {
     );
   }
 
-  if (!job) {
+  if (jobQuery.error || !jobQuery.data) {
     return (
       <div className="text-center py-10">
         <h2 className="text-xl font-semibold">Job Not Found</h2>
+        {jobQuery.error ? <p className="text-sm text-red-400 mt-2">{getBankingErrorMessage(jobQuery.error, "Unable to load this job.")}</p> : null}
         <Button variant="link" onClick={() => window.history.back()}>
           Return to Jobs
         </Button>
       </div>
     );
   }
+  const job = jobQuery.data;
 
   const getTypeLabel = (type: string) => {
     return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
-  const handleUpdateStatus = async (newStatus: VerificationStatusResponse['status']) => {
-    if (!job) return;
-    try {
-      await bankingService.updateVerificationStatus(id || "", newStatus);
-      setJob({ ...job, status: newStatus });
-      toast.success(`Job status updated to ${newStatus.replace('_', ' ')}`);
-      
-      if (newStatus === 'verified' || newStatus === 'rejected') {
-        setTimeout(() => window.history.back(), 1500);
-      }
-    } catch (error) {
-      console.error("Failed to update job status", error);
-      toast.error("Failed to update job status");
-    }
-  };
+  const handleUpdateStatus = async (newStatus: VerificationStatusResponse["status"]) => statusMutation.mutate(newStatus);
 
   const details = job.details ?? {};
   const subjectName = details.firstName ? `${details.firstName} ${details.lastName}` : 'Unknown Subject';

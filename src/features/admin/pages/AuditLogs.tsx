@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { 
   Search, Filter, Shield, 
   User, Database, Globe, Calendar, Loader2
@@ -12,30 +13,48 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { bankingService } from '@/services/bankingService';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 import type { AuditLogResponse } from '@/types/banking';
 
 export default function AuditLogs() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [logs, setLogs] = useState<AuditLogResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const fromDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const toDate = new Date().toISOString();
+
+  const logsQuery = useQuery({
+    queryKey: ["admin", "audit-logs", fromDate, toDate, typeFilter],
+    queryFn: async () => {
+      const eventType = typeFilter === "all" ? undefined : typeFilter;
+      const data = await bankingService.searchAuditTrail({
+        from: fromDate,
+        to: toDate,
+        eventType,
+      });
+      return data.length ? data : bankingService.getAuditLogs();
+    },
+  });
 
   useEffect(() => {
-    const fetchLogs = async () => {
-      setIsLoading(true);
-      try {
-        const data = await bankingService.getAuditLogs();
-        setLogs(data);
-      } catch (error) {
-        console.error("Failed to fetch audit logs", error);
-        toast.error("Failed to load audit logs");
-      } finally {
-        setIsLoading(false);
+    setLogs(logsQuery.data ?? []);
+  }, [logsQuery.data]);
+
+  const exportMutation = useMutation({
+    mutationFn: () =>
+      bankingService.exportSignedAuditLogs({
+        from: fromDate,
+        to: toDate,
+        eventType: typeFilter === "all" ? undefined : typeFilter,
+      }),
+    onSuccess: (result) => {
+      if (result.downloadUrl) {
+        window.open(result.downloadUrl, "_blank");
       }
-    };
-    fetchLogs();
-  }, []);
+      toast.success("Signed audit export generated.");
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to export signed audit logs")),
+  });
 
   const getActionIcon = (action: string) => {
     if (action.includes('USER')) return <User className="h-4 w-4 text-blue-500" />;
@@ -59,7 +78,7 @@ export default function AuditLogs() {
     return matchesSearch && matchesType;
   });
 
-  if (isLoading) {
+  if (logsQuery.isLoading) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -79,12 +98,17 @@ export default function AuditLogs() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => toast.success("Logs exported to CSV")}>
+          <Button variant="outline" onClick={() => exportMutation.mutate()} disabled={exportMutation.isPending}>
             <Calendar className="h-4 w-4 mr-2" />
-            Export CSV
+            Export Signed
+          </Button>
+          <Button variant="outline" onClick={() => void logsQuery.refetch()} disabled={logsQuery.isFetching}>
+            {logsQuery.isFetching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Refresh
           </Button>
         </div>
       </div>
+      {logsQuery.error ? <div className="text-sm text-red-400">{getBankingErrorMessage(logsQuery.error, "Failed to load audit logs.")}</div> : null}
 
       <Card className="bg-card/80 backdrop-blur-sm border-border/50">
         <CardHeader>

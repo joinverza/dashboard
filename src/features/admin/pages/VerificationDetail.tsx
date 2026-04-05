@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, CheckCircle, XCircle, Clock, 
@@ -12,45 +12,30 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { bankingService } from '@/services/bankingService';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 import type { VerificationStatusResponse } from '@/types/banking';
 
 export default function VerificationDetail() {
   const [, setLocation] = useLocation();
-  const [, params] = useRoute("/admin/verifications/:id");
-  const id = params?.id || 'REQ-001';
+  const [match, params] = useRoute("/admin/verifications/:id");
+  const id = params?.id;
+  if (!match || !id) return null;
+  const verificationQuery = useQuery({
+    queryKey: ["admin", "verification", id],
+    queryFn: () => bankingService.getVerificationStatus(id),
+  });
+  const updateMutation = useMutation({
+    mutationFn: (newStatus: 'verified' | 'rejected') => bankingService.updateVerificationStatus(id, newStatus),
+    onSuccess: () => {
+      verificationQuery.refetch();
+      toast.success("Verification status updated.");
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to update request status")),
+  });
 
-  const [verification, setVerification] = useState<VerificationStatusResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const handleStatusUpdate = async (newStatus: 'verified' | 'rejected') => updateMutation.mutate(newStatus);
 
-  useEffect(() => {
-    const fetchDetails = async () => {
-      setIsLoading(true);
-      try {
-        const data = await bankingService.getVerificationStatus(id);
-        setVerification(data);
-      } catch (error) {
-        console.error("Failed to fetch verification details", error);
-        toast.error("Failed to load verification details");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchDetails();
-  }, [id]);
-
-  const handleStatusUpdate = async (newStatus: 'verified' | 'rejected') => {
-    try {
-      await bankingService.updateVerificationStatus(id, newStatus);
-      setVerification(prev => prev ? { ...prev, status: newStatus } : null);
-      toast.success(`Request ${newStatus === 'verified' ? 'approved' : 'rejected'} successfully`);
-    } catch (error) {
-      console.error("Failed to update status", error);
-      toast.error("Failed to update request status");
-    }
-  };
-
-  if (isLoading) {
+  if (verificationQuery.isLoading) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -58,16 +43,17 @@ export default function VerificationDetail() {
     );
   }
 
-  if (!verification) {
+  if (verificationQuery.error || !verificationQuery.data) {
     return (
       <div className="text-center py-10">
-        <h2 className="text-xl font-semibold">Verification Request Not Found</h2>
+        <h2 className="text-xl font-semibold">{getBankingErrorMessage(verificationQuery.error, "Verification Request Not Found")}</h2>
         <Button variant="link" onClick={() => setLocation('/admin/verifications')}>
           Return to Requests
         </Button>
       </div>
     );
   }
+  const verification: VerificationStatusResponse = verificationQuery.data;
 
   const details = verification.details || {};
   const subjectName = details.firstName && details.lastName 

@@ -1,52 +1,49 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Search, Filter, Clock, ShieldCheck, MapPin, ChevronRight, Loader2,  } from "lucide-react";
+import { Search, Clock, ShieldCheck, MapPin, ChevronRight, Loader2 } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { bankingService } from "@/services/bankingService";
-import type { VerificationRequestResponse } from "@/types/banking";
+import { bankingService, getBankingErrorMessage } from "@/services/bankingService";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 
 export default function JobBoard() {
+  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
-  const [jobs, setJobs] = useState<VerificationRequestResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchJobs = async () => {
-      setIsLoading(true);
-      try {
-        const allRequests = await bankingService.getVerificationRequests();
-        // In a real scenario, the backend would filter this.
-        // For now, we simulate "Jobs" as any request that needs review or is pending.
-        const pendingJobs = allRequests.filter(req => 
-          req.status === 'review_needed' || req.status === 'pending'
-        );
-        setJobs(pendingJobs);
-      } catch (error) {
-        console.error("Failed to fetch jobs", error);
-        toast.error("Failed to load available jobs");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchJobs();
-  }, []);
-
-  const filteredJobs = jobs.filter(job => {
-    const matchesSearch = 
-      job.verificationId.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      (job.details?.firstName && job.details.firstName.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesType = filterType === "all" || job.type === filterType;
-    return matchesSearch && matchesType;
+  const jobsQuery = useQuery({
+    queryKey: ["verifier", "jobs", "board"],
+    queryFn: () => bankingService.getVerificationRequests({ limit: 200 }),
   });
+
+  const acceptJobMutation = useMutation({
+    mutationFn: (verificationId: string) => bankingService.updateVerificationStatus(verificationId, "in_progress"),
+    onSuccess: async () => {
+      toast.success("Job accepted.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["verifier", "jobs"] }),
+        queryClient.invalidateQueries({ queryKey: ["verifier", "history"] }),
+      ]);
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to accept job")),
+  });
+
+  const filteredJobs = useMemo(() => {
+    const jobs = (jobsQuery.data ?? []).filter((req) => req.status === "review_needed" || req.status === "pending");
+    return jobs.filter((job) => {
+      const matchesSearch =
+        job.verificationId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        Boolean(job.details?.firstName && job.details.firstName.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesType = filterType === "all" || job.type === filterType;
+      return matchesSearch && matchesType;
+    });
+  }, [jobsQuery.data, searchTerm, filterType]);
 
   const getUrgency = (type: string) => {
     if (type.includes('sanctions') || type.includes('pep')) return 'High';
@@ -68,14 +65,10 @@ export default function JobBoard() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Job Board</h1>
           <p className="text-muted-foreground">Find and accept new verification tasks.</p>
         </div>
-        <div className="flex gap-2">
-            <Button variant="outline">
-                <Filter className="mr-2 h-4 w-4" /> Filters
-            </Button>
-            <Button className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow">
-                Auto-Accept On
-            </Button>
-        </div>
+        <Button variant="outline" onClick={() => void jobsQuery.refetch()} disabled={jobsQuery.isFetching}>
+          {jobsQuery.isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          Refresh
+        </Button>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4">
@@ -102,10 +95,14 @@ export default function JobBoard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isLoading ? (
+        {jobsQuery.isLoading ? (
            <div className="col-span-full flex justify-center py-10">
              <Loader2 className="h-8 w-8 animate-spin text-primary" />
            </div>
+        ) : jobsQuery.error ? (
+          <div className="col-span-full text-center py-10 text-red-400">
+            {getBankingErrorMessage(jobsQuery.error, "Failed to load available jobs.")}
+          </div>
         ) : filteredJobs.length === 0 ? (
            <div className="col-span-full text-center py-10 text-muted-foreground">
              No available jobs found.
@@ -152,7 +149,14 @@ export default function JobBoard() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button className="w-full group-hover:bg-verza-primary transition-colors">
+                <Button
+                  className="w-full group-hover:bg-verza-primary transition-colors"
+                  disabled={acceptJobMutation.isPending}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    acceptJobMutation.mutate(job.verificationId);
+                  }}
+                >
                   Accept Job <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </CardFooter>

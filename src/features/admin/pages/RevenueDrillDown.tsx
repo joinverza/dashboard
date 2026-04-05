@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import {
-  Download, Filter, Calendar, ArrowUpRight, ArrowDownRight, Search
+  Download, Calendar, ArrowUpRight, ArrowDownRight, Search, Loader2
 } from 'lucide-react';
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
@@ -12,18 +13,21 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 
 export default function RevenueDrillDown() {
   const [dateRange, setDateRange] = useState('30d');
-  
-  // Mock Data
-  const topCustomers = [
-    { id: 'CUST-001', name: 'Acme Corp', type: 'Enterprise', revenue: '$12,450', growth: '+15%', transactions: 450 },
-    { id: 'CUST-002', name: 'Global Verify', type: 'Verifier', revenue: '$8,200', growth: '+5%', transactions: 320 },
-    { id: 'CUST-003', name: 'TechStart Inc', type: 'Enterprise', revenue: '$6,800', growth: '+22%', transactions: 180 },
-    { id: 'CUST-004', name: 'SecureID Ltd', type: 'Verifier', revenue: '$5,400', growth: '-2%', transactions: 210 },
-    { id: 'CUST-005', name: 'DataFlow Systems', type: 'Enterprise', revenue: '$4,900', growth: '+8%', transactions: 150 },
-  ];
+  const [search, setSearch] = useState("");
+  const [overviewQuery, customersQuery] = useQueries({
+    queries: [
+      { queryKey: ["admin", "financial", "overview", dateRange], queryFn: () => bankingService.getFinancialOverview(dateRange) },
+      { queryKey: ["admin", "financial", "customers", dateRange, search], queryFn: () => bankingService.getRevenueCustomers({ range: dateRange, search, page: 1, limit: 100 }) },
+    ],
+  });
+
+  const topCustomers = customersQuery.data?.items ?? [];
+  const totalRevenue = overviewQuery.data?.totalRevenue ?? 0;
+  const arpu = topCustomers.length ? totalRevenue / topCustomers.length : 0;
 
   return (
     <div className="space-y-6">
@@ -55,6 +59,9 @@ export default function RevenueDrillDown() {
           </Button>
         </div>
       </div>
+      {overviewQuery.isLoading || customersQuery.isLoading ? <div className="flex justify-center py-10"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div> : null}
+      {overviewQuery.error ? <div className="text-sm text-red-400">{getBankingErrorMessage(overviewQuery.error, "Failed to load revenue overview.")}</div> : null}
+      {customersQuery.error ? <div className="text-sm text-red-400">{getBankingErrorMessage(customersQuery.error, "Failed to load top customers.")}</div> : null}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
@@ -62,7 +69,7 @@ export default function RevenueDrillDown() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$124,500</div>
+            <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
             <div className="flex items-center text-xs mt-1">
               <span className="text-verza-emerald flex items-center font-medium">
                 <ArrowUpRight className="h-3 w-3 mr-1" />
@@ -77,7 +84,7 @@ export default function RevenueDrillDown() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Avg. Revenue Per User</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$42.50</div>
+            <div className="text-2xl font-bold">${arpu.toFixed(2)}</div>
             <div className="flex items-center text-xs mt-1">
               <span className="text-verza-emerald flex items-center font-medium">
                 <ArrowUpRight className="h-3 w-3 mr-1" />
@@ -92,7 +99,9 @@ export default function RevenueDrillDown() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Churn Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2.1%</div>
+            <div className="text-2xl font-bold">
+              {Math.abs((topCustomers.filter((item) => item.growthPercent < 0).length / Math.max(topCustomers.length, 1)) * 100).toFixed(1)}%
+            </div>
             <div className="flex items-center text-xs mt-1">
               <span className="text-red-500 flex items-center font-medium">
                 <ArrowDownRight className="h-3 w-3 mr-1" />
@@ -111,11 +120,8 @@ export default function RevenueDrillDown() {
             <div className="flex gap-2">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search customers..." className="pl-8 w-[200px]" />
+                <Input placeholder="Search customers..." className="pl-8 w-[200px]" value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
-              </Button>
             </div>
           </div>
         </CardHeader>
@@ -132,13 +138,13 @@ export default function RevenueDrillDown() {
             </TableHeader>
             <TableBody>
               {topCustomers.map((customer) => (
-                <TableRow key={customer.id}>
+                <TableRow key={customer.customerId}>
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.type}</TableCell>
                   <TableCell>{customer.transactions}</TableCell>
-                  <TableCell>{customer.revenue}</TableCell>
-                  <TableCell className={`text-right ${customer.growth.startsWith('+') ? 'text-verza-emerald' : 'text-red-500'}`}>
-                    {customer.growth}
+                  <TableCell>${customer.revenue.toLocaleString()}</TableCell>
+                  <TableCell className={`text-right ${customer.growthPercent >= 0 ? 'text-verza-emerald' : 'text-red-500'}`}>
+                    {customer.growthPercent >= 0 ? "+" : ""}{customer.growthPercent}%
                   </TableCell>
                 </TableRow>
               ))}

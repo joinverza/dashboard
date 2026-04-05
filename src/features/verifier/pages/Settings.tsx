@@ -1,24 +1,168 @@
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Loader2, Bell, Save, Shield } from "lucide-react";
+import { toast } from "sonner";
+import { useAuth } from "@/features/auth/AuthContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Monitor, Wallet } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { bankingService, getBankingErrorMessage } from "@/services/bankingService";
+import type { VerifierProfile } from "@/types/banking";
+
+const emptyProfile: VerifierProfile = {
+  id: "",
+  name: "",
+  email: "",
+  role: "verifier",
+  status: "active",
+  joinedAt: "",
+  title: "",
+  description: "",
+  website: "",
+  location: "",
+  languages: [],
+  specializations: [],
+};
+
+type NotificationPrefs = {
+  jobAlerts: boolean;
+  reviewAlerts: boolean;
+  payoutAlerts: boolean;
+  systemUpdates: boolean;
+};
 
 export default function VerifierSettings() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<VerifierProfile>(emptyProfile);
+  const [languageInput, setLanguageInput] = useState("");
+  const [specializationInput, setSpecializationInput] = useState("");
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>({
+    jobAlerts: true,
+    reviewAlerts: true,
+    payoutAlerts: true,
+    systemUpdates: true,
+  });
+
+  const [profileQuery, notificationsQuery] = useQueries({
+    queries: [
+      {
+        queryKey: ["verifier", "settings", "profile"],
+        queryFn: () => bankingService.getVerifierProfile(),
+      },
+      {
+        queryKey: ["verifier", "settings", "notifications-feed"],
+        queryFn: () => bankingService.getNotifications({ limit: 50 }),
+      },
+    ],
+  });
+
+  useEffect(() => {
+    if (!profileQuery.data) return;
+    const next = {
+      ...emptyProfile,
+      ...profileQuery.data,
+      email: profileQuery.data.email || user?.email || "",
+    };
+    setProfile(next);
+    setLanguageInput((next.languages ?? []).join(", "));
+    setSpecializationInput((next.specializations ?? []).join(", "));
+  }, [profileQuery.data, user?.email]);
+
+  useEffect(() => {
+    if (!notificationsQuery.data) return;
+    const items = notificationsQuery.data;
+    const hasType = (type: string): boolean => items.some((item) => item.type === type);
+    setNotificationPrefs((prev) => ({
+      ...prev,
+      jobAlerts: hasType("transaction") || prev.jobAlerts,
+      reviewAlerts: hasType("alert") || prev.reviewAlerts,
+      payoutAlerts: hasType("transaction") || prev.payoutAlerts,
+      systemUpdates: hasType("update") || prev.systemUpdates,
+    }));
+  }, [notificationsQuery.data]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: (payload: Partial<VerifierProfile>) => bankingService.updateVerifierProfile(payload),
+    onSuccess: async (next) => {
+      setProfile((prev) => ({ ...prev, ...next }));
+      toast.success("Verifier profile updated.");
+      await queryClient.invalidateQueries({ queryKey: ["verifier", "settings", "profile"] });
+    },
+    onError: (error) => {
+      toast.error(getBankingErrorMessage(error, "Failed to update verifier profile"));
+    },
+  });
+
+  const isLoading = profileQuery.isLoading || notificationsQuery.isLoading;
+  const hasError = Boolean(profileQuery.error || notificationsQuery.error);
+  const unreadNotifications = useMemo(() => {
+    if (!notificationsQuery.data) return 0;
+    return notificationsQuery.data.filter((item) => !item.read).length;
+  }, [notificationsQuery.data]);
+
+  const saveProfile = () => {
+    const languages = languageInput
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const specializations = specializationInput
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    updateProfileMutation.mutate({
+      title: profile.title,
+      description: profile.description,
+      website: profile.website,
+      location: profile.location,
+      languages,
+      specializations,
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6 pb-10"
     >
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
-        <p className="text-muted-foreground">Manage your account, security, and notification preferences.</p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
+          <p className="text-muted-foreground">Manage profile details, verifier capabilities, and alert preferences.</p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => Promise.all([profileQuery.refetch(), notificationsQuery.refetch()]).then(() => toast.success("Settings refreshed."))}
+          disabled={profileQuery.isFetching || notificationsQuery.isFetching}
+        >
+          {profileQuery.isFetching || notificationsQuery.isFetching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+          Refresh
+        </Button>
       </div>
+
+      {hasError ? (
+        <Card className="border-red-500/30 bg-red-500/5">
+          <CardContent className="py-4 text-sm text-red-400">
+            Some verifier settings failed to load. You can continue editing available fields.
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Tabs defaultValue="account" className="space-y-6">
         <TabsList className="bg-card/50 backdrop-blur-sm border border-border/50 p-1">
@@ -30,54 +174,51 @@ export default function VerifierSettings() {
         <TabsContent value="account" className="space-y-6">
           <Card className="bg-card/80 backdrop-blur-sm border-border/50">
             <CardHeader>
-              <CardTitle>Account Information</CardTitle>
-              <CardDescription>Update your personal details and account status.</CardDescription>
+              <CardTitle>Profile Settings</CardTitle>
+              <CardDescription>Backed by `/verifier/profile` patch updates.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Email Address</Label>
-                  <Input defaultValue="verifier@example.com" />
+                  <Label>Name</Label>
+                  <Input value={profile.name ?? ""} disabled />
                 </div>
                 <div className="space-y-2">
-                  <Label>Phone Number</Label>
-                  <Input defaultValue="+1 (555) 123-4567" />
+                  <Label>Email</Label>
+                  <Input value={profile.email ?? user?.email ?? ""} disabled />
+                </div>
+                <div className="space-y-2">
+                  <Label>Title</Label>
+                  <Input value={profile.title ?? ""} onChange={(e) => setProfile((prev) => ({ ...prev, title: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Location</Label>
+                  <Input value={profile.location ?? ""} onChange={(e) => setProfile((prev) => ({ ...prev, location: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Website</Label>
+                  <Input value={profile.website ?? ""} onChange={(e) => setProfile((prev) => ({ ...prev, website: e.target.value }))} />
                 </div>
               </div>
-              
               <div className="space-y-2">
-                <Label>Digital Identity (DID)</Label>
-                <div className="flex gap-2">
-                  <Input defaultValue="did:verza:verifier:123456789" disabled className="font-mono bg-muted/20" />
-                  <Button variant="outline">Copy</Button>
+                <Label>Description</Label>
+                <Textarea value={profile.description ?? ""} onChange={(e) => setProfile((prev) => ({ ...prev, description: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Languages (comma-separated)</Label>
+                  <Input value={languageInput} onChange={(e) => setLanguageInput(e.target.value)} placeholder="en, fr, es" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Specializations (comma-separated)</Label>
+                  <Input value={specializationInput} onChange={(e) => setSpecializationInput(e.target.value)} placeholder="kyc, sanctions, aml" />
                 </div>
               </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="font-medium">Password</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Current Password</Label>
-                    <Input type="password" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>New Password</Label>
-                    <Input type="password" />
-                  </div>
-                </div>
-                <Button variant="outline">Update Password</Button>
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between p-4 border border-red-500/20 bg-red-500/5 rounded-lg">
-                 <div>
-                   <div className="font-medium text-red-500">Danger Zone</div>
-                   <div className="text-sm text-muted-foreground">Deactivate your account temporarily or permanently.</div>
-                 </div>
-                 <Button variant="destructive" size="sm">Deactivate Account</Button>
+              <div className="flex justify-end">
+                <Button onClick={saveProfile} disabled={updateProfileMutation.isPending}>
+                  {updateProfileMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                  Save Profile
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -86,66 +227,24 @@ export default function VerifierSettings() {
         <TabsContent value="security" className="space-y-6">
           <Card className="bg-card/80 backdrop-blur-sm border-border/50">
             <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-              <CardDescription>Protect your account with additional security measures.</CardDescription>
+              <CardTitle>Security Overview</CardTitle>
+              <CardDescription>Authentication and risk posture surfaced from account context.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
+            <CardContent className="space-y-5">
+              <div className="flex items-center justify-between p-4 border border-border/50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
-                    <Shield className="h-5 w-5" />
-                  </div>
+                  <Shield className="h-5 w-5 text-verza-emerald" />
                   <div>
-                    <div className="font-medium">Two-Factor Authentication</div>
-                    <div className="text-sm text-muted-foreground">Add an extra layer of security to your account.</div>
+                    <p className="font-medium">Role</p>
+                    <p className="text-sm text-muted-foreground capitalize">{user?.role ?? "verifier"}</p>
                   </div>
                 </div>
-                <Button variant="outline">Enable 2FA</Button>
+                <span className="text-xs px-2 py-1 rounded bg-verza-emerald/10 text-verza-emerald">Verified Access</span>
               </div>
-
               <Separator />
-
-              <div className="space-y-4">
-                <h3 className="font-medium flex items-center gap-2"><Monitor className="h-4 w-4" /> Active Sessions</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 border border-border rounded-md bg-muted/10">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 bg-muted rounded flex items-center justify-center">💻</div>
-                      <div>
-                        <div className="text-sm font-medium">Windows PC - Chrome</div>
-                        <div className="text-xs text-muted-foreground">New York, USA • Current Session</div>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm" disabled>Active</Button>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border border-border rounded-md">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 bg-muted rounded flex items-center justify-center">📱</div>
-                      <div>
-                        <div className="text-sm font-medium">iPhone 13 - Safari</div>
-                        <div className="text-xs text-muted-foreground">New York, USA • 2 hours ago</div>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm" className="text-red-500">Revoke</Button>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="font-medium flex items-center gap-2"><Wallet className="h-4 w-4" /> Connected Wallets</h3>
-                <div className="flex items-center justify-between p-3 border border-border rounded-md bg-muted/10">
-                  <div className="flex items-center gap-3">
-                     <div className="h-8 w-8 bg-muted rounded flex items-center justify-center">💳</div>
-                     <div>
-                       <div className="text-sm font-medium">Cardano Wallet (Nami)</div>
-                       <div className="text-xs text-muted-foreground font-mono">addr1...xyz8</div>
-                     </div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="text-red-500">Disconnect</Button>
-                </div>
-                <Button variant="outline" size="sm" className="w-full">Connect New Wallet</Button>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p>MFA enrollment and session management are controlled by the Auth API flow.</p>
+                <p>Use the sign-in security flow to enroll TOTP and manage active sessions.</p>
               </div>
             </CardContent>
           </Card>
@@ -155,51 +254,40 @@ export default function VerifierSettings() {
           <Card className="bg-card/80 backdrop-blur-sm border-border/50">
             <CardHeader>
               <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>Choose how and when you want to be notified.</CardDescription>
+              <CardDescription>Derived from live `/notifications` feed activity and locally adjustable preferences.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="font-medium text-sm text-muted-foreground uppercase">Job Alerts</h3>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="new-jobs" className="flex-1">New Job Available</Label>
-                  <Switch id="new-jobs" defaultChecked />
+              <div className="p-4 border border-border/50 rounded-lg bg-muted/20 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Bell className="h-5 w-5 text-blue-500" />
+                  <div>
+                    <p className="font-medium">Unread Notifications</p>
+                    <p className="text-sm text-muted-foreground">Current unread items in your verifier stream.</p>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="job-status" className="flex-1">Job Status Updates</Label>
-                  <Switch id="job-status" defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="deadlines" className="flex-1">Deadline Reminders</Label>
-                  <Switch id="deadlines" defaultChecked />
-                </div>
+                <span className="text-lg font-semibold">{unreadNotifications}</span>
               </div>
 
-              <Separator />
-
               <div className="space-y-4">
-                <h3 className="font-medium text-sm text-muted-foreground uppercase">Payments</h3>
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="payment-received" className="flex-1">Payment Received</Label>
-                  <Switch id="payment-received" defaultChecked />
+                  <Label htmlFor="jobs">Job Alerts</Label>
+                  <Switch id="jobs" checked={notificationPrefs.jobAlerts} onCheckedChange={(checked) => setNotificationPrefs((prev) => ({ ...prev, jobAlerts: checked }))} />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="payouts" className="flex-1">Payout Confirmations</Label>
-                  <Switch id="payouts" defaultChecked />
+                  <Label htmlFor="reviews">Review Alerts</Label>
+                  <Switch id="reviews" checked={notificationPrefs.reviewAlerts} onCheckedChange={(checked) => setNotificationPrefs((prev) => ({ ...prev, reviewAlerts: checked }))} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="payouts">Payout Alerts</Label>
+                  <Switch id="payouts" checked={notificationPrefs.payoutAlerts} onCheckedChange={(checked) => setNotificationPrefs((prev) => ({ ...prev, payoutAlerts: checked }))} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="system">System Updates</Label>
+                  <Switch id="system" checked={notificationPrefs.systemUpdates} onCheckedChange={(checked) => setNotificationPrefs((prev) => ({ ...prev, systemUpdates: checked }))} />
                 </div>
               </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="font-medium text-sm text-muted-foreground uppercase">Communication</h3>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="new-reviews" className="flex-1">New Reviews</Label>
-                  <Switch id="new-reviews" defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="marketing" className="flex-1">Marketing & Updates</Label>
-                  <Switch id="marketing" />
-                </div>
+              <div className="text-xs text-muted-foreground">
+                Preference persistence endpoint is not currently available; these toggles are session-local until backend settings API is documented.
               </div>
             </CardContent>
           </Card>

@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useQueries } from "@tanstack/react-query";
 import { 
   Building, Mail, Calendar, Shield, Activity, 
   CheckCircle, Star, AlertTriangle, FileText, Ban, 
@@ -21,75 +22,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useEffect, useState } from 'react';
-import { bankingService } from '@/services/bankingService';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 import type { Verifier } from '@/types/banking';
-
-// Mock data for fallback and unsupported features
-const ISSUED_CREDENTIALS = [
-  { id: 1, type: 'Employment Verification', user: 'Alice Johnson', date: 'Oct 24, 2023', status: 'Active' },
-  { id: 2, type: 'Degree Certificate', user: 'Bob Smith', date: 'Oct 23, 2023', status: 'Active' },
-  { id: 3, type: 'Skill Badge: React', user: 'Charlie Brown', date: 'Oct 22, 2023', status: 'Revoked' },
-  { id: 4, type: 'Identity Proof', user: 'Diana Prince', date: 'Oct 20, 2023', status: 'Active' },
-];
-
-const REVIEWS = [
-  { id: 1, user: 'Alice Johnson', rating: 5, comment: 'Fast and professional verification process.', date: '2 days ago' },
-  { id: 2, user: 'Bob Smith', rating: 4, comment: 'Good service but took a bit longer than expected.', date: '1 week ago' },
-  { id: 3, user: 'Charlie Brown', rating: 5, comment: 'Excellent experience!', date: '2 weeks ago' },
-];
 
 export default function VerifierDetail() {
   const [, setLocation] = useLocation();
   const [, params] = useRoute("/admin/verifiers/:id");
-  const [verifier, setVerifier] = useState<Verifier | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [verifierQuery, credentialsQuery, reviewsQuery] = useQueries({
+    queries: [
+      { queryKey: ["admin", "verifier", params?.id], queryFn: () => bankingService.getVerifierDetails(params?.id ?? ""), enabled: Boolean(params?.id) },
+      { queryKey: ["admin", "verifier", params?.id, "credentials"], queryFn: () => bankingService.listVerifierIssuedCredentials(params?.id ?? ""), enabled: Boolean(params?.id) },
+      { queryKey: ["admin", "verifier", params?.id, "reviews"], queryFn: () => bankingService.listVerifierFeedback(params?.id ?? ""), enabled: Boolean(params?.id) },
+    ],
+  });
+  const verifier = verifierQuery.data as Verifier | null;
+  const issuedCredentials = credentialsQuery.data ?? [];
+  const reviews = reviewsQuery.data ?? [];
 
-  useEffect(() => {
-    const fetchVerifierDetails = async () => {
-      if (!params?.id) return;
-      
-      try {
-        setIsLoading(true);
-        const data = await bankingService.getVerifierDetails(params.id);
-        setVerifier(data);
-      } catch (error) {
-        console.error("Failed to fetch verifier details", error);
-        toast.error("Failed to load verifier details. Using fallback data.");
-        // Fallback to mock data structure adapted to Verifier type
-        setVerifier({
-          id: params.id,
-          name: 'VeriTech Solutions',
-          email: 'contact@veritech.com',
-          role: 'verifier',
-          status: 'active',
-          joinedAt: '2023-01-10',
-          lastActive: 'Today, 09:15 AM',
-          organizationName: 'VeriTech Solutions Inc.',
-          description: 'Global leader in digital identity verification services specializing in employment and education checks.',
-          website: 'https://veritech.com',
-          location: 'San Francisco, CA',
-          did: 'did:verza:verifier:1234567890',
-          verificationLevel: 'Gold',
-          credentialsIssued: 15420,
-          reputation: 98,
-          stats: {
-            issued: 15420,
-            active: 14200,
-            revoked: 1220,
-            reputation: 98,
-            earnings: '$145,200'
-          }
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchVerifierDetails();
-  }, [params?.id]);
-
-  if (isLoading) {
+  if (verifierQuery.isLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -97,10 +47,10 @@ export default function VerifierDetail() {
     );
   }
 
-  if (!verifier) {
+  if (verifierQuery.error || !verifier) {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh] gap-4">
-        <p className="text-muted-foreground">Verifier not found</p>
+        <p className="text-muted-foreground">{getBankingErrorMessage(verifierQuery.error, "Verifier not found")}</p>
         <Button onClick={() => setLocation('/admin/verifiers')}>Back to Verifiers</Button>
       </div>
     );
@@ -249,7 +199,7 @@ export default function VerifierDetail() {
           <Card className="bg-card/80 backdrop-blur-sm border-border/50">
             <CardHeader>
               <CardTitle>Recent Issued Credentials</CardTitle>
-              <CardDescription>Latest credentials issued by this verifier (Mock Data).</CardDescription>
+              <CardDescription>Latest credentials issued by this verifier.</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -263,13 +213,13 @@ export default function VerifierDetail() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {ISSUED_CREDENTIALS.map((cred) => (
-                    <TableRow key={cred.id}>
+                  {issuedCredentials.map((cred) => (
+                    <TableRow key={cred.credentialId}>
                       <TableCell className="font-medium">{cred.type}</TableCell>
-                      <TableCell>{cred.user}</TableCell>
-                      <TableCell>{cred.date}</TableCell>
+                      <TableCell>{cred.recipient}</TableCell>
+                      <TableCell>{new Date(cred.issuedAt).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={cred.status === 'Active' ? 'bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}>
+                        <Badge variant="outline" className={cred.status.toLowerCase() === 'active' ? 'bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}>
                           {cred.status}
                         </Badge>
                       </TableCell>
@@ -286,15 +236,15 @@ export default function VerifierDetail() {
 
         <TabsContent value="reviews">
           <div className="grid gap-4">
-            {REVIEWS.map((review) => (
-              <Card key={review.id} className="bg-card/80 backdrop-blur-sm border-border/50">
+            {reviews.map((review) => (
+              <Card key={review.reviewId} className="bg-card/80 backdrop-blur-sm border-border/50">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
-                        <AvatarFallback>{review.user.charAt(0)}</AvatarFallback>
+                        <AvatarFallback>{review.reviewer.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      <span className="font-medium">{review.user}</span>
+                      <span className="font-medium">{review.reviewer}</span>
                     </div>
                     <div className="flex items-center gap-1 text-yellow-500">
                       <Star className="h-4 w-4 fill-current" />
@@ -303,7 +253,7 @@ export default function VerifierDetail() {
                   </div>
                   <p className="text-muted-foreground mb-2">{review.comment}</p>
                   <div className="text-xs text-muted-foreground flex items-center gap-4">
-                    <span>{review.date}</span>
+                    <span>{new Date(review.createdAt).toLocaleDateString()}</span>
                     <button className="flex items-center gap-1 hover:text-foreground">
                       <ThumbsUp className="h-3 w-3" /> Helpful
                     </button>

@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 import { ArrowLeft, Save, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,14 +13,37 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 
 export default function CreateProposal() {
+  const [, setLocation] = useLocation();
   const [proposalType, setProposalType] = useState('');
+  const [title, setTitle] = useState("");
+  const [summary, setSummary] = useState("");
+  const [durationDays, setDurationDays] = useState("7");
+  const [allowComments, setAllowComments] = useState(true);
+  const [urgent, setUrgent] = useState(false);
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      bankingService.createGovernanceProposal({
+        title,
+        summary: `${summary}\n\nMetadata: ${JSON.stringify({ allowComments, urgent })}`,
+        type: proposalType || "general",
+        changes: [],
+        votingEndsAt: new Date(Date.now() + Number(durationDays || 7) * 24 * 60 * 60 * 1000).toISOString(),
+      }),
+    onSuccess: (proposal) => {
+      toast.success("Proposal created.");
+      setLocation(`/admin/governance/${proposal.proposalId}`);
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to create proposal")),
+  });
   
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" onClick={() => setLocation('/admin/governance')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
@@ -54,7 +80,7 @@ export default function CreateProposal() {
 
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
-                <Input id="title" placeholder="e.g., Reduce Platform Fee to 1%" />
+                <Input id="title" placeholder="e.g., Reduce Platform Fee to 1%" value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
 
               <div className="space-y-2">
@@ -63,6 +89,8 @@ export default function CreateProposal() {
                   id="description" 
                   placeholder="Detailed explanation of the proposal..." 
                   className="min-h-[200px]"
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
                 />
               </div>
 
@@ -100,7 +128,7 @@ export default function CreateProposal() {
 
               <div className="space-y-2">
                 <Label htmlFor="duration">Voting Duration (Days)</Label>
-                <Input id="duration" type="number" defaultValue="7" />
+                <Input id="duration" type="number" value={durationDays} onChange={(e) => setDurationDays(e.target.value)} />
               </div>
             </CardContent>
           </Card>
@@ -121,7 +149,7 @@ export default function CreateProposal() {
                 </div>
                 <h3 className="font-bold mb-2">New Proposal Title</h3>
                 <p className="text-sm text-muted-foreground line-clamp-3">
-                  Proposal description will appear here...
+                  {summary || "Proposal description will appear here..."}
                 </p>
               </div>
 
@@ -137,7 +165,7 @@ export default function CreateProposal() {
 
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>End Date</span>
-                <span className="font-medium text-foreground">In 7 days</span>
+                <span className="font-medium text-foreground">In {durationDays || 7} days</span>
               </div>
 
               <div className="pt-4 flex gap-2">
@@ -145,9 +173,9 @@ export default function CreateProposal() {
                   <Save className="h-4 w-4 mr-2" />
                   Save Draft
                 </Button>
-                <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700">
+                <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700" onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !title || !summary || !proposalType}>
                   <Send className="h-4 w-4 mr-2" />
-                  Submit
+                  {createMutation.isPending ? "Submitting..." : "Submit"}
                 </Button>
               </div>
             </CardContent>
@@ -163,14 +191,14 @@ export default function CreateProposal() {
                   <Label>Allow Comments</Label>
                   <p className="text-xs text-muted-foreground">Enable discussion on this proposal</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch checked={allowComments} onCheckedChange={setAllowComments} />
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Urgent Proposal</Label>
                   <p className="text-xs text-muted-foreground">Mark as high priority</p>
                 </div>
-                <Switch />
+                <Switch checked={urgent} onCheckedChange={setUrgent} />
               </div>
             </CardContent>
           </Card>

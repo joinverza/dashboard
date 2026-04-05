@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { motion } from "framer-motion";
 import { 
@@ -23,12 +24,12 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { bankingService } from "@/services/bankingService";
+import { bankingService, getBankingErrorMessage } from "@/services/bankingService";
 import type { VerificationStatusResponse } from "@/types/banking";
 import { toast } from "sonner";
 
 export default function DocumentReview() {
-  const [match, params] = useRoute("/verifier/workspace/:id");
+  const [match, params] = useRoute("/verifier/review/:id");
   const id = match ? params.id : null;
   
   const [job, setJob] = useState<VerificationStatusResponse | null>(null);
@@ -101,30 +102,24 @@ export default function DocumentReview() {
 
   const allChecked = requirements.every(req => checklist[req.id]);
 
-  const handleApprove = async () => {
-    if (!id) return;
-    try {
-      await bankingService.updateVerificationStatus(id, 'verified', notes);
+  const approveMutation = useMutation({
+    mutationFn: () => bankingService.updateVerificationStatus(id ?? "", "verified", notes),
+    onSuccess: () => {
       toast.success("Verification approved successfully");
       setIsApproveDialogOpen(false);
-      setTimeout(() => window.location.href = "/verifier/dashboard", 1500);
-    } catch (error) {
-      console.error("Failed to approve verification", error);
-      toast.error("Failed to approve verification");
-    }
-  };
+      setTimeout(() => { window.location.href = "/verifier/completed"; }, 1200);
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to approve verification")),
+  });
 
-  const handleReject = async () => {
-    if (!id) return;
-    try {
-      await bankingService.updateVerificationStatus(id, 'rejected', notes);
+  const rejectMutation = useMutation({
+    mutationFn: () => bankingService.updateVerificationStatus(id ?? "", "rejected", notes),
+    onSuccess: () => {
       toast.success("Verification rejected");
-      setTimeout(() => window.location.href = "/verifier/dashboard", 1500);
-    } catch (error) {
-      console.error("Failed to reject verification", error);
-      toast.error("Failed to reject verification");
-    }
-  };
+      setTimeout(() => { window.location.href = "/verifier/completed"; }, 1200);
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to reject verification")),
+  });
 
   if (isLoading) {
     return (
@@ -146,7 +141,7 @@ export default function DocumentReview() {
   }
 
   const details = job.details ?? {};
-  const documentUrl = typeof details.documentUrl === 'string' ? details.documentUrl : "/placeholder-passport.png";
+  const documentUrl = typeof details.documentUrl === 'string' ? details.documentUrl : null;
   const documentType = typeof details.documentType === 'string' ? details.documentType : "Identity Document";
   const requesterName = details.firstName ? `${details.firstName} ${details.lastName}` : "Unknown Subject";
 
@@ -170,7 +165,7 @@ export default function DocumentReview() {
                 <span className="font-mono font-medium">{formatTime(elapsedTime)}</span>
             </div>
             <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="text-red-500 hover:text-red-600 border-red-200 hover:bg-red-50" onClick={handleReject}>
+                <Button variant="outline" size="sm" className="text-red-500 hover:text-red-600 border-red-200 hover:bg-red-50" onClick={() => rejectMutation.mutate()} disabled={rejectMutation.isPending}>
                     <XCircle className="h-4 w-4 mr-2" /> Reject
                 </Button>
                 <Button variant="outline" size="sm">
@@ -213,12 +208,18 @@ export default function DocumentReview() {
                         transformOrigin: "center center"
                     }}
                 >
-                    <img 
-                        src={documentUrl} 
-                        alt="Document to review" 
+                    {documentUrl ? (
+                      <img
+                        src={documentUrl}
+                        alt="Document to review"
                         className="max-w-full rounded-lg"
                         style={{ maxHeight: 'calc(100vh - 12rem)' }}
-                    />
+                      />
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-border/60 p-8 text-sm text-muted-foreground bg-card/50">
+                        Document preview URL is not provided by backend. Continue review with extracted fields and checklist.
+                      </div>
+                    )}
                 </motion.div>
             </div>
         </div>
@@ -377,7 +378,7 @@ export default function DocumentReview() {
                             </div>
                             <DialogFooter>
                                 <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)}>Cancel</Button>
-                                <Button onClick={handleApprove} disabled={!confirmChecked}>Confirm Approval</Button>
+                                <Button onClick={() => approveMutation.mutate()} disabled={!confirmChecked || approveMutation.isPending}>Confirm Approval</Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
