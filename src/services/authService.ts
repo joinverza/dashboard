@@ -1,6 +1,10 @@
 import type { UserRole } from "@/features/auth/AuthContext";
-
-const AUTH_STORAGE_KEY = "verza:auth:session";
+import { env } from "@/config/env";
+import {
+  readSession as readSessionState,
+  writeSession as writeSessionState,
+  type SessionState,
+} from "@/auth/sessionStore";
 
 type BackendRole = UserRole;
 type MfaMethod = "totp" | "webauthn" | "recovery_code";
@@ -212,7 +216,7 @@ const request = async <T>(
   role?: BackendRole
 ): Promise<{ status: number; payload: ApiSuccess<T> | ApiFailure | null }> => {
   const normalizedPath = normalizeEndpointPath(path);
-  const authBaseUrl = normalizeAuthBaseUrl(import.meta.env.VITE_BANKING_API_BASE_URL || "", role);
+  const authBaseUrl = normalizeAuthBaseUrl(env.ontiverAuthBaseUrl || env.ontiverApiBaseUrl || "", role);
   
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -255,24 +259,11 @@ const toDisplayName = (email: string): string => {
 };
 
 export const saveSession = (session: AuthSession | null): void => {
-  if (typeof window === "undefined") return;
-  if (!session) {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
-    return;
-  }
-  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+  writeSessionState(session as SessionState | null);
 };
 
 export const getStoredSession = (): AuthSession | null => {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as AuthSession;
-  } catch {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
-    return null;
-  }
+  return readSessionState() as AuthSession | null;
 };
 
 export const toSession = (tokens: AuthTokenResponse): AuthSession => ({

@@ -23,16 +23,21 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
+import { useAuth } from '@/features/auth/AuthContext';
 
 export default function Analytics() {
+  const { hasPermission } = useAuth();
   const queryClient = useQueryClient();
+  const canReadAnalytics = hasPermission("admin:read") && hasPermission("analytics:read");
   const statsQuery = useQuery({
     queryKey: ["admin", "analytics", "verification-stats"],
     queryFn: () => bankingService.getVerificationStats(),
+    enabled: canReadAnalytics,
   });
   const reportsQuery = useQuery({
     queryKey: ["admin", "analytics", "reports"],
     queryFn: () => bankingService.listReports(),
+    enabled: canReadAnalytics,
   });
 
   const handleGenerateReport = async (type: 'compliance' | 'audit' | 'activity', name: string) => {
@@ -58,6 +63,18 @@ export default function Analytics() {
     },
   });
   const stats = statsQuery.data;
+  const isForbidden =
+    (statsQuery.error as { status?: number } | null)?.status === 403 ||
+    (reportsQuery.error as { status?: number } | null)?.status === 403;
+
+  if (!canReadAnalytics || isForbidden) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-3xl font-bold tracking-tight">Analytics & Reports</h1>
+        <p className="text-muted-foreground">You do not have access to perform this action.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -22,5 +22,6 @@ describe('role navigation deep-links', () => {
     expect(hasPath(paths, '/admin/tools/auditor')).toBe(true);
     expect(hasPath(paths, '/admin/tools/support')).toBe(true);
     expect(hasPath(paths, '/admin/tools/developer')).toBe(true);
+    expect(hasPath(paths, '/admin/security')).toBe(true);
   });
 });

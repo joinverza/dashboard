@@ -10,6 +10,13 @@ import type {
   VerifierProfile,
 } from '@/types/banking';
 
+const isForbiddenError = (error: unknown): boolean => {
+  if (typeof error === 'object' && error !== null && 'status' in error) {
+    return (error as { status?: unknown }).status === 403;
+  }
+  return error instanceof Error && error.message.includes('403');
+};
+
 const queryKeys = {
   userDashboard: ['banking', 'dashboard', 'user'] as const,
   verifierDashboard: ['banking', 'dashboard', 'verifier'] as const,
@@ -151,7 +158,25 @@ export const useAdminDashboardData = () => {
     queries: [
       {
         queryKey: [...queryKeys.adminDashboard, 'stats'],
-        queryFn: () => bankingService.getVerificationStats(),
+        queryFn: async () => {
+          try {
+            return await bankingService.getVerificationStats();
+          } catch (error) {
+            if (isForbiddenError(error)) {
+              return {
+                totalVerifications: 0,
+                approved: 0,
+                rejected: 0,
+                pending: 0,
+                averageTime: 0,
+                successful: 0,
+                failed: 0,
+                dailyBreakdown: [],
+              } satisfies VerificationStatsResponse;
+            }
+            throw error;
+          }
+        },
         staleTime: 30_000,
         refetchInterval: 30_000,
       },
@@ -175,7 +200,16 @@ export const useAdminDashboardData = () => {
       },
       {
         queryKey: [...queryKeys.adminDashboard, 'geo'],
-        queryFn: () => bankingService.getGeoDistribution(),
+        queryFn: async () => {
+          try {
+            return await bankingService.getGeoDistribution();
+          } catch (error) {
+            if (isForbiddenError(error)) {
+              return [] as GeoDistributionItem[];
+            }
+            throw error;
+          }
+        },
         staleTime: 60_000,
         refetchInterval: 60_000,
       },

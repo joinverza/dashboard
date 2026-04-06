@@ -83,6 +83,7 @@ const AdminUsers = lazy(() => import("@/features/admin/pages/AdminUsers"));
 const AdminComplianceReports = lazy(() => import("@/features/admin/pages/ComplianceReports"));
 const AdminAuditLogs = lazy(() => import("@/features/admin/pages/AuditLogs"));
 const AdminContentModeration = lazy(() => import("@/features/admin/pages/ContentModeration"));
+const AdminSecurityConsole = lazy(() => import("@/features/admin/security/AdminSecurityConsole"));
 
 const MessagePage = lazy(() => import("@/pages/Message"));
 const NotificationsPage = lazy(() => import("@/pages/Notifications"));
@@ -307,6 +308,7 @@ function Router() {
             <Route path="/admin/enterprises" component={AdminEnterpriseManagement} />
             <Route path="/admin/enterprises/:id" component={AdminEnterpriseDetail} />
             <Route path="/admin/system" component={AdminSystemMonitor} />
+            <Route path="/admin/security" component={AdminSecurityConsole} />
             <Route path="/admin/disputes" component={AdminDisputes} />
             <Route path="/admin/disputes/:id" component={AdminDisputeDetail} />
             <Route path="/admin/analytics" component={AdminAnalytics} />

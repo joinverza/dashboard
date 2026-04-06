@@ -91,5 +91,6 @@ export const adminNavItems: NavItem[] = [
   { path: "/admin/disputes", label: "Disputes", icon: Gavel },
   { path: "/admin/governance", label: "Governance", icon: Vote },
   { path: "/admin/system", label: "System", icon: Server },
+  { path: "/admin/security", label: "Security", icon: Shield },
   { path: "/admin/settings", label: "Settings", icon: Settings },
 ];

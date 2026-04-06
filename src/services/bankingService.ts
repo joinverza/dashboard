@@ -170,6 +170,9 @@ import type {
 } from '../types/banking';
 import { getStoredSession, refreshRequest, saveSession, toSession } from './authService';
 import { z } from 'zod';
+import { env } from '../config/env';
+import { runWithStepUpRetry, isStepUpFresh } from '../auth/stepUp';
+import { HIGH_RISK_OPERATIONS, type HighRiskOperationConfig } from '../types/security';
 
 const API_PATH = '/api/v1/banking';
 const API_KEY_STORAGE_KEY = 'verza:banking:apiKey';
@@ -201,7 +204,7 @@ const normalizeBaseUrl = (value: string): string => {
   return `${cleaned}${API_PATH}`;
 };
 
-const BASE_URL = normalizeBaseUrl(import.meta.env.VITE_BANKING_API_BASE_URL || '');
+const BASE_URL = normalizeBaseUrl(env.ontiverBankingBaseUrl || env.ontiverApiBaseUrl || '');
 const ROOT_BASE_URL = BASE_URL.endsWith(API_PATH) ? BASE_URL.slice(0, -API_PATH.length) : BASE_URL;
 const ENV_API_KEY = (import.meta.env.VITE_BANKING_API_KEY || '').trim();
 const ENV_ADMIN_TOKEN = (import.meta.env.VITE_BANKING_ADMIN_TOKEN || '').trim();
@@ -352,6 +355,7 @@ export const clearBankingApiKey = (): void => removeStorage(API_KEY_STORAGE_KEY)
 export const setBankingAdminToken = (token: string): void => writeStorage(ADMIN_TOKEN_STORAGE_KEY, token.trim());
 
 const getAdminToken = (): string => readStorage(ADMIN_TOKEN_STORAGE_KEY) || ENV_ADMIN_TOKEN;
+export const getBankingAdminToken = (): string => getAdminToken();
 const getAuthAccessToken = (): string => {
   if (typeof window === 'undefined') return '';
   const raw = window.localStorage.getItem('verza:auth:session');
@@ -474,6 +478,45 @@ const shouldRetry = (method: string, status: number, retryAttempt: number): bool
   return retryAttempt <= 3;
 };
 
+const toPathRegex = (pathPattern: string): RegExp =>
+  new RegExp(`^${pathPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/:[^/]+/g, '[^/]+')}$`);
+
+const highRiskRouteMatchers = HIGH_RISK_OPERATIONS.map((item) => ({
+  config: item,
+  regex: toPathRegex(item.pathPattern),
+}));
+
+const getHighRiskConfig = (method: string, path: string): HighRiskOperationConfig | null => {
+  const upperMethod = method.toUpperCase();
+  for (const route of highRiskRouteMatchers) {
+    if (route.config.method === upperMethod && route.regex.test(path)) {
+      return route.config;
+    }
+  }
+  return null;
+};
+
+const applySecurityHeaders = (
+  method: string,
+  path: string,
+  headers: Record<string, string>,
+): Record<string, string> => {
+  const config = getHighRiskConfig(method, path);
+  if (!config || !config.requiresNonce || !env.securityNonceEnabled) {
+    return headers;
+  }
+  return {
+    ...headers,
+    'X-Ontiver-Nonce': generateUuid(),
+    'X-Ontiver-Timestamp': String(Math.floor(Date.now() / 1000)),
+  };
+};
+
+export const __securityTestables = {
+  applySecurityHeaders,
+  getHighRiskConfig,
+};
+
 const unwrapEnvelope = <T>(status: number, payload: unknown): { value: T; envelopeError: ApiErrorShape | null } => {
   if (isRecord(payload) && typeof payload.success === 'boolean') {
     if (!payload.success) {
@@ -547,17 +590,18 @@ const performRequest = async <T>(
   let refreshedAfterUnauthorized = false;
   while (true) {
     try {
+      const requestHeaders = applySecurityHeaders(method, normalizedPath, { ...headers });
       if (accessToken) {
-        headers.Authorization = `Bearer ${accessToken}`;
+        requestHeaders.Authorization = `Bearer ${accessToken}`;
       } else if (apiKey) {
-        headers.Authorization = `Bearer ${apiKey}`;
+        requestHeaders.Authorization = `Bearer ${apiKey}`;
       } else {
-        delete headers.Authorization;
+        delete requestHeaders.Authorization;
       }
 
       const res = await fetch(`${baseUrl}${normalizedPath}`, {
         method,
-        headers,
+        headers: requestHeaders,
         body: body === undefined ? undefined : JSON.stringify(body),
         credentials: 'include',
       });
@@ -697,6 +741,21 @@ const request = async <T>(
   body?: unknown,
   options?: { allowBootstrapAdminToken?: boolean; idempotent?: boolean }
 ): Promise<T> => performRequest<T>(BASE_URL, method, path, body, options);
+
+const runHighRiskMutation = async <T>(
+  method: 'POST' | 'PATCH',
+  path: string,
+  op: () => Promise<T>,
+): Promise<T> => {
+  const highRisk = getHighRiskConfig(method, path);
+  if (!highRisk || !highRisk.requiresStepUp || !env.securityStepUpEnabled) {
+    return op();
+  }
+  if (isStepUpFresh()) {
+    return op();
+  }
+  return runWithStepUpRetry(op, true);
+};
 
 const primitiveRequest = async <T>(
   method: string,
@@ -1628,16 +1687,18 @@ export const bankingService = {
   },
 
   createReport: async (data: ReportCreateRequest): Promise<ReportResponse> => {
-    const result = await request<JsonRecord>('POST', '/reports/create', {
-      reportType: data.reportType || (data.type === 'compliance' ? 'compliance_summary' : data.type === 'audit' ? 'verification_summary' : 'risk_distribution'),
-      dateRange: {
-        from: data.dateRange.from || data.dateRange.start || '',
-        to: data.dateRange.to || data.dateRange.end || '',
-      },
-      filters: data.filters,
-      format: data.format || 'csv',
-      includeCharts: data.includeCharts ?? false,
-    });
+    const result = await runHighRiskMutation('POST', '/reports/create', () =>
+      request<JsonRecord>('POST', '/reports/create', {
+        reportType: data.reportType || (data.type === 'compliance' ? 'compliance_summary' : data.type === 'audit' ? 'verification_summary' : 'risk_distribution'),
+        dateRange: {
+          from: data.dateRange.from || data.dateRange.start || '',
+          to: data.dateRange.to || data.dateRange.end || '',
+        },
+        filters: data.filters,
+        format: data.format || 'csv',
+        includeCharts: data.includeCharts ?? false,
+      }),
+    );
     return {
       reportId: String(result.reportId ?? ''),
       status: (result.status as ReportResponse['status']) || 'generating',
@@ -3114,7 +3175,10 @@ export const bankingService = {
   },
 
   resolveDispute: async (disputeId: string, body: DisputeResolveBody): Promise<{ status: string }> => {
-    const payload = await request<JsonRecord>('POST', `/disputes/${disputeId}/resolve`, body, { idempotent: false });
+    const path = `/disputes/${disputeId}/resolve`;
+    const payload = await runHighRiskMutation('POST', path, () =>
+      request<JsonRecord>('POST', path, body, { idempotent: false }),
+    );
     return { status: String(payload.status ?? 'resolved') };
   },
 
@@ -3142,7 +3206,9 @@ export const bankingService = {
   },
 
   createGovernanceProposal: async (body: GovernanceProposalCreateBody): Promise<GovernanceProposal> => {
-    const payload = await request<JsonRecord>('POST', '/governance/proposals', body, { idempotent: false });
+    const payload = await runHighRiskMutation('POST', '/governance/proposals', () =>
+      request<JsonRecord>('POST', '/governance/proposals', body, { idempotent: false }),
+    );
     return {
       proposalId: String(payload.proposalId ?? payload.id ?? generateToken('proposal')),
       title: String(payload.title ?? body.title),
@@ -3535,7 +3601,10 @@ export const bankingService = {
   },
 
   updateEnterpriseStatus: async (enterpriseId: string, status: string): Promise<{ status: string }> => {
-    const payload = await request<JsonRecord>('PATCH', `/enterprises/${enterpriseId}`, { status }, { idempotent: false });
+    const path = `/enterprises/${enterpriseId}`;
+    const payload = await runHighRiskMutation('PATCH', path, () =>
+      request<JsonRecord>('PATCH', path, { status }, { idempotent: false }),
+    );
     return { status: String(payload.status ?? status) };
   },
 

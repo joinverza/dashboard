@@ -13,6 +13,7 @@ import { ChatModal } from "@/components/chat/ChatModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { StepUpPromptDialog } from "@/components/auth/StepUpPromptDialog";
 
 interface LayoutProps {
   children: ReactNode;
@@ -53,6 +54,7 @@ export default function Layout({ children }: LayoutProps) {
     "/admin/verifiers": "verifiers:manage",
     "/admin/enterprises": "enterprises:manage",
     "/admin/system": "system:manage",
+    "/admin/security": "admin:read",
     "/admin/audit": "audit:read",
     "/admin/tools/verifications": "verification:read",
     "/admin/tools/operations": "documents:write",
@@ -263,6 +265,7 @@ export default function Layout({ children }: LayoutProps) {
           <Button onClick={dismissMfaBackupCodes}>I have saved these codes</Button>
         </DialogContent>
       </Dialog>
+      <StepUpPromptDialog />
     </div>
   );
 }
