@@ -12,7 +12,6 @@ import {
   Award,
   User,
   Users,
-  Upload,
   FileText,
   Key,
   Gavel,
@@ -51,17 +50,10 @@ export const verifierNavItems: NavItem[] = [
 
 export const enterpriseNavItems: NavItem[] = [
   { path: "/enterprise", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/enterprise/bulk", label: "Bulk Verification", icon: Upload },
-  { path: "/enterprise/kyb", label: "KYB Wizard", icon: Shield },
-  { path: "/enterprise/mono", label: "Mono Accounts", icon: Wallet },
-  { path: "/enterprise/requests", label: "Requests", icon: FileText },
   { path: "/enterprise/verifications", label: "Verifications", icon: Shield },
-  { path: "/enterprise/compliance/workflows", label: "Case Workflows", icon: FileText },
-  { path: "/enterprise/team", label: "Team", icon: Users },
-  { path: "/enterprise/tools", label: "Operations Hub", icon: Wrench },
-  { path: "/enterprise/api", label: "API", icon: Key },
-  { path: "/enterprise/billing", label: "Billing", icon: DollarSign },
-  { path: "/enterprise/settings", label: "Settings", icon: Settings },
+  { path: "/enterprise/users", label: "Users", icon: Users },
+  { path: "/enterprise/reports", label: "Reports", icon: BarChart3 },
+  { path: "/enterprise/platform", label: "Platform", icon: Wrench },
 ];
 
 export const managerNavItems: NavItem[] = [

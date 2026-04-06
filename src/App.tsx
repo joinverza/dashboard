@@ -37,6 +37,10 @@ const EnterpriseBulkVerification = lazy(() => import("@/features/enterprise/page
 const EnterpriseVerificationRequests = lazy(() => import("@/features/enterprise/pages/VerificationRequests"));
 const EnterpriseVerificationTools = lazy(() => import("@/features/enterprise/pages/VerificationTools"));
 const EnterpriseVerifications = lazy(() => import("@/features/enterprise/pages/Verifications"));
+const EnterpriseVerificationsHub = lazy(() => import("@/features/enterprise/pages/VerificationsHub"));
+const EnterpriseUsers = lazy(() => import("@/features/enterprise/pages/Users"));
+const EnterpriseReportsHub = lazy(() => import("@/features/enterprise/pages/ReportsHub"));
+const EnterprisePlatformHub = lazy(() => import("@/features/enterprise/pages/PlatformHub"));
 const EnterpriseVerificationDetail = lazy(() => import("@/features/enterprise/pages/VerificationDetail"));
 const EnterpriseApiManagement = lazy(() => import("@/features/enterprise/pages/ApiManagement"));
 const EnterpriseApiDocumentation = lazy(() => import("@/features/enterprise/pages/ApiDocumentation"));
@@ -247,7 +251,11 @@ function Router() {
             <Route path="/enterprise" component={EnterpriseDashboard} />
             <Route path="/enterprise/bulk" component={EnterpriseBulkVerification} />
             <Route path="/enterprise/requests" component={EnterpriseVerificationRequests} />
-            <Route path="/enterprise/verifications" component={EnterpriseVerifications} />
+            <Route path="/enterprise/verifications" component={EnterpriseVerificationsHub} />
+            <Route path="/enterprise/verifications/workbench" component={EnterpriseVerifications} />
+            <Route path="/enterprise/users" component={EnterpriseUsers} />
+            <Route path="/enterprise/reports" component={EnterpriseReportsHub} />
+            <Route path="/enterprise/platform" component={EnterprisePlatformHub} />
             <Route path="/enterprise/tools" component={EnterpriseVerificationTools} />
             <Route path="/enterprise/requests/:id" component={EnterpriseVerificationDetail} />
             <Route path="/enterprise/api" component={EnterpriseApiManagement} />
