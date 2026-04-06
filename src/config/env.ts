@@ -5,6 +5,17 @@ const sanitize = (value: string | undefined): string =>
     .replace(/\s+/g, "")
     .replace(/\/+$/, "");
 
+const isLikelyPlaceholder = (value: string): boolean => value.includes("${") || value.includes("}");
+const isAbsoluteHttpUrl = (value: string): boolean => /^https?:\/\//i.test(value);
+
+const normalizeUrlEnv = (value: string | undefined): string => {
+  const cleaned = sanitize(value);
+  if (!cleaned) return "";
+  if (isLikelyPlaceholder(cleaned)) return "";
+  if (!isAbsoluteHttpUrl(cleaned)) return "";
+  return cleaned;
+};
+
 const asBool = (value: string | undefined, fallback: boolean): boolean => {
   if (typeof value !== "string") return fallback;
   const normalized = value.trim().toLowerCase();
@@ -15,9 +26,9 @@ const asBool = (value: string | undefined, fallback: boolean): boolean => {
 
 const API_PATH = "/api/v1/banking";
 
-const rawApiBase = sanitize(import.meta.env.VITE_ONTIVER_API_BASE_URL || import.meta.env.VITE_BANKING_API_BASE_URL || "");
-const rawAuthBase = sanitize(import.meta.env.VITE_ONTIVER_AUTH_BASE_URL || rawApiBase);
-const rawBankingBase = sanitize(import.meta.env.VITE_ONTIVER_BANKING_BASE_URL || rawApiBase);
+const rawApiBase = normalizeUrlEnv(import.meta.env.VITE_ONTIVER_API_BASE_URL || import.meta.env.VITE_BANKING_API_BASE_URL || "");
+const rawAuthBase = normalizeUrlEnv(import.meta.env.VITE_ONTIVER_AUTH_BASE_URL) || rawApiBase;
+const rawBankingBase = normalizeUrlEnv(import.meta.env.VITE_ONTIVER_BANKING_BASE_URL) || rawApiBase;
 
 const normalizeBankingBase = (base: string): string => {
   if (!base) return API_PATH;
@@ -36,8 +47,15 @@ export const env = {
 
 export const envValidationWarnings = (() => {
   const warnings: string[] = [];
+  const authRaw = sanitize(import.meta.env.VITE_ONTIVER_AUTH_BASE_URL);
+  const bankingRaw = sanitize(import.meta.env.VITE_ONTIVER_BANKING_BASE_URL);
+  if (authRaw && isLikelyPlaceholder(authRaw)) {
+    warnings.push("VITE_ONTIVER_AUTH_BASE_URL contains an unresolved placeholder. Use a full URL value.");
+  }
+  if (bankingRaw && isLikelyPlaceholder(bankingRaw)) {
+    warnings.push("VITE_ONTIVER_BANKING_BASE_URL contains an unresolved placeholder. Use a full URL value.");
+  }
   if (!env.ontiverAuthBaseUrl) warnings.push("Missing VITE_ONTIVER_AUTH_BASE_URL (or VITE_ONTIVER_API_BASE_URL).");
   if (!env.ontiverBankingBaseUrl) warnings.push("Missing VITE_ONTIVER_BANKING_BASE_URL (or VITE_ONTIVER_API_BASE_URL).");
   return warnings;
 })();
-

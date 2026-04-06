@@ -217,6 +217,13 @@ const request = async <T>(
 ): Promise<{ status: number; payload: ApiSuccess<T> | ApiFailure | null }> => {
   const normalizedPath = normalizeEndpointPath(path);
   const authBaseUrl = normalizeAuthBaseUrl(env.ontiverAuthBaseUrl || env.ontiverApiBaseUrl || "", role);
+  if (!/^https?:\/\//i.test(authBaseUrl)) {
+    throw new AuthApiError(
+      0,
+      "auth_internal_error",
+      "Invalid frontend auth API configuration. Set VITE_ONTIVER_AUTH_BASE_URL to a full https URL.",
+    );
+  }
   
   const headers: Record<string, string> = {
     Accept: "application/json",
