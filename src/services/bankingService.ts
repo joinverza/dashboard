@@ -1647,7 +1647,7 @@ export const bankingService = {
   },
 
   exportSignedAuditLogs: async (filters: AuditExplorerFilters): Promise<SignedAuditExportResponse> => {
-    const result = await request<JsonRecord>('POST', '/audit/logs/export-signed', filters, { idempotent: false });
+    const result = await request<JsonRecord>('POST', '/audit/export', filters, { idempotent: false });
     return {
       exportId: String(result.exportId ?? generateToken('audit-export')),
       signature: typeof result.signature === 'string' ? result.signature : generateToken('sig'),
@@ -3304,7 +3304,7 @@ export const bankingService = {
 
   listModerationQueue: async (params?: { status?: string; page?: number; limit?: number }): Promise<PagedResult<ModerationItem>> => {
     const query = buildQueryString({ status: params?.status, page: params?.page, limit: params?.limit });
-    const payload = await request<unknown>('GET', `/content/moderation/queue${query}`, undefined, { idempotent: false });
+    const payload = await request<unknown>('GET', `/admin/content${query}`, undefined, { idempotent: false });
     return normalizePagedResult(payload, (item) => ({
       contentId: String(item.contentId ?? item.id ?? generateToken('content')),
       contentType: String(item.contentType ?? item.type ?? 'message'),
@@ -3318,8 +3318,8 @@ export const bankingService = {
   },
 
   listModerationHistory: async (params?: { page?: number; limit?: number }): Promise<PagedResult<ModerationItem>> => {
-    const query = buildQueryString({ page: params?.page, limit: params?.limit });
-    const payload = await request<unknown>('GET', `/content/moderation/history${query}`, undefined, { idempotent: false });
+    const query = buildQueryString({ status: 'reviewed', page: params?.page, limit: params?.limit });
+    const payload = await request<unknown>('GET', `/admin/content${query}`, undefined, { idempotent: false });
     return normalizePagedResult(payload, (item) => ({
       contentId: String(item.contentId ?? item.id ?? generateToken('content')),
       contentType: String(item.contentType ?? item.type ?? 'message'),
@@ -3333,8 +3333,15 @@ export const bankingService = {
   },
 
   listModerationRules: async (): Promise<ModerationRule[]> => {
-    const payload = await request<unknown>('GET', '/content/moderation/rules', undefined, { idempotent: false });
-    const items = Array.isArray(payload) ? payload : isRecord(payload) && Array.isArray(payload.items) ? payload.items : [];
+    const payload = await request<unknown>('GET', '/admin/content', undefined, { idempotent: false });
+    const items =
+      isRecord(payload) && Array.isArray(payload.rules)
+        ? payload.rules
+        : Array.isArray(payload)
+          ? payload
+          : isRecord(payload) && Array.isArray(payload.items)
+            ? payload.items
+            : [];
     return items.filter(isRecord).map((item) => ({
       ruleId: String(item.ruleId ?? item.id ?? generateToken('rule')),
       name: String(item.name ?? 'Rule'),
@@ -3345,7 +3352,7 @@ export const bankingService = {
   },
 
   moderateContent: async (contentId: string, body: ModerationActionBody): Promise<{ status: string }> => {
-    const payload = await request<JsonRecord>('POST', `/content/moderation/${contentId}/action`, body, { idempotent: false });
+    const payload = await request<JsonRecord>('POST', `/admin/content/${contentId}/moderate`, body, { idempotent: false });
     return { status: String(payload.status ?? body.action) };
   },
 
@@ -3421,17 +3428,18 @@ export const bankingService = {
   },
 
   getVerifierStakingOverview: async (): Promise<VerifierStakingOverview> => {
-    const payload = await request<JsonRecord>('GET', '/verifier/staking/overview', undefined, { idempotent: false });
-    const tiers = Array.isArray(payload.tiers) ? payload.tiers : [];
+    const payload = await request<JsonRecord>('GET', '/verifier/staking', undefined, { idempotent: false });
+    const overview = isRecord(payload.overview) ? payload.overview : payload;
+    const tiers = Array.isArray(overview.tiers) ? overview.tiers : [];
     return {
-      stakedAmount: Number(payload.stakedAmount ?? 0),
-      availableAmount: Number(payload.availableAmount ?? 0),
-      apy: Number(payload.apy ?? 0),
-      estimatedMonthlyReward: Number(payload.estimatedMonthlyReward ?? 0),
-      unstakePeriodDays: Number(payload.unstakePeriodDays ?? 14),
-      currentTier: String(payload.currentTier ?? 'Tier 1'),
-      nextTier: typeof payload.nextTier === 'string' ? payload.nextTier : undefined,
-      nextTierRequiredStake: typeof payload.nextTierRequiredStake === 'number' ? payload.nextTierRequiredStake : undefined,
+      stakedAmount: Number(overview.stakedAmount ?? 0),
+      availableAmount: Number(overview.availableAmount ?? 0),
+      apy: Number(overview.apy ?? 0),
+      estimatedMonthlyReward: Number(overview.estimatedMonthlyReward ?? 0),
+      unstakePeriodDays: Number(overview.unstakePeriodDays ?? 14),
+      currentTier: String(overview.currentTier ?? 'Tier 1'),
+      nextTier: typeof overview.nextTier === 'string' ? overview.nextTier : undefined,
+      nextTierRequiredStake: typeof overview.nextTierRequiredStake === 'number' ? overview.nextTierRequiredStake : undefined,
       tiers: tiers.filter(isRecord).map((item) => ({
         tier: String(item.tier ?? 'Tier'),
         requiredStake: Number(item.requiredStake ?? 0),
@@ -3441,8 +3449,15 @@ export const bankingService = {
   },
 
   listVerifierStakingHistory: async (): Promise<VerifierStakingHistoryItem[]> => {
-    const payload = await request<unknown>('GET', '/verifier/staking/history', undefined, { idempotent: false });
-    const items = Array.isArray(payload) ? payload : isRecord(payload) && Array.isArray(payload.items) ? payload.items : [];
+    const payload = await request<unknown>('GET', '/verifier/staking', undefined, { idempotent: false });
+    const items =
+      isRecord(payload) && Array.isArray(payload.history)
+        ? payload.history
+        : Array.isArray(payload)
+          ? payload
+          : isRecord(payload) && Array.isArray(payload.items)
+            ? payload.items
+            : [];
     return items.filter(isRecord).map((item) => ({
       stakeEventId: String(item.stakeEventId ?? item.id ?? generateToken('stake')),
       action: String(item.action ?? 'stake'),
@@ -3453,18 +3468,18 @@ export const bankingService = {
   },
 
   stakeVerifierTokens: async (body: VerifierStakeActionBody): Promise<{ status: string }> => {
-    const payload = await request<JsonRecord>('POST', '/verifier/staking/stake', body, { idempotent: false });
+    const payload = await request<JsonRecord>('POST', '/verifier/staking/actions', { ...body, action: 'stake' }, { idempotent: false });
     return { status: String(payload.status ?? 'queued') };
   },
 
   unstakeVerifierTokens: async (body: VerifierStakeActionBody): Promise<{ status: string }> => {
-    const payload = await request<JsonRecord>('POST', '/verifier/staking/unstake', body, { idempotent: false });
+    const payload = await request<JsonRecord>('POST', '/verifier/staking/actions', { ...body, action: 'unstake' }, { idempotent: false });
     return { status: String(payload.status ?? 'queued') };
   },
 
   listSupportArticles: async (params?: { category?: string; search?: string }): Promise<SupportArticle[]> => {
     const query = buildQueryString({ category: params?.category, search: params?.search });
-    const payload = await request<unknown>('GET', `/support/articles${query}`, undefined, { idempotent: false });
+    const payload = await request<unknown>('GET', `/verifier/help/articles${query}`, undefined, { idempotent: false });
     const items = Array.isArray(payload) ? payload : isRecord(payload) && Array.isArray(payload.items) ? payload.items : [];
     return items.filter(isRecord).map((item) => ({
       articleId: String(item.articleId ?? item.id ?? generateToken('article')),
@@ -3475,7 +3490,7 @@ export const bankingService = {
   },
 
   createSupportTicket: async (body: SupportTicketCreateBody): Promise<SupportTicketRecord> => {
-    const payload = await request<JsonRecord>('POST', '/support/tickets', body, { idempotent: false });
+    const payload = await request<JsonRecord>('POST', '/verifier/help/tickets', body, { idempotent: false });
     return {
       ticketId: String(payload.ticketId ?? payload.id ?? generateToken('ticket')),
       subject: String(payload.subject ?? body.subject),
@@ -3486,7 +3501,7 @@ export const bankingService = {
 
   listSupportTickets: async (params?: { page?: number; limit?: number; status?: string }): Promise<PagedResult<SupportTicketRecord>> => {
     const query = buildQueryString({ page: params?.page, limit: params?.limit, status: params?.status });
-    const payload = await request<unknown>('GET', `/support/tickets${query}`, undefined, { idempotent: false });
+    const payload = await request<unknown>('GET', `/verifier/help/tickets${query}`, undefined, { idempotent: false });
     return normalizePagedResult(payload, (item) => ({
       ticketId: String(item.ticketId ?? item.id ?? generateToken('ticket')),
       subject: String(item.subject ?? 'Support Ticket'),
