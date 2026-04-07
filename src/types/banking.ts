@@ -1183,12 +1183,57 @@ export interface PrimitiveModelStatus {
   modelVersion?: string;
 }
 
+export interface PrimitiveReloadRequest {
+  model_path?: string | null;
+}
+
+export interface PrimitiveProxyTokenRequest {
+  documentType?: string;
+}
+
+export interface PrimitiveProxyTokenResponse {
+  token?: string;
+  expiresAt?: string;
+  [key: string]: unknown;
+}
+
 export interface AccountVerificationResponse {
   verificationId: string;
   status: string;
   accountName?: string;
   bankName?: string;
   confidence?: number;
+}
+
+export interface AlertInvestigateRequest {
+  analyst?: string | null;
+  notes?: string | null;
+}
+
+export interface AlertResolveRequest {
+  resolution: string;
+  notes?: string | null;
+}
+
+export interface AccountVerifyRequest {
+  customerId: string;
+  accountNumber: string;
+  routingNumber: string;
+  accountHolderName: string;
+  verificationMethod: string;
+}
+
+export interface AccountInstantVerifyRequest {
+  customerId: string;
+  publicToken: string;
+  accountHolderName?: string | null;
+}
+
+export interface AccountMicroDepositsRequest {
+  customerId: string;
+  accountNumber: string;
+  routingNumber: string;
+  accountHolderName: string;
 }
 
 export interface MonitoringToggleResponse {

@@ -259,4 +259,99 @@ describe('bankingService operations hub integration', () => {
     expect(fetchMock.mock.calls.some((call) => String(call[0]).includes('/api/v1/banking/verifier/help/tickets'))).toBe(true);
     expect(fetchMock.mock.calls.some((call) => String(call[0]).includes('/api/v1/banking/admin/content/c1/moderate'))).toBe(true);
   });
+
+  it('uses alerts investigate/resolve endpoints and geological analytics endpoint from compapi', async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      const requestUrl = String(url);
+      if (requestUrl.includes('/api/v1/banking/alerts/alert-1')) {
+        return jsonResponse(200, {
+          success: true,
+          data: {
+            id: 'alert-1',
+            type: 'alert',
+            title: 'Suspicious activity',
+            message: 'Potential fraud',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            read: false,
+          },
+        });
+      }
+      if (requestUrl.includes('/api/v1/banking/alerts/alert-1/investigate') && init?.method === 'POST') {
+        return jsonResponse(200, { success: true, data: { status: 'investigating' } });
+      }
+      if (requestUrl.includes('/api/v1/banking/alerts/alert-1/resolve') && init?.method === 'POST') {
+        return jsonResponse(200, { success: true, data: { status: 'resolved' } });
+      }
+      if (requestUrl.includes('/api/v1/banking/analytics/geographical')) {
+        return jsonResponse(200, { success: true, data: [{ region: 'US', percentage: 60 }] });
+      }
+      return jsonResponse(404, { error: { message: 'not found' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const details = await bankingService.getAlertDetails('alert-1');
+    const investigate = await bankingService.investigateAlert('alert-1', { analyst: 'ops@bank.com', notes: 'triaging' });
+    const resolve = await bankingService.resolveAlert('alert-1', { resolution: 'false_positive', notes: 'closed' });
+    const geo = await bankingService.getGeographicalAnalytics();
+
+    expect(details.id).toBe('alert-1');
+    expect(investigate.status).toBe('investigating');
+    expect(resolve.status).toBe('resolved');
+    expect(geo.length).toBeGreaterThan(0);
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes('/api/v1/banking/alerts/alert-1/investigate'))).toBe(true);
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes('/api/v1/banking/alerts/alert-1/resolve'))).toBe(true);
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes('/api/v1/banking/analytics/geographical'))).toBe(true);
+  });
+
+  it('uses account verify, instant verify, and micro-deposit endpoints with schema-compliant payloads', async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      const requestUrl = String(url);
+      if (requestUrl.includes('/api/v1/banking/account/verify') && init?.method === 'POST') {
+        return jsonResponse(200, { success: true, data: { verificationId: 'acct-1', status: 'pending' } });
+      }
+      if (requestUrl.includes('/api/v1/banking/account/instant-verify') && init?.method === 'POST') {
+        return jsonResponse(200, { success: true, data: { verificationId: 'acct-2', status: 'verified' } });
+      }
+      if (requestUrl.includes('/api/v1/banking/account/micro-deposits') && init?.method === 'POST') {
+        return jsonResponse(200, { success: true, data: { verificationId: 'acct-3', status: 'pending' } });
+      }
+      return jsonResponse(404, { error: { message: 'not found' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const verify = await bankingService.verifyBankAccount({
+      customerId: 'cust-1',
+      accountNumber: '1234567890',
+      routingNumber: '110000000',
+      accountHolderName: 'Jane Doe',
+      verificationMethod: 'micro_deposits',
+    });
+    const instant = await bankingService.instantVerifyBankAccount({
+      customerId: 'cust-1',
+      publicToken: 'public-token',
+      accountHolderName: 'Jane Doe',
+    });
+    const micro = await bankingService.verifyMicroDeposits({
+      customerId: 'cust-1',
+      accountNumber: '1234567890',
+      routingNumber: '110000000',
+      accountHolderName: 'Jane Doe',
+    });
+
+    expect(verify.verificationId).toBe('acct-1');
+    expect(instant.verificationId).toBe('acct-2');
+    expect(micro.verificationId).toBe('acct-3');
+  });
+
+  it('rejects invalid account verification payloads before request dispatch', async () => {
+    await expect(
+      bankingService.verifyBankAccount({
+        customerId: '',
+        accountNumber: '',
+        routingNumber: '',
+        accountHolderName: '',
+        verificationMethod: '',
+      }),
+    ).rejects.toThrow(/schema validation failed/i);
+  });
 });

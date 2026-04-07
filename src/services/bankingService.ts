@@ -1,3 +1,5 @@
+import type * as ClosureTypes from '@/types/closureEndpoints';
+
 import type {
   IndividualKYCRequest,
   IndividualKYCResponse,
@@ -78,7 +80,15 @@ import type {
   CaseRecord,
   PrimitiveHealth,
   PrimitiveModelStatus,
+  PrimitiveReloadRequest,
+  PrimitiveProxyTokenRequest,
+  PrimitiveProxyTokenResponse,
   AccountVerificationResponse,
+  AlertInvestigateRequest,
+  AlertResolveRequest,
+  AccountVerifyRequest,
+  AccountInstantVerifyRequest,
+  AccountMicroDepositsRequest,
   MonitoringToggleResponse,
   DueReviewItem,
   WatchlistEntry,
@@ -320,6 +330,42 @@ const bulkVerificationResponseSchema = z.object({
     requestId: z.string().min(1),
     verificationId: z.string().min(1),
   }).strict()),
+}).strict();
+const primitiveReloadRequestSchema = z.object({
+  model_path: z.string().min(1).nullable().optional(),
+}).strict();
+const primitiveProxyTokenRequestSchema = z.object({
+  documentType: z.string().min(1).optional(),
+}).strict();
+const primitiveProxyTokenResponseSchema = z.object({
+  token: z.string().optional(),
+  expiresAt: z.string().optional(),
+}).passthrough();
+const alertActionSchema = z.object({
+  analyst: z.string().min(1).nullable().optional(),
+  notes: z.string().min(1).nullable().optional(),
+}).strict();
+const alertResolveSchema = z.object({
+  resolution: z.string().min(1),
+  notes: z.string().min(1).nullable().optional(),
+}).strict();
+const accountVerifyRequestSchema = z.object({
+  customerId: z.string().min(1),
+  accountNumber: z.string().min(1),
+  routingNumber: z.string().min(1),
+  accountHolderName: z.string().min(1),
+  verificationMethod: z.string().min(1),
+}).strict();
+const accountInstantVerifyRequestSchema = z.object({
+  customerId: z.string().min(1),
+  publicToken: z.string().min(1),
+  accountHolderName: z.string().min(1).nullable().optional(),
+}).strict();
+const accountMicroDepositsRequestSchema = z.object({
+  customerId: z.string().min(1),
+  accountNumber: z.string().min(1),
+  routingNumber: z.string().min(1),
+  accountHolderName: z.string().min(1),
 }).strict();
 
 const generateToken = (prefix: string): string => {
@@ -2462,13 +2508,15 @@ export const bankingService = {
     return mapDashboardNotification(payload);
   },
 
-  investigateAlert: async (alertId: string, data?: Record<string, unknown>): Promise<{ status: string }> => {
-    const payload = await request<JsonRecord>('POST', `/alerts/${alertId}/investigate`, data ?? {}, { idempotent: false });
+  investigateAlert: async (alertId: string, data?: AlertInvestigateRequest): Promise<{ status: string }> => {
+    const body = parseWithSchema(alertActionSchema, data ?? {}, 'investigateAlert request');
+    const payload = await request<JsonRecord>('POST', `/alerts/${alertId}/investigate`, body, { idempotent: false });
     return { status: typeof payload.status === 'string' ? payload.status : 'investigating' };
   },
 
-  resolveAlert: async (alertId: string, data?: Record<string, unknown>): Promise<{ status: string }> => {
-    const payload = await request<JsonRecord>('POST', `/alerts/${alertId}/resolve`, data ?? {}, { idempotent: false });
+  resolveAlert: async (alertId: string, data: AlertResolveRequest): Promise<{ status: string }> => {
+    const body = parseWithSchema(alertResolveSchema, data, 'resolveAlert request');
+    const payload = await request<JsonRecord>('POST', `/alerts/${alertId}/resolve`, body, { idempotent: false });
     return { status: typeof payload.status === 'string' ? payload.status : 'resolved' };
   },
 
@@ -2854,8 +2902,9 @@ export const bankingService = {
     };
   },
 
-  verifyBankAccount: async (data: Record<string, unknown>): Promise<AccountVerificationResponse> => {
-    const payload = await request<JsonRecord>('POST', '/account/verify', data, { idempotent: false });
+  verifyBankAccount: async (data: AccountVerifyRequest): Promise<AccountVerificationResponse> => {
+    const body = parseWithSchema(accountVerifyRequestSchema, data, 'verifyBankAccount request');
+    const payload = await request<JsonRecord>('POST', '/account/verify', body, { idempotent: false });
     return {
       verificationId: String(payload.verificationId ?? payload.id ?? generateToken('acct')),
       status: String(payload.status ?? 'pending'),
@@ -2865,8 +2914,9 @@ export const bankingService = {
     };
   },
 
-  instantVerifyBankAccount: async (data: Record<string, unknown>): Promise<AccountVerificationResponse> => {
-    const payload = await request<JsonRecord>('POST', '/account/instant-verify', data, { idempotent: false });
+  instantVerifyBankAccount: async (data: AccountInstantVerifyRequest): Promise<AccountVerificationResponse> => {
+    const body = parseWithSchema(accountInstantVerifyRequestSchema, data, 'instantVerifyBankAccount request');
+    const payload = await request<JsonRecord>('POST', '/account/instant-verify', body, { idempotent: false });
     return {
       verificationId: String(payload.verificationId ?? payload.id ?? generateToken('acct')),
       status: String(payload.status ?? 'verified'),
@@ -2876,8 +2926,9 @@ export const bankingService = {
     };
   },
 
-  verifyMicroDeposits: async (data: Record<string, unknown>): Promise<AccountVerificationResponse> => {
-    const payload = await request<JsonRecord>('POST', '/account/micro-deposits', data, { idempotent: false });
+  verifyMicroDeposits: async (data: AccountMicroDepositsRequest): Promise<AccountVerificationResponse> => {
+    const body = parseWithSchema(accountMicroDepositsRequestSchema, data, 'verifyMicroDeposits request');
+    const payload = await request<JsonRecord>('POST', '/account/micro-deposits', body, { idempotent: false });
     return {
       verificationId: String(payload.verificationId ?? payload.id ?? generateToken('acct')),
       status: String(payload.status ?? 'pending'),
@@ -3091,9 +3142,16 @@ export const bankingService = {
     return isRecord(payload) ? payload : {};
   },
 
-  getPrimitiveProxyToken: async (data?: Record<string, unknown>): Promise<Record<string, unknown>> => {
-    const payload = await primitiveRequest<unknown>('POST', '/verification/proxy/token', data ?? {});
-    return isRecord(payload) ? payload : {};
+  getPrimitiveProxyToken: async (data?: PrimitiveProxyTokenRequest): Promise<PrimitiveProxyTokenResponse> => {
+    const input = parseWithSchema(primitiveProxyTokenRequestSchema, data ?? {}, 'getPrimitiveProxyToken request');
+    const query = new URLSearchParams();
+    if (typeof input.documentType === 'string' && input.documentType.trim()) {
+      query.set('document_type', input.documentType.trim());
+    }
+    const path = query.toString() ? `/verification/proxy/token?${query.toString()}` : '/verification/proxy/token';
+    const payload = await primitiveRequest<unknown>('POST', path);
+    if (!isRecord(payload)) return {};
+    return parseWithSchema(primitiveProxyTokenResponseSchema, payload, 'getPrimitiveProxyToken response');
   },
 
   getPrimitiveModelStatus: async (): Promise<PrimitiveModelStatus> => {
@@ -3105,8 +3163,9 @@ export const bankingService = {
     };
   },
 
-  reloadPrimitiveModel: async (): Promise<PrimitiveModelStatus> => {
-    const payload = await primitiveRequest<JsonRecord>('POST', '/verification/model/reload', {});
+  reloadPrimitiveModel: async (data?: PrimitiveReloadRequest): Promise<PrimitiveModelStatus> => {
+    const body = parseWithSchema(primitiveReloadRequestSchema, data ?? {}, 'reloadPrimitiveModel request');
+    const payload = await primitiveRequest<JsonRecord>('POST', '/verification/model/reload', body);
     return {
       status: String(payload.status ?? 'reloading'),
       loaded: payload.loaded === true,
@@ -3640,6 +3699,347 @@ export const bankingService = {
     const payload = await request<JsonRecord>('POST', `/logs/errors/${errorId}/resolve`, undefined, { idempotent: false });
     return { status: String(payload.status ?? 'resolved') };
   },
+  // Closure pass: explicit strongly-typed bindings for strict endpoint coverage
+  closureGetApiV1BankingAdminCredentials: async (): Promise<ClosureTypes.GetApiV1BankingAdminCredentialsResponse> => {
+    const raw = await request<unknown>('GET', '/admin/credentials', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAdminCredentialsByCredentialId: async (credentialId: string): Promise<ClosureTypes.GetApiV1BankingAdminCredentialsByCredentialIdResponse> => {
+    const raw = await request<unknown>('GET', `/admin/credentials/${credentialId}`, undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAdminEnterprises: async (): Promise<ClosureTypes.GetApiV1BankingAdminEnterprisesResponse> => {
+    const raw = await request<unknown>('GET', '/admin/enterprises', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAdminEnterprisesByTenantId: async (tenantId: string): Promise<ClosureTypes.GetApiV1BankingAdminEnterprisesByTenantIdResponse> => {
+    const raw = await request<unknown>('GET', `/admin/enterprises/${tenantId}`, undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePatchApiV1BankingAdminEnterprisesByTenantId: async (tenantId: string, payload?: ClosureTypes.PatchApiV1BankingAdminEnterprisesByTenantIdRequest): Promise<ClosureTypes.PatchApiV1BankingAdminEnterprisesByTenantIdResponse> => {
+    const raw = await request<unknown>('PATCH', `/admin/enterprises/${tenantId}`, payload?.body, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAdminFinancial: async (): Promise<ClosureTypes.GetApiV1BankingAdminFinancialResponse> => {
+    const raw = await request<unknown>('GET', '/admin/financial', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAdminFinancialRevenue: async (): Promise<ClosureTypes.GetApiV1BankingAdminFinancialRevenueResponse> => {
+    const raw = await request<unknown>('GET', '/admin/financial/revenue', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAdminLogs: async (): Promise<ClosureTypes.GetApiV1BankingAdminLogsResponse> => {
+    const raw = await request<unknown>('GET', '/admin/logs', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAdminVerifications: async (): Promise<ClosureTypes.GetApiV1BankingAdminVerificationsResponse> => {
+    const raw = await request<unknown>('GET', '/admin/verifications', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAdminVerificationsByVerificationId: async (verificationId: string): Promise<ClosureTypes.GetApiV1BankingAdminVerificationsByVerificationIdResponse> => {
+    const raw = await request<unknown>('GET', `/admin/verifications/${verificationId}`, undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAlerts: async (): Promise<ClosureTypes.GetApiV1BankingAlertsResponse> => {
+    const raw = await request<unknown>('GET', '/alerts', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAnalyticsComplianceMetrics: async (): Promise<ClosureTypes.GetApiV1BankingAnalyticsComplianceMetricsResponse> => {
+    const raw = await request<unknown>('GET', '/analytics/compliance-metrics', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAnalyticsFraudTrends: async (): Promise<ClosureTypes.GetApiV1BankingAnalyticsFraudTrendsResponse> => {
+    const raw = await request<unknown>('GET', '/analytics/fraud-trends', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAnalyticsProcessingTimes: async (): Promise<ClosureTypes.GetApiV1BankingAnalyticsProcessingTimesResponse> => {
+    const raw = await request<unknown>('GET', '/analytics/processing-times', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAnalyticsRiskDistribution: async (): Promise<ClosureTypes.GetApiV1BankingAnalyticsRiskDistributionResponse> => {
+    const raw = await request<unknown>('GET', '/analytics/risk-distribution', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAnalyticsVerificationStats: async (): Promise<ClosureTypes.GetApiV1BankingAnalyticsVerificationStatsResponse> => {
+    const raw = await request<unknown>('GET', '/analytics/verification-stats', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingApiKeys: async (): Promise<ClosureTypes.GetApiV1BankingApiKeysResponse> => {
+    const raw = await request<unknown>('GET', '/api-keys', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingApiKeysValidateCurrent: async (): Promise<ClosureTypes.GetApiV1BankingApiKeysValidateCurrentResponse> => {
+    const raw = await request<unknown>('GET', '/api-keys/validate/current', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureDeleteApiV1BankingApiKeysByKeyId: async (keyId: string, payload?: ClosureTypes.DeleteApiV1BankingApiKeysByKeyIdRequest): Promise<ClosureTypes.DeleteApiV1BankingApiKeysByKeyIdResponse> => {
+    const raw = await request<unknown>('DELETE', `/api-keys/${keyId}`, payload?.body, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingAuditLogsSearch: async (): Promise<ClosureTypes.GetApiV1BankingAuditLogsSearchResponse> => {
+    const raw = await request<unknown>('GET', '/audit/logs/search', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostApiV1BankingBillingWebhooksProvider: async (payload?: ClosureTypes.PostApiV1BankingBillingWebhooksProviderRequest): Promise<ClosureTypes.PostApiV1BankingBillingWebhooksProviderResponse> => {
+    const raw = await request<unknown>('POST', '/billing/webhooks/provider', payload?.body, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingCases: async (): Promise<ClosureTypes.GetApiV1BankingCasesResponse> => {
+    const raw = await request<unknown>('GET', '/cases', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingComplianceReports: async (): Promise<ClosureTypes.GetApiV1BankingComplianceReportsResponse> => {
+    const raw = await request<unknown>('GET', '/compliance/reports', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingDiagnosticsRequests: async (): Promise<ClosureTypes.GetApiV1BankingDiagnosticsRequestsResponse> => {
+    const raw = await request<unknown>('GET', '/diagnostics/requests', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostApiV1BankingDiagnosticsRequestsByRequestIdCancel: async (requestId: string, payload?: ClosureTypes.PostApiV1BankingDiagnosticsRequestsByRequestIdCancelRequest): Promise<ClosureTypes.PostApiV1BankingDiagnosticsRequestsByRequestIdCancelResponse> => {
+    const raw = await request<unknown>('POST', `/diagnostics/requests/${requestId}/cancel`, payload?.body, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostApiV1BankingDiagnosticsRequestsByRequestIdRetry: async (requestId: string, payload?: ClosureTypes.PostApiV1BankingDiagnosticsRequestsByRequestIdRetryRequest): Promise<ClosureTypes.PostApiV1BankingDiagnosticsRequestsByRequestIdRetryResponse> => {
+    const raw = await request<unknown>('POST', `/diagnostics/requests/${requestId}/retry`, payload?.body, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingDisputes: async (): Promise<ClosureTypes.GetApiV1BankingDisputesResponse> => {
+    const raw = await request<unknown>('GET', '/disputes', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostApiV1BankingDisputesByDisputeIdResolve: async (disputeId: string, payload?: ClosureTypes.PostApiV1BankingDisputesByDisputeIdResolveRequest): Promise<ClosureTypes.PostApiV1BankingDisputesByDisputeIdResolveResponse> => {
+    const raw = await request<unknown>('POST', `/disputes/${disputeId}/resolve`, payload?.body, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingDocumentsSupportedTypes: async (): Promise<ClosureTypes.GetApiV1BankingDocumentsSupportedTypesResponse> => {
+    const raw = await request<unknown>('GET', '/documents/supported-types', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingGovernanceProposals: async (): Promise<ClosureTypes.GetApiV1BankingGovernanceProposalsResponse> => {
+    const raw = await request<unknown>('GET', '/governance/proposals', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingMarketplaceVerifiers: async (): Promise<ClosureTypes.GetApiV1BankingMarketplaceVerifiersResponse> => {
+    const raw = await request<unknown>('GET', '/marketplace/verifiers', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureDeleteApiV1BankingMonitoringRulesByRuleId: async (ruleId: string, payload?: ClosureTypes.DeleteApiV1BankingMonitoringRulesByRuleIdRequest): Promise<ClosureTypes.DeleteApiV1BankingMonitoringRulesByRuleIdResponse> => {
+    const raw = await request<unknown>('DELETE', `/monitoring/rules/${ruleId}`, payload?.body, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingNotifications: async (): Promise<ClosureTypes.GetApiV1BankingNotificationsResponse> => {
+    const raw = await request<unknown>('GET', '/notifications', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingRequests: async (): Promise<ClosureTypes.GetApiV1BankingRequestsResponse> => {
+    const raw = await request<unknown>('GET', '/requests', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostApiV1BankingRequestsByVerificationIdRevoke: async (verificationId: string, payload?: ClosureTypes.PostApiV1BankingRequestsByVerificationIdRevokeRequest): Promise<ClosureTypes.PostApiV1BankingRequestsByVerificationIdRevokeResponse> => {
+    const raw = await request<unknown>('POST', `/requests/${verificationId}/revoke`, payload?.body, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostApiV1BankingScreeningAdverseMediaOngoing: async (payload?: ClosureTypes.PostApiV1BankingScreeningAdverseMediaOngoingRequest): Promise<ClosureTypes.PostApiV1BankingScreeningAdverseMediaOngoingResponse> => {
+    const raw = await request<unknown>('POST', '/screening/adverse-media/ongoing', payload?.body, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostApiV1BankingScreeningPepOngoing: async (payload?: ClosureTypes.PostApiV1BankingScreeningPepOngoingRequest): Promise<ClosureTypes.PostApiV1BankingScreeningPepOngoingResponse> => {
+    const raw = await request<unknown>('POST', '/screening/pep/ongoing', payload?.body, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostApiV1BankingScreeningSanctionsOngoing: async (payload?: ClosureTypes.PostApiV1BankingScreeningSanctionsOngoingRequest): Promise<ClosureTypes.PostApiV1BankingScreeningSanctionsOngoingResponse> => {
+    const raw = await request<unknown>('POST', '/screening/sanctions/ongoing', payload?.body, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingUserVerifications: async (): Promise<ClosureTypes.GetApiV1BankingUserVerificationsResponse> => {
+    const raw = await request<unknown>('GET', '/user/verifications', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingVerifierActive: async (): Promise<ClosureTypes.GetApiV1BankingVerifierActiveResponse> => {
+    const raw = await request<unknown>('GET', '/verifier/active', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingVerifierCompleted: async (): Promise<ClosureTypes.GetApiV1BankingVerifierCompletedResponse> => {
+    const raw = await request<unknown>('GET', '/verifier/completed', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingVerifierEarnings: async (): Promise<ClosureTypes.GetApiV1BankingVerifierEarningsResponse> => {
+    const raw = await request<unknown>('GET', '/verifier/earnings', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingVerifierHelp: async (): Promise<ClosureTypes.GetApiV1BankingVerifierHelpResponse> => {
+    const raw = await request<unknown>('GET', '/verifier/help', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingVerifierHelpArticles: async (): Promise<ClosureTypes.GetApiV1BankingVerifierHelpArticlesResponse> => {
+    const raw = await request<unknown>('GET', '/verifier/help/articles', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingVerifierHelpTickets: async (): Promise<ClosureTypes.GetApiV1BankingVerifierHelpTicketsResponse> => {
+    const raw = await request<unknown>('GET', '/verifier/help/tickets', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingVerifierJobs: async (): Promise<ClosureTypes.GetApiV1BankingVerifierJobsResponse> => {
+    const raw = await request<unknown>('GET', '/verifier/jobs', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingVerifierJobsByVerificationId: async (verificationId: string): Promise<ClosureTypes.GetApiV1BankingVerifierJobsByVerificationIdResponse> => {
+    const raw = await request<unknown>('GET', `/verifier/jobs/${verificationId}`, undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingVerifierNotifications: async (): Promise<ClosureTypes.GetApiV1BankingVerifierNotificationsResponse> => {
+    const raw = await request<unknown>('GET', '/verifier/notifications', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingVerifierReviewByVerificationId: async (verificationId: string): Promise<ClosureTypes.GetApiV1BankingVerifierReviewByVerificationIdResponse> => {
+    const raw = await request<unknown>('GET', `/verifier/review/${verificationId}`, undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingVerifierReviews: async (): Promise<ClosureTypes.GetApiV1BankingVerifierReviewsResponse> => {
+    const raw = await request<unknown>('GET', '/verifier/reviews', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostApiV1BankingVerifierWithdraw: async (payload?: ClosureTypes.PostApiV1BankingVerifierWithdrawRequest): Promise<ClosureTypes.PostApiV1BankingVerifierWithdrawResponse> => {
+    const raw = await request<unknown>('POST', '/verifier/withdraw', payload?.body, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetApiV1BankingWebhooks: async (): Promise<ClosureTypes.GetApiV1BankingWebhooksResponse> => {
+    const raw = await request<unknown>('GET', '/webhooks', undefined, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureDeleteApiV1BankingWebhooksByWebhookId: async (webhookId: string, payload?: ClosureTypes.DeleteApiV1BankingWebhooksByWebhookIdRequest): Promise<ClosureTypes.DeleteApiV1BankingWebhooksByWebhookIdResponse> => {
+    const raw = await request<unknown>('DELETE', `/webhooks/${webhookId}`, payload?.body, { idempotent: false });
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetHealth: async (): Promise<ClosureTypes.GetHealthResponse> => {
+    const raw = await primitiveRequest<unknown>('GET', '/health', undefined);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetRoot: async (): Promise<ClosureTypes.GetRootResponse> => {
+    const raw = await primitiveRequest<unknown>('GET', '/', undefined);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetVerificationDemoDocumentWebcam: async (): Promise<ClosureTypes.GetVerificationDemoDocumentWebcamResponse> => {
+    const raw = await primitiveRequest<unknown>('GET', '/verification/demo/document-webcam', undefined);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetVerificationDemoMobile: async (): Promise<ClosureTypes.GetVerificationDemoMobileResponse> => {
+    const raw = await primitiveRequest<unknown>('GET', '/verification/demo/mobile', undefined);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetVerificationDemoMobileLiveness: async (): Promise<ClosureTypes.GetVerificationDemoMobileLivenessResponse> => {
+    const raw = await primitiveRequest<unknown>('GET', '/verification/demo/mobile-liveness', undefined);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetVerificationDemoWebcam: async (): Promise<ClosureTypes.GetVerificationDemoWebcamResponse> => {
+    const raw = await primitiveRequest<unknown>('GET', '/verification/demo/webcam', undefined);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostVerificationPredict: async (payload?: ClosureTypes.PostVerificationPredictRequest): Promise<ClosureTypes.PostVerificationPredictResponse> => {
+    const raw = await primitiveRequest<unknown>('POST', '/verification/predict', payload?.body);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostVerificationProxyDocumentOcrCheck: async (payload?: ClosureTypes.PostVerificationProxyDocumentOcrCheckRequest): Promise<ClosureTypes.PostVerificationProxyDocumentOcrCheckResponse> => {
+    const raw = await primitiveRequest<unknown>('POST', '/verification/proxy/document-ocr-check', payload?.body);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostVerificationProxyToken: async (payload?: ClosureTypes.PostVerificationProxyTokenRequest): Promise<ClosureTypes.PostVerificationProxyTokenResponse> => {
+    const raw = await primitiveRequest<unknown>('POST', '/verification/proxy/token', payload?.body);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostVerificationProxyVerifyDocument: async (payload?: ClosureTypes.PostVerificationProxyVerifyDocumentRequest): Promise<ClosureTypes.PostVerificationProxyVerifyDocumentResponse> => {
+    const raw = await primitiveRequest<unknown>('POST', '/verification/proxy/verify-document', payload?.body);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closureGetVerificationResult: async (): Promise<ClosureTypes.GetVerificationResultResponse> => {
+    const raw = await primitiveRequest<unknown>('GET', '/verification/result', undefined);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostVerificationVerify: async (payload?: ClosureTypes.PostVerificationVerifyRequest): Promise<ClosureTypes.PostVerificationVerifyResponse> => {
+    const raw = await primitiveRequest<unknown>('POST', '/verification/verify', payload?.body);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostVerificationVerifyDocument: async (payload?: ClosureTypes.PostVerificationVerifyDocumentRequest): Promise<ClosureTypes.PostVerificationVerifyDocumentResponse> => {
+    const raw = await primitiveRequest<unknown>('POST', '/verification/verify-document', payload?.body);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostVerificationVerifyMobileLiveness: async (payload?: ClosureTypes.PostVerificationVerifyMobileLivenessRequest): Promise<ClosureTypes.PostVerificationVerifyMobileLivenessResponse> => {
+    const raw = await primitiveRequest<unknown>('POST', '/verification/verify-mobile-liveness', payload?.body);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
+  closurePostVerificationVerifyWebcam: async (payload?: ClosureTypes.PostVerificationVerifyWebcamRequest): Promise<ClosureTypes.PostVerificationVerifyWebcamResponse> => {
+    const raw = await primitiveRequest<unknown>('POST', '/verification/verify-webcam', payload?.body);
+    return { status: 'ok', data: raw as ClosureTypes.ClosureJson };
+  },
+
 
   issueCredential: async (data: CredentialIssuanceRequest): Promise<CredentialIssuanceResponse> => {
     return request<CredentialIssuanceResponse>('POST', '/verifier/issue-credential', data);

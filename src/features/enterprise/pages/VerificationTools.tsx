@@ -1,5 +1,5 @@
 import { useMemo, useState, type ChangeEvent } from 'react';
-import { AlertTriangle, BarChart3, Clock3, Download, FileSpreadsheet, Loader2, ShieldCheck, SlidersHorizontal, Upload, Webhook } from 'lucide-react';
+import { AlertTriangle, BarChart3, Clock3, Cog, Download, FileSpreadsheet, Loader2, ShieldCheck, SlidersHorizontal, Upload, Webhook } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,9 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
 import { TabHelpCard } from '@/components/shared/TabHelpCard';
+import AlertAndAccountOpsPanel from '@/features/enterprise/components/AlertAndAccountOpsPanel';
+import PartialEndpointsWorkbench from '@/features/enterprise/components/PartialEndpointsWorkbench';
+import PrimitiveVerificationPanel from '@/features/enterprise/components/PrimitiveVerificationPanel';
 import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 import { webhooksService } from '@/services/apiManagementService';
 import type { AuditLogResponse, LicenseUsageMetrics, RiskSimulationResponse, WebhookResponse, WebhookRetryItem } from '@/types/banking';
@@ -221,12 +224,15 @@ export default function VerificationTools() {
         <p className="text-muted-foreground mt-1">Enterprise onboarding, risk, governance, webhook, and SLA tooling.</p>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
           <TabsTrigger value="bulk">Bulk KYC</TabsTrigger>
           <TabsTrigger value="risk">Risk Sandbox</TabsTrigger>
           <TabsTrigger value="audit">Audit Explorer</TabsTrigger>
           <TabsTrigger value="webhooks">Webhook Manager</TabsTrigger>
           <TabsTrigger value="sla">Usage & SLA</TabsTrigger>
+          <TabsTrigger value="primitive">Primitive Ops</TabsTrigger>
+          <TabsTrigger value="alerts-accounts">Alerts & Accounts</TabsTrigger>
+          <TabsTrigger value="coverage-workbench">Coverage Workbench</TabsTrigger>
         </TabsList>
         <TabsContent value="bulk">
           <TabHelpCard
@@ -433,6 +439,42 @@ export default function VerificationTools() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="primitive">
+          <TabHelpCard
+            title="Primitive Ops"
+            description="Control low-level verification runtime status, camera devices, and proxy token generation."
+            icon={ShieldCheck}
+            sectionLabel="Verification Runtime"
+            tone="emerald"
+            useWhen="you need to diagnose primitive verification stack behavior or issue short-lived proxy tokens."
+            highlights={['Health snapshot', 'Camera inventory', 'Model reload', 'Proxy token']}
+          />
+          <PrimitiveVerificationPanel />
+        </TabsContent>
+        <TabsContent value="alerts-accounts">
+          <TabHelpCard
+            title="Alerts & Accounts"
+            description="Investigate/resolve alerts, run account verification workflows, and load geographical analytics."
+            icon={AlertTriangle}
+            sectionLabel="Investigations"
+            tone="amber"
+            useWhen="you need to perform investigation and account-verification operations from one place."
+            highlights={['Alert actions', 'Account verification', 'Geo analytics']}
+          />
+          <AlertAndAccountOpsPanel />
+        </TabsContent>
+        <TabsContent value="coverage-workbench">
+          <TabHelpCard
+            title="Coverage Workbench"
+            description="Run remaining partial endpoint operations with parameterized JSON payloads to complete service-to-page wiring."
+            icon={Cog}
+            sectionLabel="Endpoint Operations"
+            tone="violet"
+            useWhen="you need one interface to execute advanced service methods not yet represented by dedicated screens."
+            highlights={['Searchable methods', 'Payload editor', 'Result preview', 'Error feedback']}
+          />
+          <PartialEndpointsWorkbench />
         </TabsContent>
       </Tabs>
       {loading && <div className="fixed bottom-6 right-6 bg-card border rounded-lg p-3 flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm">Processing...</span></div>}

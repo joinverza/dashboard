@@ -524,3 +524,8 @@ export const mapAuthErrorToMessage = (error: unknown, operation?: AuthOperation)
   }
   return operation ? fallbackByOperation[operation] : "Authentication request failed.";
 };
+
+export const stepUpAuth = async (payload?: Record<string, unknown>): Promise<AuthSession> => {
+  const { status, payload: response } = await request<AuthSession>("POST", "/step-up", payload ?? {});
+  return assertSuccess(status, response);
+};

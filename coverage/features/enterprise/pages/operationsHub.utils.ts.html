@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>21/21</span>
+                <span class='fraction'>0/21</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>6/6</span>
+                <span class='fraction'>0/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>8/8</span>
+                <span class='fraction'>0/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>16/16</span>
+                <span class='fraction'>0/16</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -86,51 +86,51 @@
 <a name='L21'></a><a href='#L21'>21</a>
 <a name='L22'></a><a href='#L22'>22</a>
 <a name='L23'></a><a href='#L23'>23</a>
-<a name='L24'></a><a href='#L24'>24</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">8x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">9x</span>
-<span class="cline-any cline-yes">9x</span>
+<a name='L24'></a><a href='#L24'>24</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export const parseCsvText = (csv: string): Array&lt;Record&lt;string, string&gt;&gt; =&gt; {
-  const rows = csv.trim().split(/\r?\n/);
-  if (rows.length &lt;= 1) return [];
-  const headers = rows[0].split(',').map((item) =&gt; item.trim());
-  return rows.slice(1).filter(Boolean).map((row) =&gt; {
-    const values = row.split(',').map((item) =&gt; item.trim());
-    return headers.reduce&lt;Record&lt;string, string&gt;&gt;((acc, key, index) =&gt; {
-      acc[key] = values[index] ?? '';
-      return acc;
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export const parseCsvText = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(c</span>sv: string): Array&lt;Record&lt;string, string&gt;&gt; =&gt; {</span>
+  const rows = <span class="cstat-no" title="statement not covered" >csv.trim().split(/\r?\n/);</span>
+<span class="cstat-no" title="statement not covered" >  if (rows.length &lt;= 1) <span class="cstat-no" title="statement not covered" >return [];</span></span>
+  const headers = <span class="cstat-no" title="statement not covered" >rows[0].split(',').map(<span class="fstat-no" title="function not covered" >(i</span>tem) =&gt; <span class="cstat-no" title="statement not covered" >item.trim())</span>;</span>
+<span class="cstat-no" title="statement not covered" >  return rows.slice(1).filter(Boolean).map(<span class="fstat-no" title="function not covered" >(r</span>ow) =&gt; {</span>
+    const values = <span class="cstat-no" title="statement not covered" >row.split(',').map(<span class="fstat-no" title="function not covered" >(i</span>tem) =&gt; <span class="cstat-no" title="statement not covered" >item.trim())</span>;</span>
+<span class="cstat-no" title="statement not covered" >    return headers.reduce&lt;Record&lt;string, string&gt;&gt;(<span class="fstat-no" title="function not covered" >(a</span>cc, key, index) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >      acc[key] = values[index] ?? '';</span>
+<span class="cstat-no" title="statement not covered" >      return acc;</span>
     }, {});
   });
 };
 &nbsp;
-export const toCsvErrorReport = (issues: Array&lt;{ row: number; field: string; message: string; severity: string }&gt;): string =&gt; {
-  const header = 'row,field,message,severity';
-  const body = issues.map((issue) =&gt; `${issue.row},${issue.field},"${issue.message.replace(/"/g, '""')}",${issue.severity}`).join('\n');
-  return `${header}\n${body}`;
+export const toCsvErrorReport = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(i</span>ssues: Array&lt;{ row: number; field: string; message: string; severity: string }&gt;): string =&gt; {</span>
+  const header = <span class="cstat-no" title="statement not covered" >'row,field,message,severity';</span>
+  const body = <span class="cstat-no" title="statement not covered" >issues.map(<span class="fstat-no" title="function not covered" >(i</span>ssue) =&gt; <span class="cstat-no" title="statement not covered" >`${issue.row},${issue.field},"${issue.message.replace(/"/g, '""')}",${issue.severity}`)</span>.join('\n');</span>
+<span class="cstat-no" title="statement not covered" >  return `${header}\n${body}`;</span>
 };
 &nbsp;
-export const calculateQuotaPercent = (usedQuota: number, monthlyQuota: number): number =&gt; {
-  if (monthlyQuota &lt;= 0) return 0;
-  return Math.min(100, Math.round((usedQuota / monthlyQuota) * 100));
+export const calculateQuotaPercent = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(u</span>sedQuota: number, monthlyQuota: number): number =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  if (monthlyQuota &lt;= 0) <span class="cstat-no" title="statement not covered" >return 0;</span></span>
+<span class="cstat-no" title="statement not covered" >  return Math.min(100, Math.round((usedQuota / monthlyQuota) * 100));</span>
 };
 &nbsp;</pre></td></tr></table></pre>
 
@@ -139,7 +139,7 @@ export const calculateQuotaPercent = (usedQuota: number, monthlyQuota: number): 
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-18T17:22:20.608Z
+                at 2026-04-06T22:55:23.519Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
