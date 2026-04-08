@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { lazy, Suspense, useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ import Layout from "@/components/layout/Layout";
 import { PageLoader } from "@/components/shared/loaders/PageLoader";
 import { BANKING_RETRY_EVENT } from "@/services/bankingService";
 import type { BankingRetryEventDetail } from "@/types/banking";
+import { canAccessRoute, isPublicRoute } from "@/security/rbacPolicy";
 
 // Lazy load pages for code splitting
 const UserDashboard = lazy(() => import("@/features/user/pages/Dashboard"));
@@ -125,20 +126,29 @@ const PaymentConfirmationPage = lazy(() => import("@/pages/PaymentConfirmation")
 const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicy"));
 const TermsOfServicePage = lazy(() => import("@/pages/TermsOfService"));
 const OnboardingPage = lazy(() => import("@/pages/Onboarding"));
+const ForbiddenPage = lazy(() => import("./pages/Forbidden"));
 
 function Router() {
-  const { user, isBootstrapping } = useAuth();
+  const { user, permissions, isBootstrapping } = useAuth();
+  const [location] = useLocation();
   const getDefaultRoute = () => {
     if (!user) return "/login";
     if (user.role === "admin") return "/admin";
     if (user.role === "verifier") return "/verifier";
-    if (user.role === "manager") return "/manager";
     if (user.role === "enterprise") return "/enterprise";
-    return "/app";
+    return "/forbidden";
   };
   
   if (isBootstrapping) {
     return <PageLoader />;
+  }
+
+  if (
+    user &&
+    !isPublicRoute(location) &&
+    !canAccessRoute(user.role, permissions, location)
+  ) {
+    return <ForbiddenPage />;
   }
   
   return (
@@ -180,6 +190,7 @@ function Router() {
         <Route path="/privacy" component={PrivacyPolicyPage} />
         <Route path="/terms" component={TermsOfServicePage} />
         <Route path="/onboarding" component={OnboardingPage} />
+        <Route path="/forbidden" component={ForbiddenPage} />
         
         {/* User Dashboard Routes */}
         {user?.role === 'user' && (

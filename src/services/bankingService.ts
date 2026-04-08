@@ -190,6 +190,7 @@ import { z } from 'zod';
 import { env } from '../config/env';
 import { runWithStepUpRetry, isStepUpFresh } from '../auth/stepUp';
 import { HIGH_RISK_OPERATIONS, type HighRiskOperationConfig } from '../types/security';
+import { assertApiAccess } from '@/security/rbacPolicy';
 
 const API_PATH = '/api/v1/banking';
 const API_KEY_STORAGE_KEY = 'verza:banking:apiKey';
@@ -625,6 +626,7 @@ const performRequest = async <T>(
   options?: { allowBootstrapAdminToken?: boolean; idempotent?: boolean }
 ): Promise<T> => {
   const normalizedPath = normalizeEndpointPath(path);
+  const pathOnly = normalizedPath.split('?')[0];
   const requestId = generateUuid();
   const headers: Record<string, string> = {
     Accept: 'application/json',
@@ -644,6 +646,27 @@ const performRequest = async <T>(
 
   if (method === 'POST' || method === 'DELETE') {
     headers['Idempotency-Key'] = generateUuid();
+  }
+
+  const currentSession = getStoredSession();
+  const deniedByRbac = assertApiAccess(
+    currentSession?.user?.role,
+    currentSession?.permissions ?? [],
+    method.toUpperCase(),
+    pathOnly,
+  );
+  if (deniedByRbac) {
+    emitDiagnosticEvent({
+      requestId,
+      path: normalizedPath,
+      method,
+      stage: 'failed',
+      status: 403,
+      attempt: 0,
+      message: deniedByRbac,
+      occurredAt: new Date().toISOString(),
+    });
+    throw new BankingApiError(403, normalizedPath, deniedByRbac, requestId, false);
   }
 
   emitDiagnosticEvent({
