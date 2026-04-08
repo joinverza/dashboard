@@ -38,6 +38,7 @@ const EnterpriseVerificationRequests = lazy(() => import("@/features/enterprise/
 const EnterpriseVerificationTools = lazy(() => import("@/features/enterprise/pages/VerificationTools"));
 const EnterpriseVerifications = lazy(() => import("@/features/enterprise/pages/Verifications"));
 const EnterpriseVerificationsHub = lazy(() => import("@/features/enterprise/pages/VerificationsHub"));
+const EnterpriseEmailVerificationManagement = lazy(() => import("@/features/enterprise/pages/EmailVerificationManagement"));
 const EnterpriseUsers = lazy(() => import("@/features/enterprise/pages/Users"));
 const EnterpriseReportsHub = lazy(() => import("@/features/enterprise/pages/ReportsHub"));
 const EnterprisePlatformHub = lazy(() => import("@/features/enterprise/pages/PlatformHub"));
@@ -252,6 +253,7 @@ function Router() {
             <Route path="/enterprise/bulk" component={EnterpriseBulkVerification} />
             <Route path="/enterprise/requests" component={EnterpriseVerificationRequests} />
             <Route path="/enterprise/verifications" component={EnterpriseVerificationsHub} />
+            <Route path="/enterprise/email-verifications" component={EnterpriseEmailVerificationManagement} />
             <Route path="/enterprise/verifications/workbench" component={EnterpriseVerifications} />
             <Route path="/enterprise/users" component={EnterpriseUsers} />
             <Route path="/enterprise/reports" component={EnterpriseReportsHub} />
@@ -286,6 +288,7 @@ function Router() {
             <Route path="/manager" component={EnterpriseDashboard} />
             <Route path="/manager/requests" component={EnterpriseVerificationRequests} />
             <Route path="/manager/verifications" component={EnterpriseVerifications} />
+            <Route path="/manager/email-verifications" component={EnterpriseEmailVerificationManagement} />
             <Route path="/manager/tools" component={EnterpriseVerificationTools} />
             <Route path="/manager/team" component={EnterpriseTeamManagement} />
             <Route path="/manager/analytics" component={EnterpriseAnalytics} />

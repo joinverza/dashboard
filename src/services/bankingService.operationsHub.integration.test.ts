@@ -354,4 +354,81 @@ describe('bankingService operations hub integration', () => {
       }),
     ).rejects.toThrow(/schema validation failed/i);
   });
+
+  it('submits single and bulk email verification workflows with documented endpoints', async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      const requestUrl = String(url);
+      if (requestUrl.includes('/api/v1/banking/email-verifications/verify') && init?.method === 'POST') {
+        return jsonResponse(200, { success: true, data: { verificationId: 'evf_1', status: 'pending' } });
+      }
+      if (requestUrl.includes('/api/v1/banking/email-verifications/bulk/verify') && init?.method === 'POST') {
+        return jsonResponse(200, { success: true, data: { bulkJobId: 'ebj_1', status: 'pending', acceptedCount: 2 } });
+      }
+      return jsonResponse(404, { error: { message: 'not found' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const single = await bankingService.verifyEmailSingle({ email: 'alice@example.com', requestId: 'req_1' });
+    const bulk = await bankingService.verifyEmailBulkJson({
+      items: [
+        { email: 'first@example.com', requestId: 'bulk_1' },
+        { email: 'second@example.com', requestId: 'bulk_2' },
+      ],
+    });
+
+    expect(single.verificationId).toBe('evf_1');
+    expect(single.status).toBe('pending');
+    expect(bulk.bulkJobId).toBe('ebj_1');
+    expect(bulk.acceptedCount).toBe(2);
+  });
+
+  it('loads single email result and bulk job status/results', async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      const requestUrl = String(url);
+      if (requestUrl.includes('/api/v1/banking/email-verifications/evf_1')) {
+        return jsonResponse(200, {
+          success: true,
+          data: { verificationId: 'evf_1', status: 'completed', verdict: 'valid', riskScore: 12.5, email: 'alice@example.com' },
+        });
+      }
+      if (requestUrl.includes('/api/v1/banking/email-verifications/bulk/jobs/ebj_1/results')) {
+        return jsonResponse(200, {
+          success: true,
+          data: {
+            bulkJobId: 'ebj_1',
+            items: [{ verificationId: 'evf_2', status: 'completed', verdict: 'invalid', riskScore: 99 }],
+            meta: { page: 1, limit: 100, count: 1 },
+          },
+        });
+      }
+      if (requestUrl.includes('/api/v1/banking/email-verifications/bulk/jobs/ebj_1')) {
+        return jsonResponse(200, {
+          success: true,
+          data: {
+            bulkJobId: 'ebj_1',
+            status: 'processing',
+            totalRecords: 5,
+            processedRecords: 3,
+            validCount: 2,
+            invalidCount: 1,
+            riskyCount: 0,
+            unknownCount: 0,
+            failedCount: 0,
+          },
+        });
+      }
+      return jsonResponse(404, { error: { message: 'not found' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const single = await bankingService.getEmailVerificationResult('evf_1');
+    const status = await bankingService.getEmailBulkJobStatus('ebj_1');
+    const results = await bankingService.getEmailBulkJobResults('ebj_1', { page: 1, limit: 100 });
+
+    expect(single.status).toBe('completed');
+    expect(single.verdict).toBe('valid');
+    expect(status.status).toBe('processing');
+    expect(results.items).toHaveLength(1);
+    expect(results.items[0]?.verdict).toBe('invalid');
+  });
 });

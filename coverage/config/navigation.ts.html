@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>5/5</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>5/5</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -151,7 +151,11 @@
 <a name='L86'></a><a href='#L86'>86</a>
 <a name='L87'></a><a href='#L87'>87</a>
 <a name='L88'></a><a href='#L88'>88</a>
-<a name='L89'></a><a href='#L89'>89</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -180,8 +184,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -190,8 +194,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -201,18 +205,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -222,7 +226,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -260,6 +268,7 @@
   Server,
   Shield,
   Wrench,
+  MailCheck,
 } from "lucide-react";
 &nbsp;
 export interface NavItem {
@@ -268,7 +277,7 @@ export interface NavItem {
   icon: React.ComponentType&lt;{ className?: string }&gt;;
 }
 &nbsp;
-export const userNavItems: NavItem[] = <span class="cstat-no" title="statement not covered" >[</span>
+export const userNavItems: NavItem[] = [
   { path: "/app", label: "Dashboard", icon: LayoutDashboard },
   { path: "/app/getting-started", label: "Getting Started", icon: FileText },
   { path: "/app/credentials", label: "Credentials", icon: FileBadge },
@@ -278,7 +287,7 @@ export const userNavItems: NavItem[] = <span class="cstat-no" title="statement n
   { path: "/app/settings", label: "Settings", icon: Settings },
 ];
 &nbsp;
-export const verifierNavItems: NavItem[] = <span class="cstat-no" title="statement not covered" >[</span>
+export const verifierNavItems: NavItem[] = [
   { path: "/verifier", label: "Dashboard", icon: LayoutDashboard },
   { path: "/verifier/jobs", label: "Job Board", icon: Briefcase },
   { path: "/verifier/active", label: "Active Jobs", icon: Clock },
@@ -289,18 +298,21 @@ export const verifierNavItems: NavItem[] = <span class="cstat-no" title="stateme
   { path: "/verifier/settings", label: "Settings", icon: Settings },
 ];
 &nbsp;
-export const enterpriseNavItems: NavItem[] = <span class="cstat-no" title="statement not covered" >[</span>
+export const enterpriseNavItems: NavItem[] = [
   { path: "/enterprise", label: "Dashboard", icon: LayoutDashboard },
   { path: "/enterprise/verifications", label: "Verifications", icon: Shield },
+  { path: "/enterprise/email-verifications", label: "Email Verification", icon: MailCheck },
+  { path: "/enterprise/tools", label: "Operations Hub", icon: Wrench },
   { path: "/enterprise/users", label: "Users", icon: Users },
   { path: "/enterprise/reports", label: "Reports", icon: BarChart3 },
   { path: "/enterprise/platform", label: "Platform", icon: Wrench },
 ];
 &nbsp;
-export const managerNavItems: NavItem[] = <span class="cstat-no" title="statement not covered" >[</span>
+export const managerNavItems: NavItem[] = [
   { path: "/manager", label: "Dashboard", icon: LayoutDashboard },
   { path: "/manager/requests", label: "Requests", icon: FileText },
   { path: "/manager/verifications", label: "Verifications", icon: Shield },
+  { path: "/manager/email-verifications", label: "Email Verification", icon: MailCheck },
   { path: "/manager/kyb", label: "KYB Wizard", icon: Shield },
   { path: "/manager/tools", label: "Operations Hub", icon: Wrench },
   { path: "/manager/team", label: "Team", icon: Users },
@@ -310,7 +322,7 @@ export const managerNavItems: NavItem[] = <span class="cstat-no" title="statemen
   { path: "/manager/settings", label: "Settings", icon: Settings },
 ];
 &nbsp;
-export const adminNavItems: NavItem[] = <span class="cstat-no" title="statement not covered" >[</span>
+export const adminNavItems: NavItem[] = [
   { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { path: "/admin/users", label: "Users", icon: Users },
   { path: "/admin/verifications", label: "Requests", icon: FileText },
@@ -334,7 +346,7 @@ export const adminNavItems: NavItem[] = <span class="cstat-no" title="statement 
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-06T22:55:23.519Z
+                at 2026-04-08T11:55:17.214Z
             </div>
         <script src="../prettify.js"></script>
         <script>

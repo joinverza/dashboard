@@ -19,6 +19,7 @@ import {
   Server,
   Shield,
   Wrench,
+  MailCheck,
 } from "lucide-react";
 
 export interface NavItem {
@@ -51,6 +52,8 @@ export const verifierNavItems: NavItem[] = [
 export const enterpriseNavItems: NavItem[] = [
   { path: "/enterprise", label: "Dashboard", icon: LayoutDashboard },
   { path: "/enterprise/verifications", label: "Verifications", icon: Shield },
+  { path: "/enterprise/email-verifications", label: "Email Verification", icon: MailCheck },
+  { path: "/enterprise/tools", label: "Operations Hub", icon: Wrench },
   { path: "/enterprise/users", label: "Users", icon: Users },
   { path: "/enterprise/reports", label: "Reports", icon: BarChart3 },
   { path: "/enterprise/platform", label: "Platform", icon: Wrench },
@@ -60,6 +63,7 @@ export const managerNavItems: NavItem[] = [
   { path: "/manager", label: "Dashboard", icon: LayoutDashboard },
   { path: "/manager/requests", label: "Requests", icon: FileText },
   { path: "/manager/verifications", label: "Verifications", icon: Shield },
+  { path: "/manager/email-verifications", label: "Email Verification", icon: MailCheck },
   { path: "/manager/kyb", label: "KYB Wizard", icon: Shield },
   { path: "/manager/tools", label: "Operations Hub", icon: Wrench },
   { path: "/manager/team", label: "Team", icon: Users },

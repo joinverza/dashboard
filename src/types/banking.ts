@@ -524,6 +524,94 @@ export interface BulkVerificationResponse {
   }>;
 }
 
+export interface SingleEmailVerifyRequest {
+  requestId?: string;
+  customerId?: string;
+  email: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface BulkEmailVerifyItem {
+  requestId?: string;
+  customerId?: string;
+  email: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface BulkEmailVerifyRequest {
+  items: BulkEmailVerifyItem[];
+}
+
+export interface EmailVerificationSubmitResponse {
+  verificationId: string;
+  status: "pending" | "processing" | "completed" | "failed";
+}
+
+export interface BulkEmailVerificationSubmitResponse {
+  bulkJobId: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  acceptedCount: number;
+}
+
+export type EmailVerificationVerdict = "valid" | "invalid" | "risky" | "unknown";
+
+export interface EmailVerificationChecks {
+  normalizedEmail?: string;
+  syntaxValid?: boolean;
+  domainValid?: boolean;
+  disposableDomain?: boolean;
+  roleAccount?: boolean;
+  highRiskTld?: boolean;
+  domainSuggestion?: string | null;
+  mailboxCheck?: "not_performed" | "valid" | "invalid" | "unknown" | string;
+}
+
+export interface EmailVerificationResult {
+  verificationId: string;
+  requestId?: string | null;
+  customerId?: string | null;
+  email?: string;
+  normalizedEmail?: string;
+  source?: "single_api" | "bulk_api_json" | "bulk_api_csv" | string;
+  status: "pending" | "processing" | "completed" | "failed" | "not_found";
+  verdict?: EmailVerificationVerdict | null;
+  reasonCode?: string | null;
+  riskScore?: number | null;
+  checks?: EmailVerificationChecks;
+  metadata?: Record<string, unknown> | null;
+  bulkJobId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  completedAt?: string | null;
+}
+
+export interface EmailBulkJobStatus {
+  bulkJobId: string;
+  status: "pending" | "processing" | "completed" | "failed" | "not_found";
+  sourceType?: "csv" | "json" | string;
+  sourceName?: string | null;
+  totalRecords: number;
+  processedRecords: number;
+  validCount: number;
+  invalidCount: number;
+  riskyCount: number;
+  unknownCount: number;
+  failedCount: number;
+  createdAt?: string;
+  updatedAt?: string;
+  completedAt?: string | null;
+}
+
+export interface EmailBulkJobResultsResponse {
+  bulkJobId: string;
+  items: EmailVerificationResult[];
+  meta: {
+    page: number;
+    limit: number;
+    count: number;
+  };
+}
+
 export interface BulkOnboardingValidationIssue {
   row: number;
   field: string;

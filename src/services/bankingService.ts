@@ -31,6 +31,13 @@ import type {
   VerificationRequestResponse,
   BulkVerificationRequest,
   BulkVerificationResponse,
+  SingleEmailVerifyRequest,
+  BulkEmailVerifyRequest,
+  EmailVerificationSubmitResponse,
+  BulkEmailVerificationSubmitResponse,
+  EmailVerificationResult,
+  EmailBulkJobStatus,
+  EmailBulkJobResultsResponse,
   BulkOnboardingValidationResponse,
   BulkOnboardingImportResponse,
   RiskSimulationRequest,
@@ -330,6 +337,21 @@ const bulkVerificationResponseSchema = z.object({
     requestId: z.string().min(1),
     verificationId: z.string().min(1),
   }).strict()),
+}).strict();
+const singleEmailVerifyRequestSchema = z.object({
+  requestId: z.string().min(2).max(128).optional(),
+  customerId: z.string().min(1).max(128).optional(),
+  email: z.string().email().min(3).max(320),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+}).strict();
+const bulkEmailVerifyItemSchema = z.object({
+  requestId: z.string().min(2).max(128).optional(),
+  customerId: z.string().min(1).max(128).optional(),
+  email: z.string().email().min(3).max(320),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+}).strict();
+const bulkEmailVerifyRequestSchema = z.object({
+  items: z.array(bulkEmailVerifyItemSchema).min(1).max(10000),
 }).strict();
 const primitiveReloadRequestSchema = z.object({
   model_path: z.string().min(1).nullable().optional(),
@@ -1191,6 +1213,60 @@ const mapProcessingTimePoint = (value: JsonRecord): ProcessingTimePoint => ({
   p95Seconds: typeof value.p95Seconds === 'number' ? value.p95Seconds : typeof value.p95 === 'number' ? value.p95 : undefined,
 });
 
+const normalizeEmailVerificationStatus = (value: unknown): EmailVerificationResult['status'] => {
+  const status = typeof value === 'string' ? value.toLowerCase() : 'pending';
+  if (status === 'not_found') return 'not_found';
+  if (status === 'completed') return 'completed';
+  if (status === 'processing' || status === 'in_progress') return 'processing';
+  if (status === 'failed') return 'failed';
+  return 'pending';
+};
+
+const mapEmailVerificationResult = (value: unknown): EmailVerificationResult => {
+  const item = isRecord(value) ? value : {};
+  return {
+    verificationId: String(item.verificationId ?? item.id ?? ''),
+    requestId: typeof item.requestId === 'string' ? item.requestId : null,
+    customerId: typeof item.customerId === 'string' ? item.customerId : null,
+    email: typeof item.email === 'string' ? item.email : undefined,
+    normalizedEmail: typeof item.normalizedEmail === 'string' ? item.normalizedEmail : undefined,
+    source: typeof item.source === 'string' ? item.source : undefined,
+    status: normalizeEmailVerificationStatus(item.status),
+    verdict:
+      item.verdict === 'valid' || item.verdict === 'invalid' || item.verdict === 'risky' || item.verdict === 'unknown'
+        ? item.verdict
+        : null,
+    reasonCode: typeof item.reasonCode === 'string' ? item.reasonCode : null,
+    riskScore: typeof item.riskScore === 'number' ? item.riskScore : null,
+    checks: isRecord(item.checks) ? item.checks : undefined,
+    metadata: isRecord(item.metadata) ? item.metadata : null,
+    bulkJobId: typeof item.bulkJobId === 'string' ? item.bulkJobId : null,
+    createdAt: typeof item.createdAt === 'string' ? item.createdAt : undefined,
+    updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : undefined,
+    completedAt: typeof item.completedAt === 'string' ? item.completedAt : null,
+  };
+};
+
+const mapEmailBulkJobStatus = (value: unknown, fallbackBulkJobId = ''): EmailBulkJobStatus => {
+  const item = isRecord(value) ? value : {};
+  return {
+    bulkJobId: String(item.bulkJobId ?? fallbackBulkJobId),
+    status: normalizeEmailVerificationStatus(item.status),
+    sourceType: typeof item.sourceType === 'string' ? item.sourceType : undefined,
+    sourceName: typeof item.sourceName === 'string' ? item.sourceName : null,
+    totalRecords: Number(item.totalRecords ?? 0),
+    processedRecords: Number(item.processedRecords ?? 0),
+    validCount: Number(item.validCount ?? 0),
+    invalidCount: Number(item.invalidCount ?? 0),
+    riskyCount: Number(item.riskyCount ?? 0),
+    unknownCount: Number(item.unknownCount ?? 0),
+    failedCount: Number(item.failedCount ?? 0),
+    createdAt: typeof item.createdAt === 'string' ? item.createdAt : undefined,
+    updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : undefined,
+    completedAt: typeof item.completedAt === 'string' ? item.completedAt : null,
+  };
+};
+
 export const bankingService = {
   getVerificationRequests: async (params?: { limit?: number }): Promise<VerificationRequestResponse[]> => {
     const query = params?.limit ? `?limit=${params.limit}` : '';
@@ -2010,6 +2086,126 @@ export const bankingService = {
     const payload = parseWithSchema(bulkVerificationRequestSchema, data, 'initiateBulkVerification request');
     const result = await request<unknown>('POST', '/bulk/verify', payload);
     return parseWithSchema(bulkVerificationResponseSchema, result, 'initiateBulkVerification response');
+  },
+
+  verifyEmailSingle: async (data: SingleEmailVerifyRequest): Promise<EmailVerificationSubmitResponse> => {
+    const payload = parseWithSchema(singleEmailVerifyRequestSchema, data, 'verifyEmailSingle request');
+    const result = await request<unknown>('POST', '/email-verifications/verify', payload);
+    const parsed = isRecord(result) ? result : {};
+    const status = normalizeEmailVerificationStatus(parsed.status);
+    return {
+      verificationId: String(parsed.verificationId ?? ''),
+      status: status === 'not_found' ? 'pending' : status,
+    };
+  },
+
+  verifyEmailBulkJson: async (data: BulkEmailVerifyRequest): Promise<BulkEmailVerificationSubmitResponse> => {
+    const payload = parseWithSchema(bulkEmailVerifyRequestSchema, data, 'verifyEmailBulkJson request');
+    const result = await request<unknown>('POST', '/email-verifications/bulk/verify', payload);
+    const parsed = isRecord(result) ? result : {};
+    const status = normalizeEmailVerificationStatus(parsed.status);
+    return {
+      bulkJobId: String(parsed.bulkJobId ?? ''),
+      status: status === 'not_found' ? 'pending' : status,
+      acceptedCount: Number(parsed.acceptedCount ?? payload.items.length),
+    };
+  },
+
+  verifyEmailBulkUpload: async (file: File): Promise<BulkEmailVerificationSubmitResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const result = await uploadMultipart<unknown>('/email-verifications/bulk/upload', formData);
+    const parsed = isRecord(result) ? result : {};
+    const status = normalizeEmailVerificationStatus(parsed.status);
+    return {
+      bulkJobId: String(parsed.bulkJobId ?? ''),
+      status: status === 'not_found' ? 'pending' : status,
+      acceptedCount: Number(parsed.acceptedCount ?? 0),
+    };
+  },
+
+  getEmailVerificationResult: async (verificationId: string): Promise<EmailVerificationResult> => {
+    const result = await request<unknown>('GET', `/email-verifications/${verificationId}`, undefined, { idempotent: false });
+    return mapEmailVerificationResult(result);
+  },
+
+  getEmailBulkJobStatus: async (bulkJobId: string): Promise<EmailBulkJobStatus> => {
+    const result = await request<unknown>('GET', `/email-verifications/bulk/jobs/${bulkJobId}`, undefined, { idempotent: false });
+    return mapEmailBulkJobStatus(result, bulkJobId);
+  },
+
+  getEmailBulkJobResults: async (
+    bulkJobId: string,
+    params?: { page?: number; limit?: number }
+  ): Promise<EmailBulkJobResultsResponse> => {
+    const query = buildQueryString({
+      page: params?.page ?? 1,
+      limit: params?.limit ?? 100,
+    });
+    const result = await request<unknown>(
+      'GET',
+      `/email-verifications/bulk/jobs/${bulkJobId}/results${query}`,
+      undefined,
+      { idempotent: false }
+    );
+    const payload = isRecord(result) ? result : {};
+    const items = Array.isArray(payload.items) ? payload.items.map((item) => mapEmailVerificationResult(item)) : [];
+    const metaValue = isRecord(payload.meta) ? payload.meta : {};
+    return {
+      bulkJobId: String(payload.bulkJobId ?? bulkJobId),
+      items,
+      meta: {
+        page: Number(metaValue.page ?? params?.page ?? 1),
+        limit: Number(metaValue.limit ?? params?.limit ?? 100),
+        count: Number(metaValue.count ?? items.length),
+      },
+    };
+  },
+
+  pollEmailVerificationResult: async (
+    verificationId: string,
+    options?: {
+      intervalMs?: number;
+      maxAttempts?: number;
+      onProgress?: (status: EmailVerificationResult['status'], attempt: number, maxAttempts: number) => void;
+    }
+  ): Promise<EmailVerificationResult> => {
+    const intervalMs = options?.intervalMs ?? 3000;
+    const maxAttempts = options?.maxAttempts ?? 20;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const current = await bankingService.getEmailVerificationResult(verificationId);
+      options?.onProgress?.(current.status, attempt, maxAttempts);
+      if (current.status === 'completed' || current.status === 'failed' || current.status === 'not_found') {
+        return current;
+      }
+      if (attempt < maxAttempts) {
+        await delay(intervalMs);
+      }
+    }
+    throw new Error(`Email verification polling timed out after ${maxAttempts} attempts`);
+  },
+
+  pollEmailBulkJobStatus: async (
+    bulkJobId: string,
+    options?: {
+      intervalMs?: number;
+      maxAttempts?: number;
+      onProgress?: (status: EmailBulkJobStatus['status'], attempt: number, maxAttempts: number) => void;
+    }
+  ): Promise<EmailBulkJobStatus> => {
+    const intervalMs = options?.intervalMs ?? 3000;
+    const maxAttempts = options?.maxAttempts ?? 30;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const current = await bankingService.getEmailBulkJobStatus(bulkJobId);
+      options?.onProgress?.(current.status, attempt, maxAttempts);
+      if (current.status === 'completed' || current.status === 'failed' || current.status === 'not_found') {
+        return current;
+      }
+      if (attempt < maxAttempts) {
+        await delay(intervalMs);
+      }
+    }
+    throw new Error(`Email bulk job polling timed out after ${maxAttempts} attempts`);
   },
 
   getCompanySettings: async (): Promise<CompanySettings> => {
