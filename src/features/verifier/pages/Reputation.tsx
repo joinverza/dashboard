@@ -1,9 +1,12 @@
 import { motion } from "framer-motion";
-import { Star, Award, TrendingUp, MessageSquare, AlertCircle } from "lucide-react";
+import { useQueries } from "@tanstack/react-query";
+import { AlertCircle, Award, Loader2, MessageSquare, Star, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
+import { bankingService, getBankingErrorMessage } from "@/services/bankingService";
 
 import {
   Chart as ChartJS,
@@ -47,47 +50,30 @@ const options = {
   }
 };
 
-const data = {
-  labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-  datasets: [
-    {
-      label: 'Reputation Score',
-      data: [4.2, 4.3, 4.5, 4.6, 4.8, 4.9],
-      borderColor: '#10b981',
-      backgroundColor: 'rgba(16, 185, 129, 0.5)',
-      tension: 0.4,
-    },
-  ],
-};
-
-const REVIEWS = [
-    {
-        id: 1,
-        user: "Alice M.",
-        rating: 5,
-        date: "2 days ago",
-        comment: "Very fast and professional verification. Highly recommended!",
-        tags: ["Fast", "Professional"]
-    },
-    {
-        id: 2,
-        user: "Tech Corp",
-        rating: 4,
-        date: "1 week ago",
-        comment: "Good service, but took slightly longer than expected.",
-        tags: ["Accurate"]
-    },
-    {
-        id: 3,
-        user: "John D.",
-        rating: 5,
-        date: "2 weeks ago",
-        comment: "Excellent attention to detail.",
-        tags: ["Detailed", "Friendly"]
-    }
-];
-
 export default function Reputation() {
+  const [, setLocation] = useLocation();
+  const [reputationQuery, reviewsQuery] = useQueries({
+    queries: [
+      { queryKey: ["verifier", "reputation"], queryFn: () => bankingService.getVerifierReputationSummary() },
+      { queryKey: ["verifier", "reviews", "preview"], queryFn: () => bankingService.listVerifierReviews({ page: 1, limit: 3 }) },
+    ],
+  });
+  const trendData = {
+    labels: (reputationQuery.data?.trend ?? []).map((item) => item.period),
+    datasets: [{ label: 'Reputation Score', data: (reputationQuery.data?.trend ?? []).map((item) => item.score), borderColor: '#1ED760', backgroundColor: 'rgba(16, 185, 129, 0.5)', tension: 0.4 }],
+  };
+
+  if (reputationQuery.isLoading || reviewsQuery.isLoading) {
+    return <div className="h-[50vh] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+
+  if (reputationQuery.error) {
+    return <div className="text-sm text-red-400">{getBankingErrorMessage(reputationQuery.error, "Failed to load reputation.")}</div>;
+  }
+
+  const reputation = reputationQuery.data;
+  const reviews = reviewsQuery.data?.items ?? [];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -99,7 +85,7 @@ export default function Reputation() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Reputation Dashboard</h1>
           <p className="text-muted-foreground">Monitor your performance and community standing.</p>
         </div>
-        <Button className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow">
+        <Button className="bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow" onClick={() => setLocation("/verifier/reviews")}>
             View Public Profile
         </Button>
       </div>
@@ -112,14 +98,14 @@ export default function Reputation() {
             </div>
             <div className="text-center z-10">
                 <h3 className="text-muted-foreground font-medium mb-2">Overall Score</h3>
-                <div className="text-6xl font-bold text-verza-emerald mb-2">4.9</div>
+                <div className="text-6xl font-bold text-verza-emerald mb-2">{(reputation?.score ?? 0).toFixed(1)}</div>
                 <div className="flex justify-center gap-1 mb-4">
                     {[1, 2, 3, 4, 5].map((star) => (
                         <Star key={star} className="h-5 w-5 fill-verza-emerald text-verza-emerald" />
                     ))}
                 </div>
                 <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">
-                    Top 5% Verifier
+                    Top {(reputation?.percentile ?? 95).toFixed(0)} Percentile
                 </Badge>
             </div>
         </Card>
@@ -130,34 +116,12 @@ export default function Reputation() {
                 <CardTitle>Score Breakdown</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                        <span>Accuracy</span>
-                        <span className="font-bold">99%</span>
-                    </div>
-                    <Progress value={99} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                        <span>Speed</span>
-                        <span className="font-bold">95%</span>
-                    </div>
-                    <Progress value={95} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                        <span>Communication</span>
-                        <span className="font-bold">4.8/5.0</span>
-                    </div>
-                    <Progress value={96} className="h-2" />
-                </div>
-                 <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                        <span>Professionalism</span>
-                        <span className="font-bold">5.0/5.0</span>
-                    </div>
-                    <Progress value={100} className="h-2" />
-                </div>
+                {(reputation?.breakdown ?? []).map((item) => (
+                  <div className="space-y-2" key={item.metric}>
+                    <div className="flex justify-between text-sm"><span>{item.metric}</span><span className="font-bold">{item.value}%</span></div>
+                    <Progress value={item.value} className="h-2" />
+                  </div>
+                ))}
             </CardContent>
         </Card>
       </div>
@@ -173,7 +137,7 @@ export default function Reputation() {
             </CardHeader>
             <CardContent>
                 <div className="h-[300px] w-full flex items-center justify-center">
-                    <Line options={options} data={data} />
+                    <Line options={options} data={trendData} />
                 </div>
             </CardContent>
          </Card>
@@ -190,17 +154,17 @@ export default function Reputation() {
                 </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-                {REVIEWS.map(review => (
-                    <div key={review.id} className="border-b border-border/50 last:border-0 pb-4 last:pb-0">
+                {reviews.map(review => (
+                    <div key={review.reviewId} className="border-b border-border/50 last:border-0 pb-4 last:pb-0">
                         <div className="flex justify-between items-start mb-1">
-                            <span className="font-medium">{review.user}</span>
-                            <span className="text-xs text-muted-foreground">{review.date}</span>
+                            <span className="font-medium">{review.reviewer}</span>
+                            <span className="text-xs text-muted-foreground">{new Date(review.createdAt).toLocaleDateString()}</span>
                         </div>
                         <div className="flex gap-0.5 mb-2">
                             {[...Array(5)].map((_, i) => (
                                 <Star 
                                     key={i} 
-                                    className={`h-3 w-3 ${i < review.rating ? 'fill-verza-emerald text-verza-emerald' : 'text-muted'}`} 
+                                    className={`h-3 w-3 ${i < review.rating ? 'fill-verza-emerald text-verza-emerald' : 'text-muted'}`}
                                 />
                             ))}
                         </div>

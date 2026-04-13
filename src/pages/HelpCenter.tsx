@@ -122,7 +122,7 @@ export default function HelpCenterPage() {
               <h2 className="text-2xl font-bold mb-4">Popular Articles</h2>
               <div className="grid gap-4">
                 {[
-                  "Getting started with Verza Dashboard",
+                  "Getting started with Ontiver Dashboard",
                   "Understanding Verification Levels",
                   "How to deposit funds securely",
                   "Connecting your Web3 Wallet"
@@ -150,12 +150,12 @@ export default function HelpCenterPage() {
                 <Button className="w-full bg-verza-emerald hover:bg-verza-kelly text-white h-12 text-base" onClick={() => setLocation("/app/message")}>
                   <MessageCircle className="w-5 h-5 mr-2" /> Start Live Chat
                 </Button>
-                <Button variant="outline" className="w-full h-12 text-base" onClick={() => window.open("mailto:support@verza.com?subject=Support%20Ticket", "_self")}>
+                <Button variant="outline" className="w-full h-12 text-base" onClick={() => window.open("mailto:support@ontiver.com?subject=Support%20Ticket", "_self")}>
                   Submit a Ticket
                 </Button>
                 <div className="text-center text-sm text-muted-foreground pt-2">
                   <p>Email us directly at</p>
-                  <a href="mailto:support@verza.com" className="text-verza-emerald hover:underline">support@verza.com</a>
+                  <a href="mailto:support@ontiver.com" className="text-verza-emerald hover:underline">support@ontiver.com</a>
                 </div>
               </CardContent>
             </Card>
@@ -165,15 +165,15 @@ export default function HelpCenterPage() {
                 <CardTitle className="text-lg">Developer Resources</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <a href="https://docs.verza.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between text-sm p-2 hover:bg-secondary rounded transition-colors">
+                <a href="https://docs.ontiver.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between text-sm p-2 hover:bg-secondary rounded transition-colors">
                   <span>API Documentation</span>
                   <ExternalLink className="w-4 h-4 text-muted-foreground" />
                 </a>
-                <a href="https://status.verza.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between text-sm p-2 hover:bg-secondary rounded transition-colors">
+                <a href="https://status.ontiver.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between text-sm p-2 hover:bg-secondary rounded transition-colors">
                   <span>System Status</span>
                   <ExternalLink className="w-4 h-4 text-muted-foreground" />
                 </a>
-                <a href="https://docs.verza.com/changelog" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between text-sm p-2 hover:bg-secondary rounded transition-colors">
+                <a href="https://docs.ontiver.com/changelog" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between text-sm p-2 hover:bg-secondary rounded transition-colors">
                   <span>Changelog</span>
                   <ExternalLink className="w-4 h-4 text-muted-foreground" />
                 </a>

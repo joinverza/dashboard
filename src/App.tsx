@@ -1,14 +1,17 @@
-import { Switch, Route, Redirect } from "wouter";
-import { lazy, Suspense } from "react";
+import { Switch, Route, Redirect, useLocation } from "wouter";
+import { lazy, Suspense, useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { MockDataProvider } from "@/contexts/MockDataContext";
 import { AuthProvider, useAuth } from "@/features/auth/AuthContext";
 import Layout from "@/components/layout/Layout";
 import { PageLoader } from "@/components/shared/loaders/PageLoader";
+import { BANKING_RETRY_EVENT } from "@/services/bankingService";
+import type { BankingRetryEventDetail } from "@/types/banking";
+import { canAccessRoute, isPublicRoute } from "@/security/rbacPolicy";
 
 // Lazy load pages for code splitting
 const UserDashboard = lazy(() => import("@/features/user/pages/Dashboard"));
@@ -35,6 +38,11 @@ const EnterpriseBulkVerification = lazy(() => import("@/features/enterprise/page
 const EnterpriseVerificationRequests = lazy(() => import("@/features/enterprise/pages/VerificationRequests"));
 const EnterpriseVerificationTools = lazy(() => import("@/features/enterprise/pages/VerificationTools"));
 const EnterpriseVerifications = lazy(() => import("@/features/enterprise/pages/Verifications"));
+const EnterpriseVerificationsHub = lazy(() => import("@/features/enterprise/pages/VerificationsHub"));
+const EnterpriseEmailVerificationManagement = lazy(() => import("@/features/enterprise/pages/EmailVerificationManagement"));
+const EnterpriseUsers = lazy(() => import("@/features/enterprise/pages/Users"));
+const EnterpriseReportsHub = lazy(() => import("@/features/enterprise/pages/ReportsHub"));
+const EnterprisePlatformHub = lazy(() => import("@/features/enterprise/pages/PlatformHub"));
 const EnterpriseVerificationDetail = lazy(() => import("@/features/enterprise/pages/VerificationDetail"));
 const EnterpriseApiManagement = lazy(() => import("@/features/enterprise/pages/ApiManagement"));
 const EnterpriseApiDocumentation = lazy(() => import("@/features/enterprise/pages/ApiDocumentation"));
@@ -50,6 +58,10 @@ const EnterpriseIntegrationSetup = lazy(() => import("@/features/enterprise/page
 const EnterpriseBilling = lazy(() => import("@/features/enterprise/pages/Billing"));
 const EnterprisePricingPlans = lazy(() => import("@/features/enterprise/pages/PricingPlans"));
 const EnterpriseSettings = lazy(() => import("@/features/enterprise/pages/Settings"));
+const EnterpriseKybWizard = lazy(() => import("@/features/enterprise/pages/KybWizard"));
+const EnterpriseMonoViewer = lazy(() => import("@/features/enterprise/pages/MonoAccountViewer"));
+const EnterpriseComplianceWorkflow = lazy(() => import("@/features/enterprise/pages/ComplianceWorkflow"));
+const EnterpriseBillingCheckoutRedirect = lazy(() => import("@/features/enterprise/pages/BillingCheckoutRedirect"));
 const AdminDashboard = lazy(() => import("@/features/admin/pages/Dashboard"));
 const AdminUserManagement = lazy(() => import("@/features/admin/pages/UserManagement"));
 const AdminUserDetail = lazy(() => import("@/features/admin/pages/UserDetail"));
@@ -77,21 +89,26 @@ const AdminUsers = lazy(() => import("@/features/admin/pages/AdminUsers"));
 const AdminComplianceReports = lazy(() => import("@/features/admin/pages/ComplianceReports"));
 const AdminAuditLogs = lazy(() => import("@/features/admin/pages/AuditLogs"));
 const AdminContentModeration = lazy(() => import("@/features/admin/pages/ContentModeration"));
+const AdminSecurityConsole = lazy(() => import("@/features/admin/security/AdminSecurityConsole"));
 
 const MessagePage = lazy(() => import("@/pages/Message"));
 const NotificationsPage = lazy(() => import("@/pages/Notifications"));
 const SettingsPage = lazy(() => import("@/pages/Settings"));
 const HelpCenterPage = lazy(() => import("@/pages/HelpCenter"));
+const GettingStartedPage = lazy(() => import("@/features/user/pages/GettingStarted"));
 const PlaceholderPage = lazy(() => import("@/pages/PlaceholderPage"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const LoginPage = lazy(() => import("@/pages/Login"));
+const UserSignupPage = lazy(() => import("@/pages/UserSignup"));
 const SignupPage = lazy(() => import("@/pages/Signup"));
 const EnterpriseLoginPage = lazy(() => import("@/pages/EnterpriseLogin"));
 const EnterpriseSignupPage = lazy(() => import("@/pages/EnterpriseSignup"));
+const VerifierLoginPage = lazy(() => import("@/pages/VerifierLogin"));
 const AdminLoginPage = lazy(() => import("@/pages/AdminLogin"));
 const AdminSignupPage = lazy(() => import("@/pages/AdminSignup"));
 const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPassword"));
 const ResetPasswordPage = lazy(() => import("@/pages/ResetPassword"));
+const AcceptTeamInvitationPage = lazy(() => import("@/pages/AcceptTeamInvitation"));
 
 const MarketplacePage = lazy(() => import("@/pages/Marketplace"));
 const WalletPage = lazy(() => import("@/pages/Wallet"));
@@ -109,20 +126,29 @@ const PaymentConfirmationPage = lazy(() => import("@/pages/PaymentConfirmation")
 const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicy"));
 const TermsOfServicePage = lazy(() => import("@/pages/TermsOfService"));
 const OnboardingPage = lazy(() => import("@/pages/Onboarding"));
+const ForbiddenPage = lazy(() => import("./pages/Forbidden"));
 
 function Router() {
-  const { user, isBootstrapping } = useAuth();
+  const { user, permissions, isBootstrapping } = useAuth();
+  const [location] = useLocation();
   const getDefaultRoute = () => {
     if (!user) return "/login";
     if (user.role === "admin") return "/admin";
     if (user.role === "verifier") return "/verifier";
-    if (user.role === "manager") return "/manager";
     if (user.role === "enterprise") return "/enterprise";
-    return "/app";
+    return "/forbidden";
   };
   
   if (isBootstrapping) {
     return <PageLoader />;
+  }
+
+  if (
+    user &&
+    !isPublicRoute(location) &&
+    !canAccessRoute(user.role, permissions, location)
+  ) {
+    return <ForbiddenPage />;
   }
   
   return (
@@ -135,13 +161,22 @@ function Router() {
           {user ? <Redirect to={getDefaultRoute()} /> : <LoginPage />}
         </Route>
         <Route path="/signup">
-          {user ? <Redirect to={getDefaultRoute()} /> : <SignupPage />}
+          {user ? <Redirect to={getDefaultRoute()} /> : <UserSignupPage />}
+        </Route>
+        <Route path="/user/signup">
+          {user ? <Redirect to={getDefaultRoute()} /> : <UserSignupPage />}
         </Route>
         <Route path="/portal/login">
           {user ? <Redirect to={getDefaultRoute()} /> : <EnterpriseLoginPage />}
         </Route>
         <Route path="/portal/signup">
           {user ? <Redirect to={getDefaultRoute()} /> : <EnterpriseSignupPage />}
+        </Route>
+        <Route path="/verifier/login">
+          {user ? <Redirect to={getDefaultRoute()} /> : <VerifierLoginPage />}
+        </Route>
+        <Route path="/verifier/signup">
+          {user ? <Redirect to={getDefaultRoute()} /> : <SignupPage />}
         </Route>
         <Route path="/admin/login">
           {user ? <Redirect to={getDefaultRoute()} /> : <AdminLoginPage />}
@@ -151,14 +186,17 @@ function Router() {
         </Route>
         <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/reset-password" component={ResetPasswordPage} />
+        <Route path="/invite/accept" component={AcceptTeamInvitationPage} />
         <Route path="/privacy" component={PrivacyPolicyPage} />
         <Route path="/terms" component={TermsOfServicePage} />
         <Route path="/onboarding" component={OnboardingPage} />
+        <Route path="/forbidden" component={ForbiddenPage} />
         
         {/* User Dashboard Routes */}
         {user?.role === 'user' && (
           <>
             <Route path="/app" component={UserDashboard} />
+            <Route path="/app/getting-started" component={GettingStartedPage} />
             <Route path="/app/credentials" component={CredentialsPage} />
             <Route path="/app/credentials/:id" component={CredentialDetailPage} />
             <Route path="/app/payment/confirm" component={PaymentConfirmationPage} />
@@ -225,7 +263,12 @@ function Router() {
             <Route path="/enterprise" component={EnterpriseDashboard} />
             <Route path="/enterprise/bulk" component={EnterpriseBulkVerification} />
             <Route path="/enterprise/requests" component={EnterpriseVerificationRequests} />
-            <Route path="/enterprise/verifications" component={EnterpriseVerifications} />
+            <Route path="/enterprise/verifications" component={EnterpriseVerificationsHub} />
+            <Route path="/enterprise/email-verifications" component={EnterpriseEmailVerificationManagement} />
+            <Route path="/enterprise/verifications/workbench" component={EnterpriseVerifications} />
+            <Route path="/enterprise/users" component={EnterpriseUsers} />
+            <Route path="/enterprise/reports" component={EnterpriseReportsHub} />
+            <Route path="/enterprise/platform" component={EnterprisePlatformHub} />
             <Route path="/enterprise/tools" component={EnterpriseVerificationTools} />
             <Route path="/enterprise/requests/:id" component={EnterpriseVerificationDetail} />
             <Route path="/enterprise/api" component={EnterpriseApiManagement} />
@@ -237,11 +280,15 @@ function Router() {
             <Route path="/enterprise/audit" component={EnterpriseAuditTrail} />
             <Route path="/enterprise/analytics" component={EnterpriseAnalytics} />
             <Route path="/enterprise/billing" component={EnterpriseBilling} />
+            <Route path="/enterprise/billing/checkout" component={EnterpriseBillingCheckoutRedirect} />
             <Route path="/enterprise/cost-analysis" component={EnterpriseCostAnalysis} />
             <Route path="/enterprise/pricing" component={EnterprisePricingPlans} />
             <Route path="/enterprise/integrations" component={EnterpriseIntegrations} />
             <Route path="/enterprise/integrations/setup" component={EnterpriseIntegrationSetup} />
             <Route path="/enterprise/integrations/setup/:id" component={EnterpriseIntegrationSetup} />
+            <Route path="/enterprise/kyb" component={EnterpriseKybWizard} />
+            <Route path="/enterprise/mono" component={EnterpriseMonoViewer} />
+            <Route path="/enterprise/compliance/workflows" component={EnterpriseComplianceWorkflow} />
             <Route path="/enterprise/settings" component={EnterpriseSettings} />
             <Route path="/enterprise/*" component={EnterpriseDashboard} />
           </>
@@ -252,10 +299,13 @@ function Router() {
             <Route path="/manager" component={EnterpriseDashboard} />
             <Route path="/manager/requests" component={EnterpriseVerificationRequests} />
             <Route path="/manager/verifications" component={EnterpriseVerifications} />
+            <Route path="/manager/email-verifications" component={EnterpriseEmailVerificationManagement} />
             <Route path="/manager/tools" component={EnterpriseVerificationTools} />
             <Route path="/manager/team" component={EnterpriseTeamManagement} />
             <Route path="/manager/analytics" component={EnterpriseAnalytics} />
             <Route path="/manager/compliance" component={EnterpriseComplianceReports} />
+            <Route path="/manager/compliance/workflows" component={EnterpriseComplianceWorkflow} />
+            <Route path="/manager/kyb" component={EnterpriseKybWizard} />
             <Route path="/manager/audit" component={EnterpriseAuditTrail} />
             <Route path="/manager/settings" component={EnterpriseSettings} />
             <Route path="/manager/*" component={EnterpriseDashboard} />
@@ -280,6 +330,7 @@ function Router() {
             <Route path="/admin/enterprises" component={AdminEnterpriseManagement} />
             <Route path="/admin/enterprises/:id" component={AdminEnterpriseDetail} />
             <Route path="/admin/system" component={AdminSystemMonitor} />
+            <Route path="/admin/security" component={AdminSecurityConsole} />
             <Route path="/admin/disputes" component={AdminDisputes} />
             <Route path="/admin/disputes/:id" component={AdminDisputeDetail} />
             <Route path="/admin/analytics" component={AdminAnalytics} />
@@ -305,7 +356,7 @@ function Router() {
           {!user ? <Redirect to="/login" /> : user.role === "user" ? <Redirect to="/app" /> : <Redirect to={getDefaultRoute()} />}
         </Route>
         <Route path="/verifier/:rest*">
-          {!user ? <Redirect to="/login" /> : user.role === "verifier" ? <Redirect to="/verifier" /> : <Redirect to={getDefaultRoute()} />}
+          {!user ? <Redirect to="/verifier/login" /> : user.role === "verifier" ? <Redirect to="/verifier" /> : <Redirect to={getDefaultRoute()} />}
         </Route>
         <Route path="/enterprise/:rest*">
           {!user ? <Redirect to="/portal/login" /> : user.role === "enterprise" ? <Redirect to="/enterprise" /> : <Redirect to={getDefaultRoute()} />}
@@ -324,6 +375,18 @@ function Router() {
 }
 
 function App() {
+  useEffect(() => {
+    const onRetry = (event: Event) => {
+      const detail = (event as CustomEvent<BankingRetryEventDetail>).detail;
+      if (!detail) return;
+      toast.warning(`Rate limited. Retrying in ${Math.round(detail.retryInMs / 1000)}s (requestId: ${detail.requestId})`);
+    };
+    window.addEventListener(BANKING_RETRY_EVENT, onRetry);
+    return () => {
+      window.removeEventListener(BANKING_RETRY_EVENT, onRetry);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

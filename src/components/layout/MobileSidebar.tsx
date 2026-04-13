@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import versalogo from "@/assets/versalogoSVG.svg";
+import versalogo from "@/assets/ONTIVER Green.svg";
 import type { NavItem } from "@/config/navigation";
 
 interface MobileSidebarProps {
@@ -37,7 +37,7 @@ export default function MobileSidebar({ isOpen, onClose, navItems }: MobileSideb
               "glass-sidebar fixed left-0 top-0 h-screen w-72 z-50 md:hidden"
             )}
             style={{
-              boxShadow: "0 0 40px rgba(141, 198, 63, 0.1)",
+              boxShadow: "0 0 40px rgba(30, 215, 96, 0.1)",
             }}
           >
             <div className="p-6">
@@ -51,13 +51,13 @@ export default function MobileSidebar({ isOpen, onClose, navItems }: MobileSideb
                 <div className="relative p-1 rounded-xl bg-gradient-to-br from-white/10 to-transparent border border-white/5">
                   <img
                     src={versalogo}
-                    alt="Verza logo"
-                    className="w-8 h-8 object-contain drop-shadow-[0_0_10px_rgba(141,198,63,0.3)]"
+                    alt="Ontiver logo"
+                    className="w-8 h-8 object-contain drop-shadow-[0_0_10px_rgba(30,215,96,0.3)]"
                   />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-lg font-bold text-foreground tracking-tight">
-                    Verza
+                    Ontiver
                   </span>
                   <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
                     Dashboard
@@ -82,7 +82,7 @@ export default function MobileSidebar({ isOpen, onClose, navItems }: MobileSideb
                         className={cn(
                           "group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer border border-transparent relative overflow-hidden",
                           isActive
-                            ? "bg-verza-emerald/10 border-verza-emerald/20 shadow-[0_0_20px_-5px_rgba(141,198,63,0.3)] before:absolute before:inset-0 before:bg-gradient-to-r before:from-verza-emerald/10 before:to-transparent before:opacity-100"
+                            ? "bg-verza-emerald/10 border-verza-emerald/20 shadow-[0_0_20px_-5px_rgba(30,215,96,0.3)] before:absolute before:inset-0 before:bg-gradient-to-r before:from-verza-emerald/10 before:to-transparent before:opacity-100"
                             : "text-muted-foreground hover:text-foreground hover:border-white/5"
                         )}
                       >
@@ -100,7 +100,7 @@ export default function MobileSidebar({ isOpen, onClose, navItems }: MobileSideb
                         {isActive && (
                           <motion.div
                             layoutId="active-indicator-mobile"
-                            className="ml-auto w-1.5 h-1.5 rounded-full bg-verza-emerald shadow-[0_0_8px_rgba(141,198,63,0.8)]"
+                            className="ml-auto w-1.5 h-1.5 rounded-full bg-verza-emerald shadow-[0_0_8px_rgba(30,215,96,0.8)]"
                           />
                         )}
                       </motion.div>

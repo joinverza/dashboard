@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   UserPlus, MoreVertical, Edit, Trash2, 
-  Search, Lock, History
+  Search, Lock, History, Loader2
 } from 'lucide-react';
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
@@ -17,64 +18,36 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 
 export default function AdminUsers() {
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Mock Data
-  const adminUsers = [
-    { 
-      id: 'ADM-001', 
-      name: 'Sarah Connor', 
-      email: 'sarah@verza.io', 
-      role: 'Super Admin', 
-      status: 'active', 
-      lastLogin: '2 mins ago', 
-      avatar: 'SC'
+  const adminsQuery = useQuery({
+    queryKey: ["admin", "team", searchTerm],
+    queryFn: () => bankingService.getUsers({ role: "admin", search: searchTerm || undefined }),
+  });
+  const activityQuery = useQuery({
+    queryKey: ["admin", "team", "activity"],
+    queryFn: () => bankingService.getAuditLogs(),
+  });
+  const resetMutation = useMutation({
+    mutationFn: (userId: string) => bankingService.resetAdminUserPassword(userId),
+    onSuccess: () => toast.success("Password reset email queued."),
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to queue password reset")),
+  });
+  const removeMutation = useMutation({
+    mutationFn: (userId: string) => bankingService.deleteAdminUser(userId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin", "team"] });
+      toast.success("Admin removed.");
     },
-    { 
-      id: 'ADM-002', 
-      name: 'John Smith', 
-      email: 'john@verza.io', 
-      role: 'Admin', 
-      status: 'active', 
-      lastLogin: '1 hour ago', 
-      avatar: 'JS'
-    },
-    { 
-      id: 'ADM-003', 
-      name: 'Emily Chen', 
-      email: 'emily@verza.io', 
-      role: 'Moderator', 
-      status: 'inactive', 
-      lastLogin: '3 days ago', 
-      avatar: 'EC'
-    },
-    { 
-      id: 'ADM-004', 
-      name: 'Michael Brown', 
-      email: 'mike@verza.io', 
-      role: 'Support', 
-      status: 'active', 
-      lastLogin: '5 hours ago', 
-      avatar: 'MB'
-    },
-  ];
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to remove admin")),
+  });
 
   // Filter admins based on search term
-  const filteredAdmins = adminUsers.filter(admin => 
-    admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    admin.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const activityLog = [
-    { id: 1, admin: 'Sarah Connor', action: 'Suspended User', target: 'Alice Johnson', date: '2 mins ago', details: 'Violation of terms' },
-    { id: 2, admin: 'John Smith', action: 'Approved Verifier', target: 'VeriTech Solutions', date: '1 hour ago', details: 'Documents verified' },
-    { id: 3, admin: 'Sarah Connor', action: 'Updated Settings', target: 'Platform Fee', date: '5 hours ago', details: 'Changed from 2% to 1.5%' },
-    { id: 4, admin: 'Emily Chen', action: 'Deleted Post', target: 'Spam Content', date: '1 day ago', details: 'Reported by users' },
-    { id: 5, admin: 'Michael Brown', action: 'Resolved Dispute', target: 'DSP-2025-001', date: '2 days ago', details: 'Refund issued' },
-  ];
+  const filteredAdmins = adminsQuery.data ?? [];
+  const activityLog = (activityQuery.data ?? []).slice(0, 50);
 
   return (
     <div className="space-y-6">
@@ -118,6 +91,8 @@ export default function AdminUsers() {
               </div>
             </CardHeader>
             <CardContent>
+              {adminsQuery.isLoading ? <div className="flex justify-center py-10"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div> : null}
+              {adminsQuery.error ? <div className="text-sm text-red-400 mb-4">{getBankingErrorMessage(adminsQuery.error, "Failed to load admin users.")}</div> : null}
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -134,7 +109,7 @@ export default function AdminUsers() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9">
-                            <AvatarFallback>{admin.avatar}</AvatarFallback>
+                            <AvatarFallback>{admin.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div className="flex flex-col">
                             <span className="font-medium">{admin.name}</span>
@@ -150,12 +125,12 @@ export default function AdminUsers() {
                       <TableCell>
                         <Badge 
                           variant={admin.status === 'active' ? 'default' : 'secondary'}
-                          className={admin.status === 'active' ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' : ''}
+                          className={admin.status === 'active' ? 'bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20' : ''}
                         >
                           {admin.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{admin.lastLogin}</TableCell>
+                      <TableCell>{admin.lastActive ?? "-"}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -170,8 +145,11 @@ export default function AdminUsers() {
                             <DropdownMenuItem onClick={() => toast.success(`Password reset email sent to ${admin.email}`)}>
                               <Lock className="mr-2 h-4 w-4" /> Reset Password
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => resetMutation.mutate(admin.id)}>
+                              <Lock className="mr-2 h-4 w-4" /> Queue Reset (API)
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-500" onClick={() => toast.warning(`${admin.name} removed from admin team`)}>
+                            <DropdownMenuItem className="text-red-500" onClick={() => removeMutation.mutate(admin.id)}>
                               <Trash2 className="mr-2 h-4 w-4" /> Remove
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -191,6 +169,7 @@ export default function AdminUsers() {
               <CardTitle>Admin Activity Log</CardTitle>
             </CardHeader>
             <CardContent>
+              {activityQuery.error ? <div className="text-sm text-red-400 mb-4">{getBankingErrorMessage(activityQuery.error, "Failed to load admin activity.")}</div> : null}
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -204,16 +183,16 @@ export default function AdminUsers() {
                 <TableBody>
                   {activityLog.map((log) => (
                     <TableRow key={log.id}>
-                      <TableCell className="font-medium">{log.admin}</TableCell>
+                      <TableCell className="font-medium">{log.actor ?? log.actorId}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <History className="h-4 w-4 text-muted-foreground" />
                           {log.action}
                         </div>
                       </TableCell>
-                      <TableCell>{log.target}</TableCell>
-                      <TableCell className="text-muted-foreground">{log.details}</TableCell>
-                      <TableCell className="text-right">{log.date}</TableCell>
+                      <TableCell>{log.targetId ?? log.resourceId}</TableCell>
+                      <TableCell className="text-muted-foreground">{typeof log.details === "string" ? log.details : JSON.stringify(log.details ?? {})}</TableCell>
+                      <TableCell className="text-right">{new Date(log.timestamp).toLocaleString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

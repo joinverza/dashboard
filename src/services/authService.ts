@@ -1,9 +1,12 @@
 import type { UserRole } from "@/features/auth/AuthContext";
+import { env } from "@/config/env";
+import {
+  readSession as readSessionState,
+  writeSession as writeSessionState,
+  type SessionState,
+} from "@/auth/sessionStore";
 
-const AUTH_PATH = "/auth";
-const AUTH_STORAGE_KEY = "verza:auth:session";
-
-type BackendRole = Exclude<UserRole, "user">;
+type BackendRole = UserRole;
 type MfaMethod = "totp" | "webauthn" | "recovery_code";
 
 type ApiSuccess<T> = {
@@ -72,6 +75,13 @@ export type MfaEnrollment = {
 };
 
 export type SignupPayload =
+  | {
+      role: "user";
+      fullName: string;
+      email: string;
+      password: string;
+      consentAccepted: boolean;
+    }
   | {
       role: "enterprise";
       organizationName: string;
@@ -159,20 +169,62 @@ const normalizeEndpointPath = (value: string): string => {
   return clean.startsWith("/") ? clean : `/${clean}`;
 };
 
-const normalizeAuthBaseUrl = (value: string): string => {
+const getAuthPathForRole = (role?: BackendRole): string => {
+  switch (role) {
+    case "admin":
+      return "/admin/auth";
+    case "enterprise":
+    case "manager":
+      return "/enterprise/auth";
+    case "verifier":
+      return "/verifier/auth";
+    case "user":
+    default:
+      return "/user/auth";
+  }
+};
+
+const normalizeAuthBaseUrl = (value: string, role?: BackendRole): string => {
   const cleaned = sanitizeUrlString(value);
-  if (!cleaned) return AUTH_PATH;
+  const authPath = getAuthPathForRole(role);
+  
+  if (!cleaned) return authPath;
+  
   const withoutBankingPath = cleaned.endsWith("/api/v1/banking")
     ? cleaned.slice(0, -"/api/v1/banking".length)
     : cleaned;
-  if (withoutBankingPath.endsWith(AUTH_PATH)) return withoutBankingPath;
-  return `${withoutBankingPath}${AUTH_PATH}`;
+    
+  // If it already ends with one of our auth paths, return it
+  if (
+    withoutBankingPath.endsWith("/admin/auth") ||
+    withoutBankingPath.endsWith("/enterprise/auth") ||
+    withoutBankingPath.endsWith("/verifier/auth") ||
+    withoutBankingPath.endsWith("/user/auth") ||
+    withoutBankingPath.endsWith("/auth")
+  ) {
+    return withoutBankingPath;
+  }
+  
+  return `${withoutBankingPath}${authPath}`;
 };
 
-const AUTH_BASE_URL = normalizeAuthBaseUrl(import.meta.env.VITE_BANKING_API_BASE_URL || "");
-
-const request = async <T>(method: string, path: string, body?: unknown, accessToken?: string): Promise<{ status: number; payload: ApiSuccess<T> | ApiFailure | null }> => {
+const request = async <T>(
+  method: string, 
+  path: string, 
+  body?: unknown, 
+  accessToken?: string,
+  role?: BackendRole
+): Promise<{ status: number; payload: ApiSuccess<T> | ApiFailure | null }> => {
   const normalizedPath = normalizeEndpointPath(path);
+  const authBaseUrl = normalizeAuthBaseUrl(env.ontiverAuthBaseUrl || env.ontiverApiBaseUrl || "", role);
+  if (!/^https?:\/\//i.test(authBaseUrl)) {
+    throw new AuthApiError(
+      0,
+      "auth_internal_error",
+      "Invalid frontend auth API configuration. Set VITE_ONTIVER_AUTH_BASE_URL to a full https URL.",
+    );
+  }
+  
   const headers: Record<string, string> = {
     Accept: "application/json",
     "X-Request-Id": generateRequestId(),
@@ -183,7 +235,7 @@ const request = async <T>(method: string, path: string, body?: unknown, accessTo
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
   }
-  const response = await fetch(`${AUTH_BASE_URL}${normalizedPath}`, {
+  const response = await fetch(`${authBaseUrl}${normalizedPath}`, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -214,24 +266,11 @@ const toDisplayName = (email: string): string => {
 };
 
 export const saveSession = (session: AuthSession | null): void => {
-  if (typeof window === "undefined") return;
-  if (!session) {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
-    return;
-  }
-  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+  writeSessionState(session as SessionState | null);
 };
 
 export const getStoredSession = (): AuthSession | null => {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as AuthSession;
-  } catch {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
-    return null;
-  }
+  return readSessionState() as AuthSession | null;
 };
 
 export const toSession = (tokens: AuthTokenResponse): AuthSession => ({
@@ -248,7 +287,7 @@ export const toSession = (tokens: AuthTokenResponse): AuthSession => ({
 });
 
 export const loginRequest = async (payload: LoginPayload): Promise<{ type: "tokens"; data: AuthTokenResponse } | { type: "mfa_required"; data: LoginMfaChallenge }> => {
-  const { status, payload: response } = await request<AuthTokenResponse | LoginMfaChallenge>("POST", "/login", payload);
+  const { status, payload: response } = await request<AuthTokenResponse | LoginMfaChallenge>("POST", "/login", payload, undefined, payload.role);
   if (status === 202) {
     return {
       type: "mfa_required",
@@ -305,7 +344,7 @@ export const verifyMfaEnrollRequest = async (accessToken: string, code: string):
 };
 
 export const signupRequest = async (payload: SignupPayload): Promise<SignupResponse> => {
-  const { status, payload: response } = await request<SignupResponse>("POST", "/signup", payload);
+  const { status, payload: response } = await request<SignupResponse>("POST", "/signup", payload, undefined, payload.role);
   if (status !== 201) {
     throw toAuthApiError(status, response);
   }
@@ -484,4 +523,9 @@ export const mapAuthErrorToMessage = (error: unknown, operation?: AuthOperation)
     return error.message;
   }
   return operation ? fallbackByOperation[operation] : "Authentication request failed.";
+};
+
+export const stepUpAuth = async (payload?: Record<string, unknown>): Promise<AuthSession> => {
+  const { status, payload: response } = await request<AuthSession>("POST", "/step-up", payload ?? {});
+  return assertSuccess(status, response);
 };

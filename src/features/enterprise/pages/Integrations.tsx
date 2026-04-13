@@ -190,7 +190,7 @@ export default function EnterpriseIntegrations() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Integrations</h1>
-          <p className="text-muted-foreground">Connect Verza with your existing tools and workflows.</p>
+          <p className="text-muted-foreground">Connect Ontiver with your existing tools and workflows.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
@@ -198,7 +198,7 @@ export default function EnterpriseIntegrations() {
               <ExternalLink className="mr-2 h-4 w-4" /> API Docs
             </Link>
           </Button>
-          <Button onClick={() => window.open('mailto:partnerships@verza.com?subject=New%20Integration%20Request', '_self')}>
+          <Button onClick={() => window.open('mailto:partnerships@ontiver.com?subject=New%20Integration%20Request', '_self')}>
             <Plus className="mr-2 h-4 w-4" /> Request Integration
           </Button>
         </div>
@@ -221,7 +221,7 @@ export default function EnterpriseIntegrations() {
                   <div className="font-bold text-xl text-black">{integration.name.substring(0, 2)}</div>
                 </div>
                 {integration.status === 'connected' && (
-                  <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20">Connected</Badge>
+                  <Badge className="bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20">Connected</Badge>
                 )}
                 {integration.status === 'disconnected' && (
                   <Badge variant="outline" className="text-muted-foreground">Available</Badge>
@@ -337,7 +337,7 @@ export default function EnterpriseIntegrations() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <span className={`h-2 w-2 rounded-full ${webhook.isActive ? 'bg-emerald-500' : 'bg-yellow-500'}`} />
+                    <span className={`h-2 w-2 rounded-full ${webhook.isActive ? 'bg-verza-emerald' : 'bg-yellow-500'}`} />
                     <span className="text-sm text-muted-foreground capitalize">{webhook.isActive ? 'Active' : 'Inactive'}</span>
                   </div>
                   <Button variant="ghost" size="icon" onClick={() => handleDeleteWebhook(webhook.id)} disabled={activeWebhookId === webhook.id}>

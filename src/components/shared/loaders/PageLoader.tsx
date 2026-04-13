@@ -18,7 +18,7 @@ const GlitchLine = ({ seed }: { seed: number }) => {
 
   return (
     <motion.div
-      className="h-1 bg-[#8DC63F] rounded-full"
+      className="h-1 bg-[#1ED760] rounded-full"
       animate={{
         width: widths,
         opacity: [0.2, 0.8, 0.2]
@@ -51,7 +51,7 @@ const LoadingText = () => {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: -20, opacity: 0 }}
-        className="text-[#8DC63F] text-xs font-mono tracking-[0.3em]"
+        className="text-[#1ED760] text-xs font-mono tracking-[0.3em]"
       >
         {WORDS[index]}
       </motion.span>
@@ -80,7 +80,7 @@ export const PageLoader = () => {
         <div 
           className="absolute inset-0" 
           style={{
-            backgroundImage: `radial-gradient(circle at 50% 50%, rgba(141, 198, 63, 0.1) 1px, transparent 1px)`,
+            backgroundImage: `radial-gradient(circle at 50% 50%, rgba(30, 215, 96, 0.1) 1px, transparent 1px)`,
             backgroundSize: '30px 30px'
           }}
         />
@@ -95,17 +95,17 @@ export const PageLoader = () => {
       <div className="relative w-64 h-64 flex items-center justify-center">
         {/* Outer Ring */}
         <motion.div
-          className="absolute inset-0 border border-[#8DC63F]/20 rounded-full"
+          className="absolute inset-0 border border-[#1ED760]/20 rounded-full"
           animate={{ rotate: 360 }}
           transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
         >
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#8DC63F] rounded-full shadow-[0_0_10px_#8DC63F]" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#8DC63F] rounded-full shadow-[0_0_10px_#8DC63F]" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#1ED760] rounded-full shadow-[0_0_10px_#1ED760]" />
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#1ED760] rounded-full shadow-[0_0_10px_#1ED760]" />
         </motion.div>
 
         {/* Middle Ring - Counter Rotating */}
         <motion.div
-          className="absolute inset-4 border border-[#8DC63F]/10 rounded-full border-dashed"
+          className="absolute inset-4 border border-[#1ED760]/10 rounded-full border-dashed"
           animate={{ rotate: -360 }}
           transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
         />
@@ -113,9 +113,9 @@ export const PageLoader = () => {
         {/* Inner Tech Circle */}
         <div className="absolute inset-0 flex items-center justify-center">
           <motion.div
-            className="w-32 h-32 rounded-full border border-[#8DC63F]/30 flex items-center justify-center relative"
+            className="w-32 h-32 rounded-full border border-[#1ED760]/30 flex items-center justify-center relative"
             animate={{ 
-              boxShadow: ["0 0 10px rgba(141,198,63,0.1)", "0 0 30px rgba(141,198,63,0.3)", "0 0 10px rgba(141,198,63,0.1)"] 
+              boxShadow: ["0 0 10px rgba(30,215,96,0.1)", "0 0 30px rgba(30,215,96,0.3)", "0 0 10px rgba(30,215,96,0.1)"] 
             }}
             transition={{ duration: 2, repeat: Infinity }}
           >
@@ -124,7 +124,7 @@ export const PageLoader = () => {
               <motion.path
                 d="M50 5 L93 27 L93 72 L50 95 L7 72 L7 27 Z"
                 fill="none"
-                stroke="#8DC63F"
+                stroke="#1ED760"
                 strokeWidth="2"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
@@ -132,7 +132,7 @@ export const PageLoader = () => {
               />
               <motion.path
                 d="M50 20 L75 35 L75 65 L50 80 L25 65 L25 35 Z"
-                fill="rgba(141,198,63,0.1)"
+                fill="rgba(30,215,96,0.1)"
                 stroke="none"
                 animate={{ opacity: [0.3, 0.6, 0.3] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
@@ -150,7 +150,7 @@ export const PageLoader = () => {
             transition={{ duration: 3 + i, repeat: Infinity, ease: "linear", delay: i * 0.5 }}
           >
             <div 
-              className="w-1 h-8 bg-gradient-to-b from-transparent via-[#8DC63F] to-transparent absolute top-0 left-1/2 -translate-x-1/2 opacity-50"
+              className="w-1 h-8 bg-gradient-to-b from-transparent via-[#1ED760] to-transparent absolute top-0 left-1/2 -translate-x-1/2 opacity-50"
               style={{ filter: 'blur(1px)' }}
             />
           </motion.div>
@@ -162,26 +162,26 @@ export const PageLoader = () => {
         <LoadingText />
         
         {/* Progress Bar */}
-        <div className="w-64 h-1 bg-[#8DC63F]/10 rounded-full overflow-hidden relative">
+        <div className="w-64 h-1 bg-[#1ED760]/10 rounded-full overflow-hidden relative">
           <motion.div
-            className="absolute top-0 left-0 h-full bg-[#8DC63F]"
+            className="absolute top-0 left-0 h-full bg-[#1ED760]"
             style={{ width: `${Math.min(progress, 100)}%` }}
             animate={{
-              boxShadow: "0 0 10px #8DC63F"
+              boxShadow: "0 0 10px #1ED760"
             }}
           />
         </div>
         
-        <div className="text-[#8DC63F]/50 text-[10px] font-mono">
+        <div className="text-[#1ED760]/50 text-[10px] font-mono">
           SYSTEM INTEGRITY: {Math.min(Math.floor(progress), 100)}%
         </div>
       </div>
 
       {/* Corner Accents */}
-      <div className="absolute top-8 left-8 w-16 h-16 border-t border-l border-[#8DC63F]/30" />
-      <div className="absolute top-8 right-8 w-16 h-16 border-t border-r border-[#8DC63F]/30" />
-      <div className="absolute bottom-8 left-8 w-16 h-16 border-b border-l border-[#8DC63F]/30" />
-      <div className="absolute bottom-8 right-8 w-16 h-16 border-b border-r border-[#8DC63F]/30" />
+      <div className="absolute top-8 left-8 w-16 h-16 border-t border-l border-[#1ED760]/30" />
+      <div className="absolute top-8 right-8 w-16 h-16 border-t border-r border-[#1ED760]/30" />
+      <div className="absolute bottom-8 left-8 w-16 h-16 border-b border-l border-[#1ED760]/30" />
+      <div className="absolute bottom-8 right-8 w-16 h-16 border-b border-r border-[#1ED760]/30" />
 
       {/* Random Data Glitch Overlay */}
       <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col gap-2 items-end opacity-30">

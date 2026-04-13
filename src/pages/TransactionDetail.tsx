@@ -37,7 +37,7 @@ const TRANSACTION = {
 export default function TransactionDetailPage() {
   const [, setLocation] = useLocation();
   useRoute("/app/wallet/transactions/:id");
-  const explorerBase = (import.meta.env.VITE_ZK_EXPLORER_URL as string | undefined) || "https://explorer.verza.com/tx";
+  const explorerBase = (import.meta.env.VITE_ZK_EXPLORER_URL as string | undefined) || "https://explorer.ontiver.com/tx";
   const explorerUrl = `${explorerBase.replace(/\/$/, "")}/${encodeURIComponent(TRANSACTION.id)}`;
   
   // In a real app, use the ID to fetch transaction details
@@ -85,7 +85,7 @@ export default function TransactionDetailPage() {
 
             <Badge variant="outline" className={cn(
               "px-3 py-1",
-              TRANSACTION.status === "confirmed" ? "bg-green-500/10 text-green-500 border-green-500/20" :
+              TRANSACTION.status === "confirmed" ? "bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20" :
               TRANSACTION.status === "pending" ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
               "bg-red-500/10 text-red-500 border-red-500/20"
             )}>

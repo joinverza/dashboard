@@ -62,7 +62,7 @@ export default function RecommendedVerifiersCarousel() {
       >
         {verifiers.map((verifier) => (
           <Link key={verifier.id} href={`/app/verifier-profile/${verifier.id}`}>
-            <div className="min-w-[200px] bg-black/20 rounded-xl p-4 border border-white/5 hover:border-[#00FF87]/30 transition-all cursor-pointer snap-start group">
+            <div className="min-w-[200px] bg-black/20 rounded-xl p-4 border border-white/5 hover:border-verza-emerald/30 transition-all cursor-pointer snap-start group">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-lg bg-white/10 p-1 flex items-center justify-center overflow-hidden">
                    {/* Fallback for image if load fails or generic icon */}
@@ -84,7 +84,7 @@ export default function RecommendedVerifiersCarousel() {
                   <span>{verifier.rating}</span>
                 </div>
                 {verifier.verified && (
-                  <div className="flex items-center gap-1 text-[#00FF87]">
+                  <div className="flex items-center gap-1 text-verza-emerald">
                     <ShieldCheck className="w-3 h-3" />
                     <span>Verified</span>
                   </div>

@@ -34,7 +34,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
     datasets: [
       {
         data: product.chartData,
-        backgroundColor: 'rgba(141, 198, 63, 0.6)',
+        backgroundColor: 'rgba(30, 215, 96, 0.6)',
         borderRadius: 2,
         barThickness: 6,
       },

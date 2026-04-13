@@ -58,29 +58,46 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const MFA_BACKUP_CODES_STORAGE_KEY = "verza:auth:mfa:backupCodes";
+const MFA_FIRST_LOGIN_PENDING_STORAGE_KEY = "verza:auth:mfa:firstLoginPending";
 
-const getStoredMfaBackupCodes = (): string[] => {
-  if (typeof window === "undefined") return [];
-  const raw = window.localStorage.getItem(MFA_BACKUP_CODES_STORAGE_KEY);
-  if (!raw) return [];
+const getMfaPendingMap = (): Record<string, true> => {
+  if (typeof window === "undefined") return {};
   try {
+    const raw = window.localStorage.getItem(MFA_FIRST_LOGIN_PENDING_STORAGE_KEY);
+    if (!raw) return {};
     const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? parsed.map(String) : [];
+    if (!parsed || typeof parsed !== "object") return {};
+    return Object.entries(parsed as Record<string, unknown>).reduce<Record<string, true>>((acc, [key, value]) => {
+      if (value === true) acc[key] = true;
+      return acc;
+    }, {});
   } catch {
-    window.localStorage.removeItem(MFA_BACKUP_CODES_STORAGE_KEY);
-    return [];
+    return {};
   }
 };
 
-const saveMfaBackupCodes = (codes: string[]): void => {
+const saveMfaPendingMap = (value: Record<string, true>): void => {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(MFA_BACKUP_CODES_STORAGE_KEY, JSON.stringify(codes));
+  window.localStorage.setItem(MFA_FIRST_LOGIN_PENDING_STORAGE_KEY, JSON.stringify(value));
 };
 
-const clearMfaBackupCodesStorage = (): void => {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(MFA_BACKUP_CODES_STORAGE_KEY);
+const getMfaFirstLoginKey = (role: UserRole, email: string): string => `${role}:${email.trim().toLowerCase()}`;
+
+const markMfaEnrollmentPendingForFirstLogin = (role: UserRole, email: string): void => {
+  if (!email.trim()) return;
+  const next = getMfaPendingMap();
+  next[getMfaFirstLoginKey(role, email)] = true;
+  saveMfaPendingMap(next);
+};
+
+const consumeMfaEnrollmentPendingForFirstLogin = (role: UserRole, email: string): boolean => {
+  if (!email.trim()) return false;
+  const key = getMfaFirstLoginKey(role, email);
+  const next = getMfaPendingMap();
+  if (!next[key]) return false;
+  delete next[key];
+  saveMfaPendingMap(next);
+  return true;
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -89,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [permissions, setPermissions] = useState<string[]>([]);
   const [mfaChallenge, setMfaChallenge] = useState<LoginMfaChallenge | null>(null);
   const [mfaEnrollment, setMfaEnrollment] = useState<MfaEnrollment | null>(null);
-  const [mfaBackupCodes, setMfaBackupCodes] = useState<string[]>(() => getStoredMfaBackupCodes());
+  const [mfaBackupCodes, setMfaBackupCodes] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [, setLocation] = useLocation();
@@ -110,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setPermissions([]);
     setMfaEnrollment(null);
+    setMfaBackupCodes([]);
   }, []);
 
   const startMfaEnrollment = useCallback(async (accessToken: string) => {
@@ -117,7 +135,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const enrollment = await enrollMfaRequest(accessToken);
       if (enrollment.backupCodes.length > 0) {
         setMfaBackupCodes(enrollment.backupCodes);
-        saveMfaBackupCodes(enrollment.backupCodes);
       }
       if (enrollment.qrCodeImageUrl || enrollment.otpauthUri) {
         setMfaEnrollment(enrollment);
@@ -158,7 +175,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const completeAuthSuccess = useCallback(async (nextSession: AuthSession) => {
     applySession(nextSession);
-    await startMfaEnrollment(nextSession.accessToken);
+    const shouldStartMfaEnrollment = consumeMfaEnrollmentPendingForFirstLogin(nextSession.user.role, nextSession.user.email);
+    if (shouldStartMfaEnrollment) {
+      await startMfaEnrollment(nextSession.accessToken);
+    } else {
+      setMfaEnrollment(null);
+      setMfaBackupCodes([]);
+    }
     setMfaChallenge(null);
     redirectByRole(nextSession.user.role);
   }, [applySession, redirectByRole, startMfaEnrollment]);
@@ -281,6 +304,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const response = await signupRequest(payload);
+      markMfaEnrollmentPendingForFirstLogin(payload.role, payload.email);
       toast.success("Signup completed. Save your auth key.");
       return response.generatedAuthKey;
     } catch (error) {
@@ -328,6 +352,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       applySession(null);
       setMfaChallenge(null);
       setMfaEnrollment(null);
+      setMfaBackupCodes([]);
       setLocation("/login");
     }
   };
@@ -350,7 +375,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const dismissMfaBackupCodes = (): void => {
-    clearMfaBackupCodesStorage();
     setMfaBackupCodes([]);
   };
 

@@ -45,7 +45,7 @@ export default function RecentActivityFeed() {
         ? { icon: FileCheck, color: "text-blue-400", bg: "bg-blue-400/10" }
         : item.type === "transaction"
           ? { icon: CreditCard, color: "text-purple-400", bg: "bg-purple-400/10" }
-          : { icon: Upload, color: "text-[#00FF87]", bg: "bg-[#00FF87]/10" };
+          : { icon: Upload, color: "text-verza-emerald", bg: "bg-verza-emerald/10" };
       return {
         id: item.id,
         title: item.title,
@@ -61,7 +61,7 @@ export default function RecentActivityFeed() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-bold text-white">Recent Activity</h2>
         <Link href="/app/notifications">
-          <button className="text-xs text-[#00FF87] hover:underline cursor-pointer">View All</button>
+          <button className="text-xs text-verza-emerald hover:underline cursor-pointer">View All</button>
         </Link>
       </div>
 
@@ -78,7 +78,7 @@ export default function RecentActivityFeed() {
             </div>
             <div className="flex-1 pb-1 border-b border-white/5 group-last:border-0">
               <div className="flex justify-between items-start mb-1">
-                <h3 className="text-sm font-semibold text-white group-hover:text-[#00FF87] transition-colors">
+                <h3 className="text-sm font-semibold text-white group-hover:text-verza-emerald transition-colors">
                   {activity.title}
                 </h3>
                 <span className="text-xs text-gray-500 flex items-center gap-1">

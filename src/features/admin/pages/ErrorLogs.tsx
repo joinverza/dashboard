@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   Search, Filter, AlertTriangle, AlertCircle, 
-  Info, Download, Eye, CheckCircle, ExternalLink 
+  Info, Download, Eye, CheckCircle, ExternalLink, Loader2
 } from 'lucide-react';
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
@@ -14,54 +15,24 @@ import { Badge } from '@/components/ui/badge';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 
 export default function ErrorLogs() {
+  const queryClient = useQueryClient();
   const [severityFilter, setSeverityFilter] = useState('all');
   const [serviceFilter, setServiceFilter] = useState('all');
+  const [search, setSearch] = useState("");
 
-  // Mock Data
-  const errorLogs = [
-    { 
-      id: 'ERR-5092', 
-      timestamp: '2025-03-15 14:23:45', 
-      service: 'API Gateway', 
-      severity: 'critical', 
-      message: 'Rate limit exceeded for IP 192.168.1.1',
-      status: 'open'
+  const logsQuery = useQuery({
+    queryKey: ["admin", "error-logs", severityFilter, serviceFilter, search],
+    queryFn: () => bankingService.listErrorLogs({ severity: severityFilter === "all" ? undefined : severityFilter, service: serviceFilter === "all" ? undefined : serviceFilter, search: search || undefined, page: 1, limit: 100 }),
+  });
+  const resolveMutation = useMutation({
+    mutationFn: (errorId: string) => bankingService.resolveErrorLog(errorId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin", "error-logs"] });
     },
-    { 
-      id: 'ERR-5091', 
-      timestamp: '2025-03-15 14:15:22', 
-      service: 'Database', 
-      severity: 'error', 
-      message: 'Connection timeout: Pool size limit reached',
-      status: 'investigating'
-    },
-    { 
-      id: 'ERR-5090', 
-      timestamp: '2025-03-15 13:45:10', 
-      service: 'Auth Service', 
-      severity: 'warning', 
-      message: 'Invalid signature detected in JWT token',
-      status: 'resolved'
-    },
-    { 
-      id: 'ERR-5089', 
-      timestamp: '2025-03-15 13:30:05', 
-      service: 'Blockchain Node', 
-      severity: 'error', 
-      message: 'Block sync stalled at height 1234567',
-      status: 'open'
-    },
-    { 
-      id: 'ERR-5088', 
-      timestamp: '2025-03-15 12:10:55', 
-      service: 'Message Queue', 
-      severity: 'warning', 
-      message: 'High consumer latency detected on verify_queue',
-      status: 'resolved'
-    },
-  ];
+  });
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
@@ -104,7 +75,7 @@ export default function ErrorLogs() {
           <div className="flex flex-col md:flex-row gap-4 justify-between">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search error message, ID, or service..." className="pl-8" />
+              <Input placeholder="Search error message, ID, or service..." className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
             <div className="flex gap-2">
               <Select value={severityFilter} onValueChange={setSeverityFilter}>
@@ -136,6 +107,8 @@ export default function ErrorLogs() {
           </div>
         </CardHeader>
         <CardContent>
+          {logsQuery.isLoading ? <div className="flex justify-center py-10"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div> : null}
+          {logsQuery.error ? <div className="text-sm text-red-400 mb-4">{getBankingErrorMessage(logsQuery.error, "Failed to load error logs.")}</div> : null}
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -149,9 +122,9 @@ export default function ErrorLogs() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {errorLogs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="font-mono text-xs text-muted-foreground">{log.timestamp}</TableCell>
+                {(logsQuery.data?.items ?? []).map((log) => (
+                  <TableRow key={log.errorId}>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{new Date(log.timestamp).toLocaleString()}</TableCell>
                     <TableCell>{log.service}</TableCell>
                     <TableCell>{getSeverityBadge(log.severity)}</TableCell>
                     <TableCell className="max-w-[300px] truncate" title={log.message}>
@@ -159,7 +132,7 @@ export default function ErrorLogs() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={
-                        log.status === 'resolved' ? 'text-green-500 border-green-500/20' : 
+                        log.status === 'resolved' ? 'text-verza-emerald border-verza-emerald/20' : 
                         log.status === 'investigating' ? 'text-blue-500 border-blue-500/20' : 
                         'text-red-500 border-red-500/20'
                       }>
@@ -168,11 +141,11 @@ export default function ErrorLogs() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" title="View Details" onClick={() => toast.info(`Viewing details for error ${log.id}`)}>
+                        <Button variant="ghost" size="icon" title="View Details" onClick={() => toast.info(`Viewing details for error ${log.errorId}`)}>
                           <Eye className="h-4 w-4" />
                         </Button>
                         {log.status !== 'resolved' && (
-                          <Button variant="ghost" size="icon" title="Mark Resolved" className="text-green-500 hover:text-green-600" onClick={() => toast.success(`Error ${log.id} marked as resolved`)}>
+                          <Button variant="ghost" size="icon" title="Mark Resolved" className="text-verza-emerald hover:text-verza-emerald" onClick={() => resolveMutation.mutate(log.errorId)}>
                             <CheckCircle className="h-4 w-4" />
                           </Button>
                         )}

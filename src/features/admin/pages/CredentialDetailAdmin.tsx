@@ -1,47 +1,47 @@
 import { 
   ArrowLeft, Shield, User, 
   Building2, ExternalLink, XCircle, CheckCircle,
-  Download, Copy, Clock
+  Download, Copy, Clock, Loader2
 } from 'lucide-react';
-import { useLocation } from "wouter";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 
 export default function CredentialDetailAdmin() {
+  const queryClient = useQueryClient();
+  const [match, params] = useRoute("/admin/credentials/:id");
   const [, setLocation] = useLocation();
-  // const [activeTab, setActiveTab] = useState('overview');
+  if (!match) return null;
 
-  // Mock Data
-  const credential = {
-    id: 'VC-2025-001',
-    type: 'University Degree',
-    schema: 'https://schema.verza.io/credentials/degree/v1',
-    holder: {
-      name: 'Alice Johnson',
-      did: 'did:verza:123...456',
-      email: 'alice@example.com'
+  const credentialQuery = useQuery({
+    queryKey: ["admin", "credentials", params.id],
+    queryFn: () => bankingService.getCredentialDetail(params.id),
+  });
+  const revokeMutation = useMutation({
+    mutationFn: () => bankingService.revokeCredential(params.id),
+    onSuccess: async () => {
+      toast.success("Credential revoked.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "credentials"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "credentials", params.id] }),
+      ]);
     },
-    issuer: {
-      name: 'University of Tech',
-      did: 'did:verza:edu:789...012',
-      verified: true
-    },
-    status: 'valid',
-    issuedDate: '2023-06-15',
-    expiryDate: 'Never',
-    txHash: '0x1234...5678',
-    network: 'Midnight Network',
-    claims: {
-      degree: 'Bachelor of Science',
-      major: 'Computer Science',
-      gpa: '3.8',
-      honors: 'Summa Cum Laude'
-    }
-  };
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to revoke credential")),
+  });
+
+  if (credentialQuery.isLoading) {
+    return <div className="h-[50vh] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+  if (credentialQuery.error || !credentialQuery.data) {
+    return <div className="text-sm text-red-400">{getBankingErrorMessage(credentialQuery.error, "Failed to load credential detail.")}</div>;
+  }
+  const credential = credentialQuery.data;
 
   return (
     <div className="space-y-6">
@@ -51,8 +51,8 @@ export default function CredentialDetailAdmin() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            Credential {credential.id}
-            <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Valid</Badge>
+            Credential {credential.credentialId}
+            <Badge className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">Valid</Badge>
           </h1>
           <p className="text-muted-foreground">
             Issued by {credential.issuer.name} to {credential.holder.name}
@@ -63,7 +63,7 @@ export default function CredentialDetailAdmin() {
             <Download className="h-4 w-4 mr-2" />
             Download JSON
           </Button>
-          <Button variant="destructive" onClick={() => toast.error("Credential revoked")}>
+          <Button variant="destructive" onClick={() => revokeMutation.mutate()} disabled={revokeMutation.isPending}>
             <XCircle className="h-4 w-4 mr-2" />
             Revoke
           </Button>
@@ -108,7 +108,7 @@ export default function CredentialDetailAdmin() {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground mb-1">Issue Date</p>
-                          <p className="font-medium text-lg">{credential.issuedDate}</p>
+                          <p className="font-medium text-lg">{new Date(credential.issuedAt).toLocaleDateString()}</p>
                         </div>
                       </div>
 
@@ -126,12 +126,12 @@ export default function CredentialDetailAdmin() {
 
                     <div className="mt-8 flex justify-between items-end">
                       <div className="flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-green-500" />
-                        <span className="text-sm font-medium text-green-500">Cryptographically Signed</span>
+                        <Shield className="h-5 w-5 text-verza-emerald" />
+                        <span className="text-sm font-medium text-verza-emerald">Cryptographically Signed</span>
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground">Credential ID</p>
-                        <p className="text-xs font-mono">{credential.id}</p>
+                        <p className="text-xs font-mono">{credential.credentialId}</p>
                       </div>
                     </div>
                   </div>
@@ -162,7 +162,7 @@ export default function CredentialDetailAdmin() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 border rounded-md">
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <CheckCircle className="h-5 w-5 text-verza-emerald" />
                     <div>
                       <p className="font-medium text-sm">Signature Valid</p>
                       <p className="text-xs text-muted-foreground">Verified against issuer public key</p>
@@ -172,7 +172,7 @@ export default function CredentialDetailAdmin() {
                 </div>
                 <div className="flex items-center justify-between p-3 border rounded-md">
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <CheckCircle className="h-5 w-5 text-verza-emerald" />
                     <div>
                       <p className="font-medium text-sm">Not Revoked</p>
                       <p className="text-xs text-muted-foreground">Checked against revocation registry</p>
@@ -182,7 +182,7 @@ export default function CredentialDetailAdmin() {
                 </div>
                 <div className="flex items-center justify-between p-3 border rounded-md">
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <CheckCircle className="h-5 w-5 text-verza-emerald" />
                     <div>
                       <p className="font-medium text-sm">Schema Compliant</p>
                       <p className="text-xs text-muted-foreground">Valid against defined schema</p>
@@ -208,7 +208,7 @@ export default function CredentialDetailAdmin() {
                 </div>
                 <div>
                   <p className="font-medium">{credential.issuer.name}</p>
-                  <div className="flex items-center gap-1 text-xs text-green-500">
+                  <div className="flex items-center gap-1 text-xs text-verza-emerald">
                     <CheckCircle className="h-3 w-3" />
                     Verified Issuer
                   </div>
@@ -256,14 +256,14 @@ export default function CredentialDetailAdmin() {
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Network</p>
                 <p className="text-sm font-medium flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                  Verza ZK Network
+                  <span className="h-2 w-2 rounded-full bg-verza-emerald"></span>
+                  {credential.network ?? "Ontiver ZK Network"}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Proof Hash</p>
                 <div className="flex items-center gap-2">
-                  <p className="text-xs font-mono truncate flex-1">{credential.txHash}</p>
+                  <p className="text-xs font-mono truncate flex-1">{credential.txHash ?? "-"}</p>
                   <ExternalLink className="h-3 w-3 text-muted-foreground" />
                 </div>
               </div>
@@ -271,7 +271,7 @@ export default function CredentialDetailAdmin() {
                 <p className="text-xs text-muted-foreground mb-1">Timestamp</p>
                 <p className="text-sm flex items-center gap-2">
                   <Clock className="h-3 w-3" />
-                  {credential.issuedDate}
+                  {new Date(credential.issuedAt).toLocaleString()}
                 </p>
               </div>
             </CardContent>

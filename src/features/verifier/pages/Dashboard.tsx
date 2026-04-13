@@ -27,11 +27,10 @@ import {
   Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { useState, useEffect } from "react";
-import { bankingService } from "@/services/bankingService";
-import type { VerificationStatsResponse, VerificationRequestResponse, VerifierProfile } from "@/types/banking";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/AuthContext";
+import { useEffect } from "react";
+import { useVerifierDashboardData } from "@/hooks/useBankingDashboard";
 
 ChartJS.register(
   CategoryScale,
@@ -75,32 +74,13 @@ const chartOptions = {
 
 export default function VerifierDashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState<VerificationStatsResponse | null>(null);
-  const [activeJobs, setActiveJobs] = useState<VerificationRequestResponse[]>([]);
-  const [profile, setProfile] = useState<VerifierProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { stats, activeJobs, profile, isLoading, error } = useVerifierDashboardData(Boolean(user?.id));
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const [statsData, requestsData, profileData] = await Promise.all([
-          bankingService.getVerificationStats(),
-          bankingService.getVerificationRequests(),
-          user?.id ? bankingService.getVerifierProfile() : Promise.resolve(null),
-        ]);
-        setStats(statsData);
-        const active = requestsData.filter(r => ['pending', 'review_needed', 'in_progress'].includes(r.status)).slice(0, 3);
-        setActiveJobs(active);
-        setProfile(profileData);
-      } catch {
-        toast.error("Failed to load dashboard data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    void fetchData();
-  }, [user?.id]);
+    if (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to load dashboard data");
+    }
+  }, [error]);
 
   const getTypeLabel = (type: string) => {
     return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -121,8 +101,8 @@ export default function VerifierDashboard() {
         label: 'Verification Volume',
         data: stats?.dailyBreakdown?.map(d => d.count) || [],
         fill: true,
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        borderColor: '#10b981',
+        backgroundColor: 'rgba(30, 215, 96, 0.1)',
+        borderColor: '#1ED760',
         tension: 0.4,
       },
     ],
@@ -131,6 +111,8 @@ export default function VerifierDashboard() {
   const earningsValue = typeof profile?.stats?.earnings === "number"
     ? profile.stats.earnings
     : Number(profile?.stats?.earnings || 0);
+  const issuedCount = Number(profile?.stats?.issued ?? 0);
+  const activeCount = Number(profile?.stats?.active ?? activeJobs.length);
 
   return (
     <motion.div
@@ -186,7 +168,7 @@ export default function VerifierDashboard() {
             <Activity className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.pending || 0}</div>
+            <div className="text-2xl font-bold">{activeCount || stats?.pending || 0}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
               Pending review
             </p>
@@ -199,7 +181,7 @@ export default function VerifierDashboard() {
             <CheckCircle className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.successful || 0}</div>
+            <div className="text-2xl font-bold">{issuedCount || stats?.successful || 0}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
               Successful verifications
             </p>
@@ -265,9 +247,13 @@ export default function VerifierDashboard() {
             <CardContent className="pt-6">
                <div className="flex flex-col gap-2">
                  <h3 className="font-bold text-lg">Verifier Pro Tier</h3>
-                 <p className="text-sm text-muted-foreground">You are close to unlocking the next tier! Stake 500 more VERZA to qualify for premium jobs.</p>
+                 <p className="text-sm text-muted-foreground">
+                   Live profile sync shows {profile?.specializations?.length ?? 0} specialization
+                   {(profile?.specializations?.length ?? 0) === 1 ? "" : "s"} and {profile?.languages?.length ?? 0} supported language
+                   {(profile?.languages?.length ?? 0) === 1 ? "" : "s"}.
+                 </p>
                  <Link href="/verifier/staking">
-                   <Button size="sm" className="mt-2 bg-verza-emerald text-white">View Staking</Button>
+                   <Button size="sm" className="mt-2 bg-verza-emerald text-black">View Staking</Button>
                  </Link>
                </div>
             </CardContent>
@@ -290,7 +276,7 @@ export default function VerifierDashboard() {
             ) : activeJobs.map((job) => (
               <div key={job.verificationId} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-border/50 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors">
                 <div className="flex items-start gap-4">
-                  <div className="p-2 rounded-full bg-blue-500/10 text-blue-500 mt-1">
+                  <div className="p-2 rounded-full bg-verza-emerald/10 text-verza-emerald mt-1">
                     <FileText className="h-5 w-5" />
                   </div>
                   <div>

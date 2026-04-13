@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
+import { useMutation, useQueries } from "@tanstack/react-query";
 import { 
   Mail, Calendar, Shield, Activity, 
   CreditCard, FileText, Lock, Ban, Edit, 
-  Trash2, Eye, ArrowLeft
+  Trash2, Eye, ArrowLeft, Loader2
 } from 'lucide-react';
-import { useLocation } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,32 +14,58 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-
-const MOCK_USER = {
-  id: '1',
-  name: 'Alice Johnson',
-  email: 'alice@example.com',
-  did: 'did:verza:1234567890abcdef',
-  type: 'regular',
-  status: 'active',
-  joinedDate: 'Jan 15, 2023',
-  lastLogin: 'Today, 10:23 AM',
-  stats: {
-    credentials: 12,
-    verifications: 45,
-    spent: '$120.50'
-  }
-};
-
-const ACTIVITY_LOG = [
-  { id: 1, action: 'Logged in', time: 'Today, 10:23 AM', ip: '192.168.1.1' },
-  { id: 2, action: 'Verified Credential: ID Card', time: 'Yesterday, 2:15 PM', ip: '192.168.1.1' },
-  { id: 3, action: 'Updated Profile', time: 'Oct 24, 2023', ip: '192.168.1.1' },
-  { id: 4, action: 'Failed Login Attempt', time: 'Oct 20, 2023', ip: '10.0.0.5', type: 'warning' },
-];
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
+import { useState } from 'react';
 
 export default function UserDetail() {
+  const [match, params] = useRoute("/admin/users/:id");
   const [, setLocation] = useLocation();
+  const [notes, setNotes] = useState("");
+  if (!match) return null;
+
+  const [userQuery, activityQuery, credentialsQuery, transactionsQuery] = useQueries({
+    queries: [
+      { queryKey: ["admin", "user-detail", params.id], queryFn: () => bankingService.getAdminUserDetails(params.id) },
+      { queryKey: ["admin", "user-detail", params.id, "activity"], queryFn: () => bankingService.listUserActivity(params.id) },
+      { queryKey: ["admin", "user-detail", params.id, "credentials"], queryFn: () => bankingService.listUserCredentials(params.id) },
+      { queryKey: ["admin", "user-detail", params.id, "transactions"], queryFn: () => bankingService.listUserTransactions(params.id) },
+    ],
+  });
+
+  const suspendMutation = useMutation({
+    mutationFn: () => bankingService.updateAdminUserStatus(params.id, "suspended"),
+    onSuccess: () => toast.success("User suspended."),
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to suspend user")),
+  });
+  const deleteMutation = useMutation({
+    mutationFn: () => bankingService.deleteAdminUser(params.id),
+    onSuccess: () => {
+      toast.success("User deleted.");
+      setLocation("/admin/users");
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to delete user")),
+  });
+  const resetMutation = useMutation({
+    mutationFn: () => bankingService.resetAdminUserPassword(params.id),
+    onSuccess: () => toast.success("Password reset queued."),
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to queue password reset")),
+  });
+  const impersonateMutation = useMutation({
+    mutationFn: () => bankingService.impersonateAdminUser(params.id),
+    onSuccess: () => toast.success("Impersonation session started."),
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to impersonate user")),
+  });
+
+  if (userQuery.isLoading) {
+    return <div className="h-[50vh] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+  if (userQuery.error || !userQuery.data) {
+    return <div className="text-sm text-red-400">{getBankingErrorMessage(userQuery.error, "Failed to load user profile.")}</div>;
+  }
+  const user = userQuery.data;
+  const activity = activityQuery.data ?? [];
+  const credentials = credentialsQuery.data ?? [];
+  const transactions = transactionsQuery.data ?? [];
 
   return (
     <motion.div
@@ -54,39 +81,39 @@ export default function UserDetail() {
       <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between bg-card/80 backdrop-blur-sm border border-border/50 p-6 rounded-lg">
         <div className="flex items-center gap-4">
           <Avatar className="h-20 w-20 border-4 border-background">
-            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${MOCK_USER.id}`} />
-            <AvatarFallback>AJ</AvatarFallback>
+            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} />
+            <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">{MOCK_USER.name}</h1>
-              <Badge className="bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20">Active</Badge>
+              <h1 className="text-2xl font-bold">{user.name}</h1>
+              <Badge className={user.status === "active" ? "bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20 hover:bg-verza-emerald/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"}>{user.status}</Badge>
             </div>
             <div className="flex flex-col gap-1 mt-1 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <Mail className="h-3 w-3" /> {MOCK_USER.email}
+                <Mail className="h-3 w-3" /> {user.email}
               </div>
               <div className="flex items-center gap-2 font-mono text-xs">
-                <Shield className="h-3 w-3" /> {MOCK_USER.did}
+                <Shield className="h-3 w-3" /> {user.did ?? "-"}
               </div>
             </div>
           </div>
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => toast.info("Edit Profile modal opened")}>
+          <Button variant="outline" size="sm" onClick={() => toast.info("Use dedicated edit endpoint/UI to update profile fields.")}>
             <Edit className="mr-2 h-4 w-4" /> Edit
           </Button>
-          <Button variant="outline" size="sm" onClick={() => toast.success("Password reset email sent")}>
+          <Button variant="outline" size="sm" onClick={() => resetMutation.mutate()} disabled={resetMutation.isPending}>
             <Lock className="mr-2 h-4 w-4" /> Reset Password
           </Button>
-          <Button variant="outline" size="sm" className="text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/10 hover:text-yellow-600" onClick={() => toast.warning("User suspended")}>
+          <Button variant="outline" size="sm" className="text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/10 hover:text-yellow-600" onClick={() => suspendMutation.mutate()} disabled={suspendMutation.isPending}>
             <Ban className="mr-2 h-4 w-4" /> Suspend
           </Button>
-          <Button variant="destructive" size="sm" onClick={() => toast.error("User deleted")}>
+          <Button variant="destructive" size="sm" onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
             <Trash2 className="mr-2 h-4 w-4" /> Delete
           </Button>
-          <Button size="sm" className="bg-purple-600 hover:bg-purple-700" onClick={() => toast.success("Impersonating user session started")}>
+          <Button size="sm" className="bg-purple-600 hover:bg-purple-700" onClick={() => impersonateMutation.mutate()} disabled={impersonateMutation.isPending}>
              <Eye className="mr-2 h-4 w-4" /> Impersonate
           </Button>
         </div>
@@ -112,21 +139,21 @@ export default function UserDetail() {
                   <div className="text-sm text-muted-foreground mb-1">Total Credentials</div>
                   <div className="text-2xl font-bold flex items-center gap-2">
                     <FileText className="h-5 w-5 text-blue-500" />
-                    {MOCK_USER.stats.credentials}
+                    {user.stats?.credentials ?? credentials.length}
                   </div>
                 </div>
                 <div className="p-4 rounded-lg bg-secondary/20 border border-border/50">
                   <div className="text-sm text-muted-foreground mb-1">Verifications</div>
                   <div className="text-2xl font-bold flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-green-500" />
-                    {MOCK_USER.stats.verifications}
+                    <Shield className="h-5 w-5 text-verza-emerald" />
+                    {user.stats?.verifications ?? 0}
                   </div>
                 </div>
                 <div className="p-4 rounded-lg bg-secondary/20 border border-border/50">
                   <div className="text-sm text-muted-foreground mb-1">Total Spent</div>
                   <div className="text-2xl font-bold flex items-center gap-2">
                     <CreditCard className="h-5 w-5 text-yellow-500" />
-                    {MOCK_USER.stats.spent}
+                    {user.stats?.spent ?? "$0.00"}
                   </div>
                 </div>
               </CardContent>
@@ -140,20 +167,20 @@ export default function UserDetail() {
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Joined Date</div>
                   <div className="flex items-center gap-2 mt-1">
-                    <Calendar className="h-4 w-4" /> {MOCK_USER.joinedDate}
+                    <Calendar className="h-4 w-4" /> {new Date(user.joinedAt).toLocaleDateString()}
                   </div>
                 </div>
                 <Separator />
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Last Login</div>
                   <div className="flex items-center gap-2 mt-1">
-                    <Activity className="h-4 w-4" /> {MOCK_USER.lastLogin}
+                    <Activity className="h-4 w-4" /> {user.lastActive ?? "-"}
                   </div>
                 </div>
                 <Separator />
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">User Type</div>
-                  <div className="capitalize mt-1">{MOCK_USER.type}</div>
+                  <div className="capitalize mt-1">{user.role}</div>
                 </div>
               </CardContent>
             </Card>
@@ -168,13 +195,13 @@ export default function UserDetail() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {ACTIVITY_LOG.map((log) => (
+                {activity.map((log) => (
                   <div key={log.id} className="flex items-start gap-4">
                     <div className={`mt-1 h-2 w-2 rounded-full ${log.type === 'warning' ? 'bg-red-500' : 'bg-blue-500'}`} />
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium leading-none">{log.action}</p>
                       <p className="text-xs text-muted-foreground">
-                        {log.time} • IP: {log.ip}
+                        {new Date(log.timestamp).toLocaleString()} • IP: {log.ip ?? "unknown"}
                       </p>
                     </div>
                   </div>
@@ -192,26 +219,22 @@ export default function UserDetail() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                 {[
-                   { id: 'VC-001', title: 'University Degree', issuer: 'University of Tech', date: '2023-06-15', status: 'active' },
-                   { id: 'VC-002', title: 'Driver License', issuer: 'State DMV', date: '2023-01-20', status: 'active' },
-                   { id: 'VC-003', title: 'Library Card', issuer: 'Public Library', date: '2022-11-05', status: 'expired' },
-                 ].map((cred, i) => (
-                   <div key={i} className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-secondary/10">
+                 {credentials.map((cred) => (
+                   <div key={cred.credentialId} className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-secondary/10">
                      <div className="flex items-center gap-4">
                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                          <FileText className="h-5 w-5 text-primary" />
                        </div>
                        <div>
-                         <p className="font-medium">{cred.title}</p>
-                         <p className="text-sm text-muted-foreground">{cred.issuer} • Issued {cred.date}</p>
+                         <p className="font-medium">{cred.type}</p>
+                         <p className="text-sm text-muted-foreground">{cred.issuer} • Issued {new Date(cred.issuedAt).toLocaleDateString()}</p>
                        </div>
                      </div>
                      <div className="flex items-center gap-3">
-                       <Badge variant={cred.status === 'active' ? 'default' : 'secondary'} className={cred.status === 'active' ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' : ''}>
+                       <Badge variant={cred.status === 'active' ? 'default' : 'secondary'} className={cred.status === 'active' ? 'bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20' : ''}>
                          {cred.status}
                        </Badge>
-                       <Button variant="ghost" size="sm" onClick={() => setLocation(`/admin/credentials/${cred.id}`)}>
+                       <Button variant="ghost" size="sm" onClick={() => setLocation(`/admin/credentials/${cred.credentialId}`)}>
                          View
                        </Button>
                      </div>
@@ -230,23 +253,21 @@ export default function UserDetail() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  { id: 'TX-123', type: 'Payment', desc: 'Credential Issuance Fee', amount: '-$15.00', date: 'Today, 10:23 AM', status: 'completed' },
-                  { id: 'TX-124', type: 'Deposit', desc: 'Wallet Top-up', amount: '+$50.00', date: 'Yesterday, 2:15 PM', status: 'completed' },
-                  { id: 'TX-125', type: 'Payment', desc: 'Verification Service', amount: '-$5.00', date: 'Oct 24, 2023', status: 'completed' },
-                ].map((tx, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-secondary/10">
+                {transactions.map((tx) => (
+                  <div key={tx.transactionId} className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-secondary/10">
                     <div className="flex items-center gap-4">
-                       <div className={`h-10 w-10 rounded-full flex items-center justify-center ${tx.amount.startsWith('+') ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-                         <CreditCard className={`h-5 w-5 ${tx.amount.startsWith('+') ? 'text-green-500' : 'text-red-500'}`} />
+                       <div className={`h-10 w-10 rounded-full flex items-center justify-center ${tx.direction === "in" ? 'bg-verza-emerald/10' : 'bg-red-500/10'}`}>
+                         <CreditCard className={`h-5 w-5 ${tx.direction === "in" ? 'text-verza-emerald' : 'text-red-500'}`} />
                        </div>
                        <div>
-                         <p className="font-medium">{tx.desc}</p>
-                         <p className="text-sm text-muted-foreground">{tx.type} • {tx.date}</p>
+                         <p className="font-medium">{tx.description}</p>
+                         <p className="text-sm text-muted-foreground">{tx.category} • {new Date(tx.createdAt).toLocaleString()}</p>
                        </div>
                     </div>
                     <div className="text-right">
-                      <p className={`font-bold ${tx.amount.startsWith('+') ? 'text-green-500' : 'text-foreground'}`}>{tx.amount}</p>
+                      <p className={`font-bold ${tx.direction === "in" ? 'text-verza-emerald' : 'text-foreground'}`}>
+                        {tx.direction === "in" ? "+" : "-"} {tx.amount.toFixed(2)} {tx.currency}
+                      </p>
                       <span className="text-xs text-muted-foreground capitalize">{tx.status}</span>
                     </div>
                   </div>
@@ -266,10 +287,11 @@ export default function UserDetail() {
               <Textarea 
                 placeholder="Add a note..." 
                 className="min-h-[150px]"
-                defaultValue="User requested limit increase on Oct 15. Approved by Supervisor."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
               />
               <div className="flex justify-end">
-                <Button onClick={() => toast.success("Notes saved successfully")}>Save Notes</Button>
+                <Button onClick={() => toast.info("Admin notes persistence endpoint is not yet available.")}>Save Notes</Button>
               </div>
             </CardContent>
           </Card>

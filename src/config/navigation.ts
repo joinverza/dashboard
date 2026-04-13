@@ -12,7 +12,6 @@ import {
   Award,
   User,
   Users,
-  Upload,
   FileText,
   Key,
   Gavel,
@@ -20,6 +19,7 @@ import {
   Server,
   Shield,
   Wrench,
+  MailCheck,
 } from "lucide-react";
 
 export interface NavItem {
@@ -30,6 +30,7 @@ export interface NavItem {
 
 export const userNavItems: NavItem[] = [
   { path: "/app", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/app/getting-started", label: "Getting Started", icon: FileText },
   { path: "/app/credentials", label: "Credentials", icon: FileBadge },
   { path: "/app/marketplace", label: "Marketplace", icon: Store },
   { path: "/app/wallet", label: "Wallet", icon: Wallet },
@@ -50,24 +51,25 @@ export const verifierNavItems: NavItem[] = [
 
 export const enterpriseNavItems: NavItem[] = [
   { path: "/enterprise", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/enterprise/bulk", label: "Bulk Verification", icon: Upload },
-  { path: "/enterprise/requests", label: "Requests", icon: FileText },
   { path: "/enterprise/verifications", label: "Verifications", icon: Shield },
-  { path: "/enterprise/team", label: "Team", icon: Users },
+  { path: "/enterprise/email-verifications", label: "Email Verification", icon: MailCheck },
   { path: "/enterprise/tools", label: "Operations Hub", icon: Wrench },
-  { path: "/enterprise/api", label: "API", icon: Key },
-  { path: "/enterprise/billing", label: "Billing", icon: DollarSign },
-  { path: "/enterprise/settings", label: "Settings", icon: Settings },
+  { path: "/enterprise/users", label: "Users", icon: Users },
+  { path: "/enterprise/reports", label: "Reports", icon: BarChart3 },
+  { path: "/enterprise/platform", label: "Platform", icon: Wrench },
 ];
 
 export const managerNavItems: NavItem[] = [
   { path: "/manager", label: "Dashboard", icon: LayoutDashboard },
   { path: "/manager/requests", label: "Requests", icon: FileText },
   { path: "/manager/verifications", label: "Verifications", icon: Shield },
+  { path: "/manager/email-verifications", label: "Email Verification", icon: MailCheck },
+  { path: "/manager/kyb", label: "KYB Wizard", icon: Shield },
   { path: "/manager/tools", label: "Operations Hub", icon: Wrench },
   { path: "/manager/team", label: "Team", icon: Users },
   { path: "/manager/analytics", label: "Analytics", icon: BarChart3 },
   { path: "/manager/compliance", label: "Compliance", icon: Shield },
+  { path: "/manager/compliance/workflows", label: "Case Workflows", icon: FileText },
   { path: "/manager/settings", label: "Settings", icon: Settings },
 ];
 
@@ -85,5 +87,6 @@ export const adminNavItems: NavItem[] = [
   { path: "/admin/disputes", label: "Disputes", icon: Gavel },
   { path: "/admin/governance", label: "Governance", icon: Vote },
   { path: "/admin/system", label: "System", icon: Server },
+  { path: "/admin/security", label: "Security", icon: Shield },
   { path: "/admin/settings", label: "Settings", icon: Settings },
 ];

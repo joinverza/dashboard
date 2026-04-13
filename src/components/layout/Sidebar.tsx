@@ -5,7 +5,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import versalogo from "@/assets/versalogoSVG.svg";
+import versalogo from "@/assets/ONTIVER Green.svg";
 import type { NavItem } from "@/config/navigation";
 
 interface SidebarProps {
@@ -42,8 +42,8 @@ export default function Sidebar({ collapsed, onToggle, navItems }: SidebarProps)
           >
             <img
               src={versalogo}
-              alt="Verza logo"
-              className="w-8 h-8 object-contain drop-shadow-[0_0_10px_rgba(141,198,63,0.3)]"
+              alt="Ontiver logo"
+              className="w-8 h-8 object-contain drop-shadow-[0_0_10px_rgba(30,215,96,0.3)]"
             />
           </motion.div>
           {!collapsed && (
@@ -54,7 +54,7 @@ export default function Sidebar({ collapsed, onToggle, navItems }: SidebarProps)
               className="flex flex-col"
             >
               <span className="text-lg font-bold text-foreground tracking-tight">
-                Verza
+                Ontiver
               </span>
               <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
                 Dashboard
@@ -81,7 +81,7 @@ export default function Sidebar({ collapsed, onToggle, navItems }: SidebarProps)
                     "group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 cursor-pointer border border-transparent relative overflow-hidden",
                     collapsed ? "justify-center" : "",
                     isActive
-                      ? "bg-verza-emerald/10 border-verza-emerald/20 shadow-[0_0_20px_-5px_rgba(141,198,63,0.3)] before:absolute before:inset-0 before:bg-gradient-to-r before:from-verza-emerald/10 before:to-transparent before:opacity-100"
+                      ? "bg-verza-emerald/10 border-verza-emerald/20 shadow-[0_0_20px_-5px_rgba(30,215,96,0.3)] before:absolute before:inset-0 before:bg-gradient-to-r before:from-verza-emerald/10 before:to-transparent before:opacity-100"
                       : "text-muted-foreground hover:text-foreground hover:border-white/5"
                   )}
                 >
@@ -109,7 +109,7 @@ export default function Sidebar({ collapsed, onToggle, navItems }: SidebarProps)
                   {!collapsed && isActive && (
                     <motion.div
                       layoutId="active-indicator"
-                      className="ml-auto w-1.5 h-1.5 rounded-full bg-verza-emerald shadow-[0_0_8px_rgba(141,198,63,0.8)]"
+                      className="ml-auto w-1.5 h-1.5 rounded-full bg-verza-emerald shadow-[0_0_8px_rgba(30,215,96,0.8)]"
                     />
                   )}
                 </motion.div>

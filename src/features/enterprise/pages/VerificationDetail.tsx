@@ -55,7 +55,7 @@ export default function VerificationDetail() {
     switch (status) {
       case 'verified':
       case 'completed':
-        return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 px-3 py-1"><CheckCircle className="h-3 w-3 mr-1" /> VERIFIED</Badge>;
+        return <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20 px-3 py-1"><CheckCircle className="h-3 w-3 mr-1" /> VERIFIED</Badge>;
       case 'pending':
         return <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 px-3 py-1"><Clock className="h-3 w-3 mr-1" /> PENDING</Badge>;
       case 'rejected':
@@ -149,10 +149,10 @@ export default function VerificationDetail() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Name Match</span>
-                      <span className="text-green-500 font-medium">100%</span>
+                      <span className="text-verza-emerald font-medium">100%</span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-1.5">
-                      <div className="bg-green-500 h-1.5 rounded-full w-full"></div>
+                      <div className="bg-verza-emerald h-1.5 rounded-full w-full"></div>
                     </div>
                   </div>
                 </div>

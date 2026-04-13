@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import versalogo from "@/assets/versalogoSVG.svg";
+import versalogo from "@/assets/ONTIVER white.svg";
 import { useTheme } from "@/contexts/ThemeContext";
 
 // Animation variants
@@ -77,15 +77,15 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-[#0D0D0D] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
       {/* Background Effects */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] bg-[#00FF87]/10" />
+        <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] bg-verza-emerald/10" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] bg-purple-500/10" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay" />
       </div>
 
       {/* Header */}
       <div className="absolute top-8 left-8 flex items-center gap-2">
-        <img src={versalogo} alt="Verza" className="h-8 w-8" />
-        <span className="text-xl font-bold tracking-tight">Verza</span>
+        <img src={versalogo} alt="Ontiver" className="h-8 w-8" />
+        <span className="text-xl font-bold tracking-tight">Ontiver</span>
       </div>
 
       <div className="w-full max-w-lg z-10">
@@ -97,7 +97,7 @@ export default function OnboardingPage() {
           </div>
           <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
             <motion.div 
-              className="h-full bg-[#00FF87]"
+              className="h-full bg-verza-emerald"
               initial={{ width: "0%" }}
               animate={{ width: `${(step / 4) * 100}%` }}
               transition={{ duration: 0.5, ease: "easeInOut" }}
@@ -120,11 +120,11 @@ export default function OnboardingPage() {
                 className="h-full flex flex-col"
               >
                 <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#00FF87] to-emerald-600 flex items-center justify-center shadow-lg shadow-[#00FF87]/20">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-verza-emerald to-verza-kelly flex items-center justify-center shadow-lg shadow-verza-emerald/20">
                     <Shield className="w-10 h-10 text-black" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold mb-2">Welcome to Verza</h1>
+                    <h1 className="text-3xl font-bold mb-2">Welcome to Ontiver</h1>
                     <p className="text-gray-400 max-w-xs mx-auto">
                       Your decentralized identity journey starts here. Let's set up your profile to get you verified.
                     </p>
@@ -160,10 +160,10 @@ export default function OnboardingPage() {
                   {/* Avatar Upload */}
                   <div className="flex items-center gap-4">
                     <div className="relative group cursor-pointer">
-                      <div className="w-20 h-20 rounded-full bg-white/5 border-2 border-dashed border-white/20 flex items-center justify-center group-hover:border-[#00FF87]/50 transition-colors">
-                        <Camera className="w-6 h-6 text-gray-400 group-hover:text-[#00FF87]" />
+                      <div className="w-20 h-20 rounded-full bg-white/5 border-2 border-dashed border-white/20 flex items-center justify-center group-hover:border-verza-emerald/50 transition-colors">
+                        <Camera className="w-6 h-6 text-gray-400 group-hover:text-verza-emerald" />
                       </div>
-                      <div className="absolute bottom-0 right-0 w-6 h-6 bg-[#00FF87] rounded-full flex items-center justify-center border-2 border-[#1A1A1A]">
+                      <div className="absolute bottom-0 right-0 w-6 h-6 bg-verza-emerald rounded-full flex items-center justify-center border-2 border-[#1A1A1A]">
                         <Upload className="w-3 h-3 text-black" />
                       </div>
                     </div>
@@ -179,7 +179,7 @@ export default function OnboardingPage() {
                       <Input 
                         id="displayName" 
                         placeholder="e.g. Alex Morgan" 
-                        className="bg-white/5 border-white/10 h-11 focus:border-[#00FF87]/50"
+                        className="bg-white/5 border-white/10 h-11 focus:border-verza-emerald/50"
                         value={formData.displayName}
                         onChange={(e) => setFormData({...formData, displayName: e.target.value})}
                       />
@@ -191,7 +191,7 @@ export default function OnboardingPage() {
                         <Input 
                           id="username" 
                           placeholder="alexmorgan" 
-                          className="bg-white/5 border-white/10 h-11 pl-8 focus:border-[#00FF87]/50"
+                          className="bg-white/5 border-white/10 h-11 pl-8 focus:border-verza-emerald/50"
                           value={formData.username}
                           onChange={(e) => setFormData({...formData, username: e.target.value})}
                         />
@@ -204,7 +204,7 @@ export default function OnboardingPage() {
                   <Button variant="outline" onClick={prevStep} className="flex-1 h-12 border-white/10 hover:bg-white/5 hover:text-white">
                     Back
                   </Button>
-                  <Button onClick={nextStep} className="flex-[2] h-12 bg-[#00FF87] text-black hover:bg-[#00FF87]/90 font-semibold">
+                  <Button onClick={nextStep} className="flex-[2] h-12 bg-verza-emerald text-black hover:bg-verza-emerald/90 font-semibold">
                     Continue
                   </Button>
                 </div>
@@ -224,7 +224,7 @@ export default function OnboardingPage() {
               >
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold mb-2">Preferences</h2>
-                  <p className="text-gray-400 text-sm">Customize your Verza experience.</p>
+                  <p className="text-gray-400 text-sm">Customize your Ontiver experience.</p>
                 </div>
 
                 <div className="flex-1 space-y-6">
@@ -288,7 +288,7 @@ export default function OnboardingPage() {
                   <Button variant="outline" onClick={prevStep} className="flex-1 h-12 border-white/10 hover:bg-white/5 hover:text-white">
                     Back
                   </Button>
-                  <Button onClick={nextStep} className="flex-[2] h-12 bg-[#00FF87] text-black hover:bg-[#00FF87]/90 font-semibold">
+                  <Button onClick={nextStep} className="flex-[2] h-12 bg-verza-emerald text-black hover:bg-verza-emerald/90 font-semibold">
                     Continue
                   </Button>
                 </div>
@@ -307,8 +307,8 @@ export default function OnboardingPage() {
                 className="h-full flex flex-col items-center justify-center text-center"
               >
                 <div className="relative mb-8">
-                  <div className="w-24 h-24 rounded-full bg-[#00FF87]/20 flex items-center justify-center animate-pulse">
-                    <div className="w-16 h-16 rounded-full bg-[#00FF87] flex items-center justify-center shadow-[0_0_30px_rgba(0,255,135,0.5)]">
+                  <div className="w-24 h-24 rounded-full bg-verza-emerald/20 flex items-center justify-center animate-pulse">
+                    <div className="w-16 h-16 rounded-full bg-verza-emerald flex items-center justify-center shadow-[0_0_30px_rgba(30,215,96,0.5)]">
                       <Check className="w-8 h-8 text-black stroke-[3]" />
                     </div>
                   </div>

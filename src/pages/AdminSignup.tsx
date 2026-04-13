@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { 
   ShieldCheck,
@@ -7,26 +8,27 @@ import {
   FileKey,
   AlertTriangle
 } from "lucide-react";
-import versalogo from "@/assets/versalogoSVG.svg";
+import versalogo from "@/assets/ONTIVER white.svg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/AuthContext";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function AdminSignupPage() {
   const { signup, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [department, setDepartment] = useState("");
   const [authorizationCode, setAuthorizationCode] = useState("");
   const [showKeyModal, setShowKeyModal] = useState(false);
-  const [generatedMasterKey, setGeneratedMasterKey] = useState("");
+  const [generatedAuthKey, setGeneratedAuthKey] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    const generatedAuthKey = await signup({
+    const key = await signup({
       role: "admin",
       fullName: name,
       email,
@@ -35,7 +37,7 @@ export default function AdminSignupPage() {
       authorizationCode,
       consentAccepted: true,
     });
-    setGeneratedMasterKey(generatedAuthKey);
+    setGeneratedAuthKey(key);
     setShowKeyModal(true);
   };
 
@@ -48,8 +50,8 @@ export default function AdminSignupPage() {
         
         {/* Logo */}
         <div className="relative z-10 flex items-center justify-end gap-3">
-          <span className="text-xl font-bold tracking-tight text-white">Verza Admin</span>
-          <img src={versalogo} alt="Verza" className="h-8 w-8 grayscale opacity-80" />
+          <span className="text-xl font-bold tracking-tight text-white">Ontiver Admin</span>
+          <img src={versalogo} alt="Ontiver" className="h-8 w-8 grayscale opacity-80" />
         </div>
 
         {/* Hero Content */}
@@ -90,7 +92,7 @@ export default function AdminSignupPage() {
             <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
             Internal Use Only
           </span>
-          <span>Verza Systems Inc.</span>
+          <span>Ontiver Systems Inc.</span>
         </div>
       </div>
 
@@ -100,7 +102,7 @@ export default function AdminSignupPage() {
           
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <img src={versalogo} alt="Verza" className="h-8 w-8" />
+            <img src={versalogo} alt="Ontiver" className="h-8 w-8" />
             <span className="text-xl font-bold text-white">Admin Portal</span>
           </div>
 
@@ -125,7 +127,7 @@ export default function AdminSignupPage() {
               <label className="text-sm font-medium text-zinc-400">Official Email</label>
               <Input 
                 type="email" 
-                placeholder="admin@verza.com"
+                placeholder="admin@ontiver.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-zinc-900/30 border-zinc-800 focus:border-red-500/50 h-11 text-white placeholder:text-zinc-700 transition-colors"
@@ -196,26 +198,42 @@ export default function AdminSignupPage() {
           </p>
         </div>
       </div>
-
-      {/* Master Key Modal */}
       <Dialog open={showKeyModal} onOpenChange={setShowKeyModal}>
         <DialogContent className="bg-[#050505] border-red-900/20 text-white">
           <DialogHeader>
-            <DialogTitle className="text-xl text-red-500">Master Key Generated</DialogTitle>
+            <DialogTitle className="text-xl text-red-500">Copy Your Auth Key</DialogTitle>
             <DialogDescription className="text-zinc-500">
-              This is your permanent root access key. It cannot be recovered if lost.
+              This key is required for login. Copy and store it securely before continuing.
             </DialogDescription>
           </DialogHeader>
           <div className="p-4 bg-red-950/10 rounded-lg border border-red-900/20 my-4">
-            <p className="font-mono text-lg text-red-500 break-all text-center select-all">
-              {generatedMasterKey}
+            <p className="font-mono text-sm text-red-400 break-all text-center select-all">
+              {generatedAuthKey}
             </p>
           </div>
-          <Button onClick={() => setShowKeyModal(false)} className="w-full bg-red-600 hover:bg-red-500 text-white">
-            Close
-          </Button>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-zinc-700 text-zinc-200"
+              onClick={() => {
+                if (!generatedAuthKey) return;
+                void navigator.clipboard.writeText(generatedAuthKey);
+              }}
+            >
+              Copy key
+            </Button>
+            <Button
+              type="button"
+              className="bg-red-600 hover:bg-red-500 text-white"
+              onClick={() => setLocation("/admin/login")}
+            >
+              Continue to Login
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

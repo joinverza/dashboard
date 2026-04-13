@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   FileText, Download, Calendar, 
   CheckCircle, AlertTriangle, Clock, Search, Loader2
@@ -12,85 +13,47 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { bankingService } from '@/services/bankingService';
-import type { ComplianceReport } from '@/types/banking';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 
 export default function ComplianceReports() {
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [reports, setReports] = useState<ComplianceReport[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const reportsQuery = useQuery({
+    queryKey: ["admin", "compliance", "reports"],
+    queryFn: () => bankingService.listReports(),
+  });
 
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const data = await bankingService.listReports();
-        setReports(data);
-      } catch (error) {
-        console.error("Failed to fetch reports", error);
-        // Fallback to mock data if API fails (for demo purposes)
-        setReports([
-            { 
-              id: 'RPT-2025-001', 
-              name: 'Q1 2025 AML Audit', 
-              type: 'Annual', 
-              date: 'Apr 01, 2025', 
-              status: 'Compliant',
-              verifications: 1240,
-              issues: 0
-            },
-            { 
-              id: 'RPT-2025-002', 
-              name: 'Monthly KYC Summary - March', 
-              type: 'Monthly', 
-              date: 'Apr 02, 2025', 
-              status: 'Certified',
-              verifications: 450,
-              issues: 0
-            }
-        ]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchReports();
-  }, []);
-
-  const handleGenerateReport = async () => {
-    setIsGenerating(true);
-    try {
-      const res = await bankingService.createReport({
-        type: 'compliance',
+  const generateMutation = useMutation({
+    mutationFn: () =>
+      bankingService.createReport({
+        type: "compliance",
         dateRange: {
-          start: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
-          end: new Date().toISOString().split('T')[0]
-        }
-      });
-      
+          start: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split("T")[0],
+          end: new Date().toISOString().split("T")[0],
+        },
+      }),
+    onSuccess: async () => {
       toast.success("New report generation started");
-      
-      // Optimistically add new report
-      const newReport: ComplianceReport = {
-        id: res.reportId,
-        name: `Compliance Report (${new Date().toLocaleDateString()})`,
-        date: new Date().toLocaleDateString(),
-        type: 'Monthly',
-        status: 'Pending',
-        verifications: 0,
-        issues: 0
-      };
-      
-      setReports([newReport, ...reports]);
-    } catch (error) {
-      console.error("Failed to generate report", error);
-      toast.error("Failed to generate report");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+      await queryClient.invalidateQueries({ queryKey: ["admin", "compliance", "reports"] });
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to generate report")),
+  });
 
-  const filteredReports = reports.filter(report => {
+  const downloadMutation = useMutation({
+    mutationFn: (reportId: string) => bankingService.getReportDetails(reportId),
+    onSuccess: (detail: Awaited<ReturnType<typeof bankingService.getReportDetails>>) => {
+      if (detail.downloadUrl) {
+        window.open(detail.downloadUrl, "_blank");
+      } else {
+        toast.info("Report is not ready for download yet.");
+      }
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to fetch report download link")),
+  });
+
+  const reports = reportsQuery.data ?? [];
+  const filteredReports = useMemo(() => reports.filter(report => {
     const matchesSearch = 
       report.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -98,14 +61,14 @@ export default function ComplianceReports() {
     const matchesStatus = statusFilter === 'all' || report.status === statusFilter;
     
     return matchesSearch && matchesStatus;
-  });
+  }), [reports, searchTerm, statusFilter]);
 
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Compliant':
       case 'Certified':
-        return <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20"><CheckCircle className="w-3 h-3 mr-1" /> {status}</Badge>;
+        return <Badge className="bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20 border-verza-emerald/20"><CheckCircle className="w-3 h-3 mr-1" /> {status}</Badge>;
       case 'Pending':
         return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20"><Clock className="w-3 h-3 mr-1" /> Processing</Badge>;
       case 'Review Needed':
@@ -151,14 +114,15 @@ export default function ComplianceReports() {
           </Select>
           <Button 
             className="bg-blue-600 hover:bg-blue-700" 
-            onClick={handleGenerateReport}
-            disabled={isGenerating}
+            onClick={() => generateMutation.mutate()}
+            disabled={generateMutation.isPending}
           >
-            {isGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+            {generateMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
             Generate Report
           </Button>
         </div>
       </div>
+      {reportsQuery.error ? <div className="text-sm text-red-400">{getBankingErrorMessage(reportsQuery.error, "Failed to load compliance reports.")}</div> : null}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
@@ -186,7 +150,7 @@ export default function ComplianceReports() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Compliance Score</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-500">98.5%</div>
+            <div className="text-2xl font-bold text-verza-emerald">98.5%</div>
             <p className="text-xs text-muted-foreground mt-1">Excellent status</p>
           </CardContent>
         </Card>
@@ -212,7 +176,7 @@ export default function ComplianceReports() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {reportsQuery.isLoading ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
                     <div className="flex justify-center items-center">
@@ -251,7 +215,7 @@ export default function ComplianceReports() {
                       variant="ghost" 
                       size="sm" 
                       disabled={report.status !== 'Compliant' && report.status !== 'Certified'}
-                      onClick={() => toast.success(`Downloading ${report.name}`)}
+                      onClick={() => downloadMutation.mutate(report.id)}
                     >
                       <Download className="h-4 w-4 mr-2" />
                       Download

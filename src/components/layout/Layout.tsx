@@ -13,6 +13,8 @@ import { ChatModal } from "@/components/chat/ChatModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { StepUpPromptDialog } from "@/components/auth/StepUpPromptDialog";
+import { canAccessRoute } from "@/security/rbacPolicy";
 
 interface LayoutProps {
   children: ReactNode;
@@ -26,47 +28,16 @@ export default function Layout({ children }: LayoutProps) {
   const [isSupportChatOpen, setIsSupportChatOpen] = useState(false);
   const [mfaEnrollmentCode, setMfaEnrollmentCode] = useState("");
   const [isVerifyingMfaEnrollment, setIsVerifyingMfaEnrollment] = useState(false);
-  const { user, hasPermission, permissions, mfaEnrollment, verifyMfaEnrollment, mfaBackupCodes, dismissMfaBackupCodes } = useAuth();
+  const { user, permissions, mfaEnrollment, verifyMfaEnrollment, mfaBackupCodes, dismissMfaBackupCodes } = useAuth();
 
   const roleNavItems = user?.role === "verifier" ? verifierNavItems :
                    user?.role === "enterprise" ? enterpriseNavItems :
                    user?.role === "manager" ? managerNavItems :
                    user?.role === "admin" ? adminNavItems :
                    userNavItems;
-  const permissionByPath: Record<string, string | undefined> = {
-    "/enterprise/tools": "documents:write",
-    "/enterprise/verifications": "documents:write",
-    "/enterprise/bulk": "kyc:write",
-    "/enterprise/api": "webhooks:write",
-    "/enterprise/analytics": "analytics:read",
-    "/enterprise/audit": "audit:read",
-    "/manager/requests": "verification:read",
-    "/manager/verifications": "verification:read",
-    "/manager/tools": "documents:write",
-    "/manager/team": "users:manage",
-    "/manager/analytics": "analytics:read",
-    "/manager/compliance": "audit:read",
-    "/verifier/jobs": "verification:read",
-    "/verifier/active": "verification:write",
-    "/verifier/profile": "verifier:profile:read",
-    "/admin/users": "users:manage",
-    "/admin/verifiers": "verifiers:manage",
-    "/admin/enterprises": "enterprises:manage",
-    "/admin/system": "system:manage",
-    "/admin/audit": "audit:read",
-    "/admin/tools/verifications": "verification:read",
-    "/admin/tools/operations": "documents:write",
-    "/admin/tools/auditor": "audit:read",
-    "/admin/tools/support": "verification:read",
-    "/admin/tools/developer": "webhooks:write",
-  };
-  const navItems =
-    permissions.length === 0
-      ? roleNavItems
-      : roleNavItems.filter((item) => {
-          const needed = permissionByPath[item.path];
-          return !needed || hasPermission(needed);
-        });
+  const navItems = user
+    ? roleNavItems.filter((item) => canAccessRoute(user.role, permissions, item.path))
+    : roleNavItems;
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -98,7 +69,7 @@ export default function Layout({ children }: LayoutProps) {
     }
   };
 
-  const isAuthPage = ['/', '/login', '/signup', '/portal/login', '/portal/signup', '/admin/login', '/admin/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/onboarding'].includes(location);
+  const isAuthPage = ['/', '/login', '/signup', '/user/signup', '/portal/login', '/portal/signup', '/verifier/login', '/verifier/signup', '/admin/login', '/admin/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/onboarding'].includes(location);
 
   if (isAuthPage || !user) {
     return (
@@ -198,7 +169,7 @@ export default function Layout({ children }: LayoutProps) {
               isOpen={isSupportChatOpen}
               onClose={() => setIsSupportChatOpen(false)}
               recipient={{
-                name: "Verza Support",
+                name: "Ontiver Support",
                 role: "Admin",
                 status: "online",
                 avatar: "https://github.com/shadcn.png"
@@ -263,6 +234,7 @@ export default function Layout({ children }: LayoutProps) {
           <Button onClick={dismissMfaBackupCodes}>I have saved these codes</Button>
         </DialogContent>
       </Dialog>
+      <StepUpPromptDialog />
     </div>
   );
 }

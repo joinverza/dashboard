@@ -310,7 +310,7 @@ export default function BulkVerification() {
               <CardHeader>
                 <CardTitle>Map Fields</CardTitle>
                 <CardDescription>
-                  Map the columns from your file to the corresponding Verza fields.
+                  Map the columns from your file to the corresponding Ontiver fields.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -487,10 +487,10 @@ export default function BulkVerification() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 flex flex-col items-center justify-center text-center">
-                    <CheckCircle className="h-8 w-8 text-green-500 mb-2" />
-                    <span className="text-2xl font-bold text-green-500">{bulkResponse?.items.length || 0}</span>
-                    <span className="text-sm text-green-600/80">Requests Submitted</span>
+                  <div className="bg-verza-emerald/10 border border-verza-emerald/20 rounded-lg p-4 flex flex-col items-center justify-center text-center">
+                    <CheckCircle className="h-8 w-8 text-verza-emerald mb-2" />
+                    <span className="text-2xl font-bold text-verza-emerald">{bulkResponse?.items.length || 0}</span>
+                    <span className="text-sm text-verza-emerald/80">Requests Submitted</span>
                   </div>
                   <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 flex flex-col items-center justify-center text-center">
                     <Loader2 className="h-8 w-8 text-blue-500 mb-2" />

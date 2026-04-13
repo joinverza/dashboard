@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,9 +29,8 @@ import {
   Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { bankingService } from '@/services/bankingService';
-import type { VerificationStatsResponse, VerificationRequestResponse } from '@/types/banking';
 import { toast } from "sonner";
+import { useEnterpriseDashboardData } from '@/hooks/useBankingDashboard';
 
 ChartJS.register(
   CategoryScale,
@@ -74,28 +73,13 @@ const chartOptions = {
 };
 
 export default function EnterpriseDashboard() {
-  const [stats, setStats] = useState<VerificationStatsResponse | null>(null);
-  const [recentVerifications, setRecentVerifications] = useState<VerificationRequestResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { stats, recentVerifications, licenseUsage, isLoading, error } = useEnterpriseDashboardData();
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const [statsData, requestsData] = await Promise.all([
-          bankingService.getVerificationStats(),
-          bankingService.getVerificationRequests({ limit: 5 })
-        ]);
-        setStats(statsData);
-        setRecentVerifications(requestsData);
-      } catch {
-        toast.error("Failed to load enterprise dashboard data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    void fetchData();
-  }, []);
+    if (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to load enterprise dashboard data");
+    }
+  }, [error]);
 
   if (isLoading) {
     return (
@@ -113,8 +97,8 @@ export default function EnterpriseDashboard() {
         label: 'Verifications',
         data: stats?.dailyBreakdown?.map((d: { count: number }) => d.count) || [],
         fill: true,
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(30, 215, 96, 0.12)',
+        borderColor: '#1ED760',
         tension: 0.4,
       },
     ],
@@ -132,8 +116,8 @@ export default function EnterpriseDashboard() {
           <p className="text-muted-foreground">Overview of your verification operations and team performance.</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/enterprise/verification/new">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-glow">
+          <Link href="/enterprise/requests">
+            <Button className="bg-verza-emerald hover:bg-verza-kelly text-black shadow-glow">
               <FileCheck className="mr-2 h-4 w-4" /> New Verification
             </Button>
           </Link>
@@ -145,7 +129,7 @@ export default function EnterpriseDashboard() {
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Verifications</CardTitle>
-            <FileCheck className="h-4 w-4 text-blue-500" />
+            <FileCheck className="h-4 w-4 text-verza-emerald" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalVerifications.toLocaleString() || 0}</div>
@@ -157,13 +141,17 @@ export default function EnterpriseDashboard() {
         
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">Quota Used</CardTitle>
             <DollarSign className="h-4 w-4 text-verza-emerald" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats ? ((stats.successful / stats.totalVerifications) * 100).toFixed(1) : 0}%</div>
+            <div className="text-2xl font-bold">
+              {licenseUsage && licenseUsage.monthlyQuota > 0
+                ? `${((licenseUsage.usedQuota / licenseUsage.monthlyQuota) * 100).toFixed(1)}%`
+                : "0%"}
+            </div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              Based on completed verifications
+              {licenseUsage?.usedQuota?.toLocaleString() ?? 0} / {licenseUsage?.monthlyQuota?.toLocaleString() ?? 0} monthly requests
             </p>
           </CardContent>
         </Card>
@@ -223,8 +211,8 @@ export default function EnterpriseDashboard() {
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
               <Link href="/enterprise/bulk">
-                <Button variant="outline" className="w-full h-24 flex flex-col gap-2 hover:border-blue-500/50 hover:bg-blue-500/5">
-                  <Upload className="h-6 w-6 text-blue-500" />
+                <Button variant="outline" className="w-full h-24 flex flex-col gap-2 hover:border-verza-emerald/50 hover:bg-verza-emerald/5">
+                  <Upload className="h-6 w-6 text-verza-emerald" />
                   <span>Bulk Upload</span>
                 </Button>
               </Link>
@@ -234,10 +222,10 @@ export default function EnterpriseDashboard() {
                   <span>API Access</span>
                 </Button>
               </Link>
-              <Link href="/enterprise/reports">
+              <Link href="/enterprise/compliance/workflows">
                 <Button variant="outline" className="w-full h-24 flex flex-col gap-2 hover:border-verza-emerald/50 hover:bg-verza-emerald/5">
                   <FileText className="h-6 w-6 text-verza-emerald" />
-                  <span>View Reports</span>
+                  <span>Case Workflows</span>
                 </Button>
               </Link>
               <Link href="/enterprise/team/invite">
@@ -249,15 +237,17 @@ export default function EnterpriseDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-blue-600/20 to-transparent border-blue-600/30">
+          <Card className="bg-gradient-to-br from-verza-emerald/20 to-transparent border-verza-emerald/30">
             <CardContent className="pt-6">
                <div className="flex flex-col gap-2">
-                 <h3 className="font-bold text-lg">System Status</h3>
+                 <h3 className="font-bold text-lg">{licenseUsage?.planName ?? "Enterprise"} Plan</h3>
                  <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-verza-emerald animate-pulse"></div>
-                    <span className="text-sm text-muted-foreground">Dashboard API connected</span>
+                    <span className="text-sm text-muted-foreground">SLA uptime {licenseUsage?.slaUptime?.toFixed(2) ?? "99.90"}%</span>
                  </div>
-                 <p className="text-xs text-muted-foreground mt-2">Last data refresh: {recentVerifications[0]?.updatedAt ? new Date(recentVerifications[0].updatedAt).toLocaleString() : "N/A"}</p>
+                 <p className="text-xs text-muted-foreground mt-2">
+                   Last data refresh: {recentVerifications[0]?.updatedAt ? new Date(recentVerifications[0].updatedAt).toLocaleString() : "N/A"}
+                 </p>
                </div>
             </CardContent>
           </Card>
@@ -269,7 +259,7 @@ export default function EnterpriseDashboard() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Verifications</CardTitle>
           <Link href="/enterprise/requests">
-            <Button variant="ghost" size="sm" className="text-blue-500">View All <ArrowRight className="ml-1 h-4 w-4" /></Button>
+            <Button variant="ghost" size="sm" className="text-verza-emerald">View All <ArrowRight className="ml-1 h-4 w-4" /></Button>
           </Link>
         </CardHeader>
         <CardContent>
@@ -277,7 +267,7 @@ export default function EnterpriseDashboard() {
             {recentVerifications.length > 0 ? recentVerifications.map((req) => (
               <div key={req.verificationId} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-border/50 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors">
                 <div className="flex items-start gap-4">
-                  <div className="p-2 rounded-full bg-blue-500/10 text-blue-500 mt-1">
+                  <div className="p-2 rounded-full bg-verza-emerald/10 text-verza-emerald mt-1">
                     <Activity className="h-5 w-5" />
                   </div>
                   <div>

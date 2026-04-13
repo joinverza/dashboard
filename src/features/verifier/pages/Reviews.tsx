@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Search, Star, MoreVertical, Flag, MessageSquare } from "lucide-react";
+import { Search, Star, MoreVertical, Flag, MessageSquare, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,71 +12,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-// Mock Reviews Data
-const REVIEWS = [
-    {
-        id: 1,
-        user: "Alice M.",
-        rating: 5,
-        date: "2025-05-10",
-        credentialType: "Education Verification",
-        comment: "Very fast and professional verification. Highly recommended! The verifier was very thorough.",
-        reply: "Thank you Alice! Glad to help.",
-        helpful: 12
-    },
-    {
-        id: 2,
-        user: "Tech Corp Inc.",
-        rating: 4,
-        date: "2025-05-08",
-        credentialType: "Employment Check",
-        comment: "Good service, but took slightly longer than expected due to timezone differences.",
-        reply: null,
-        helpful: 3
-    },
-    {
-        id: 3,
-        user: "John D.",
-        rating: 5,
-        date: "2025-05-01",
-        credentialType: "Identity Verification",
-        comment: "Excellent attention to detail. Process was smooth.",
-        reply: null,
-        helpful: 5
-    },
-    {
-        id: 4,
-        user: "Sarah L.",
-        rating: 3,
-        date: "2025-04-28",
-        credentialType: "Professional License",
-        comment: "Verification was accurate but communication could be better.",
-        reply: null,
-        helpful: 1
-    },
-    {
-        id: 5,
-        user: "Global Logistics",
-        rating: 5,
-        date: "2025-04-25",
-        credentialType: "Business Verification",
-        comment: "Top notch service. Will use again.",
-        reply: "Appreciate the business!",
-        helpful: 8
-    }
-];
+import { bankingService, getBankingErrorMessage } from "@/services/bankingService";
 
 export default function Reviews() {
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [ratingFilter, setRatingFilter] = useState("all");
+  const [draftReplies, setDraftReplies] = useState<Record<string, string>>({});
 
-  const filteredReviews = REVIEWS.filter(review => {
-    const matchesSearch = review.comment.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          review.user.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRating = ratingFilter === "all" || review.rating.toString() === ratingFilter;
-    return matchesSearch && matchesRating;
+  const reviewsQuery = useQuery({
+    queryKey: ["verifier", "reviews", searchTerm, ratingFilter],
+    queryFn: () => bankingService.listVerifierReviews({ page: 1, limit: 100, search: searchTerm || undefined, rating: ratingFilter === "all" ? undefined : Number(ratingFilter) }),
   });
+
+  const replyMutation = useMutation({
+    mutationFn: ({ reviewId, message }: { reviewId: string; message: string }) => bankingService.replyVerifierReview(reviewId, message),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["verifier", "reviews"] });
+    },
+  });
+
+  const reviews = reviewsQuery.data?.items ?? [];
+  const average = reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
 
   return (
     <motion.div
@@ -92,13 +50,13 @@ export default function Reviews() {
              <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Average Rating:</span>
                 <span className="font-bold text-verza-emerald flex items-center">
-                    4.4 <Star className="h-4 w-4 fill-verza-emerald ml-1" />
+                    {average.toFixed(1)} <Star className="h-4 w-4 fill-verza-emerald ml-1" />
                 </span>
              </div>
              <div className="w-px h-4 bg-border" />
              <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Total Reviews:</span>
-                <span className="font-bold">128</span>
+                <span className="font-bold">{reviews.length}</span>
              </div>
         </div>
       </div>
@@ -131,21 +89,25 @@ export default function Reviews() {
 
       {/* Reviews List */}
       <div className="grid gap-6">
-        {filteredReviews.length > 0 ? (
-            filteredReviews.map((review) => (
-                <Card key={review.id} className="bg-card/80 backdrop-blur-sm border-border/50">
+        {reviewsQuery.isLoading ? (
+          <div className="flex justify-center py-12"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div>
+        ) : reviewsQuery.error ? (
+          <div className="text-sm text-red-400">{getBankingErrorMessage(reviewsQuery.error, "Failed to load reviews.")}</div>
+        ) : reviews.length > 0 ? (
+            reviews.map((review) => (
+                <Card key={review.reviewId} className="bg-card/80 backdrop-blur-sm border-border/50">
                     <CardHeader className="pb-3">
                         <div className="flex justify-between items-start">
                             <div className="flex gap-4">
                                 <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-medium">
-                                    {review.user.charAt(0)}
+                                    {review.reviewer.charAt(0)}
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold">{review.user}</h4>
+                                    <h4 className="font-semibold">{review.reviewer}</h4>
                                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                                        <span>{review.date}</span>
+                                        <span>{new Date(review.createdAt).toLocaleDateString()}</span>
                                         <span>•</span>
-                                        <span>{review.credentialType}</span>
+                                        <span>{review.credentialType ?? "Verification"}</span>
                                     </div>
                                 </div>
                             </div>
@@ -176,7 +138,7 @@ export default function Reviews() {
                         <p className="text-sm">{review.comment}</p>
                         
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <span>{review.helpful} people found this helpful</span>
+                            <span>{review.helpfulCount ?? 0} people found this helpful</span>
                         </div>
 
                         {review.reply && (
@@ -187,10 +149,23 @@ export default function Reviews() {
                         )}
 
                         {!review.reply && (
-                            <Button variant="outline" size="sm" className="gap-2 text-xs h-8">
+                          <div className="space-y-2">
+                            <Input
+                              placeholder="Write a professional reply..."
+                              value={draftReplies[review.reviewId] ?? ""}
+                              onChange={(e) => setDraftReplies((prev) => ({ ...prev, [review.reviewId]: e.target.value }))}
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-2 text-xs h-8"
+                              disabled={!draftReplies[review.reviewId] || replyMutation.isPending}
+                              onClick={() => replyMutation.mutate({ reviewId: review.reviewId, message: draftReplies[review.reviewId] })}
+                            >
                                 <MessageSquare className="h-3 w-3" />
-                                Reply to Review
+                                Submit Reply
                             </Button>
+                          </div>
                         )}
                     </CardContent>
                 </Card>

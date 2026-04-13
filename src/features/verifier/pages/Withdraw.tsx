@@ -1,18 +1,38 @@
 import { motion } from "framer-motion";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Wallet, History, AlertCircle } from "lucide-react";
+import { ArrowRight, Wallet, History, AlertCircle, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { bankingService, getBankingErrorMessage } from "@/services/bankingService";
 
 export default function VerifierWithdraw() {
-  const withdrawals = [
-    { id: "TX123456", date: "2023-06-15", amount: 450.00, status: "Completed", hash: "0x7f...9a2b" },
-    { id: "TX123457", date: "2023-05-20", amount: 1250.00, status: "Completed", hash: "0x3c...1e4f" },
-    { id: "TX123458", date: "2023-04-10", amount: 300.00, status: "Completed", hash: "0x8d...5b7c" },
-  ];
+  const queryClient = useQueryClient();
+  const [destinationId, setDestinationId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [earningsQuery, withdrawalsQuery] = useQueries({
+    queries: [
+      { queryKey: ["verifier", "earnings"], queryFn: () => bankingService.getVerifierEarningsSummary("30d") },
+      { queryKey: ["verifier", "withdrawals"], queryFn: () => bankingService.listVerifierWithdrawals({ page: 1, limit: 20 }) },
+    ],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: () => bankingService.createVerifierWithdrawal({ amount: Number(amount), currency: earningsQuery.data?.currency ?? "USD", destinationId }),
+    onSuccess: async () => {
+      toast.success("Withdrawal request created.");
+      setAmount("");
+      await queryClient.invalidateQueries({ queryKey: ["verifier", "withdrawals"] });
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to create withdrawal")),
+  });
+
+  const available = earningsQuery.data?.availableBalance ?? 0;
 
   return (
     <motion.div
@@ -35,7 +55,7 @@ export default function VerifierWithdraw() {
             <div className="p-4 bg-muted/20 rounded-lg border border-border/50 flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Available Balance</p>
-                <h2 className="text-2xl font-bold text-verza-emerald">$1,245.50</h2>
+                <h2 className="text-2xl font-bold text-verza-emerald">${available.toFixed(2)}</h2>
               </div>
               <Wallet className="h-8 w-8 text-muted-foreground/50" />
             </div>
@@ -43,7 +63,7 @@ export default function VerifierWithdraw() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="address">Wallet Address</Label>
-                <Input id="address" placeholder="addr1..." defaultValue="addr1q9...xyz" />
+                <Input id="address" placeholder="Destination account / wallet id" value={destinationId} onChange={(e) => setDestinationId(e.target.value)} />
                 <p className="text-xs text-muted-foreground">
                   Verify this address carefully. Transactions cannot be reversed.
                 </p>
@@ -53,8 +73,8 @@ export default function VerifierWithdraw() {
                 <Label htmlFor="amount">Amount (USD)</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
-                  <Input id="amount" type="number" placeholder="0.00" className="pl-7" />
-                  <Button variant="ghost" size="sm" className="absolute right-1 top-1 h-7 text-xs text-verza-emerald">
+                  <Input id="amount" type="number" placeholder="0.00" className="pl-7" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                  <Button variant="ghost" size="sm" className="absolute right-1 top-1 h-7 text-xs text-verza-emerald" onClick={() => setAmount(String(available))}>
                     MAX
                   </Button>
                 </div>
@@ -67,13 +87,13 @@ export default function VerifierWithdraw() {
                  </div>
                  <div className="flex justify-between font-medium pt-2">
                    <span>Total to Receive</span>
-                   <span>$0.00</span>
+                   <span>${Math.max(0, Number(amount || 0) - 0.45).toFixed(2)}</span>
                  </div>
               </div>
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow">
+            <Button className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow" onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !destinationId || Number(amount) <= 0}>
               Confirm Withdrawal <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </CardFooter>
@@ -116,12 +136,14 @@ export default function VerifierWithdraw() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {withdrawals.map((tx) => (
-                    <TableRow key={tx.id}>
-                      <TableCell className="text-xs">{tx.date}</TableCell>
+                  {withdrawalsQuery.isLoading ? (
+                    <TableRow><TableCell colSpan={3} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin inline" /></TableCell></TableRow>
+                  ) : (withdrawalsQuery.data?.items ?? []).map((tx) => (
+                    <TableRow key={tx.withdrawalId}>
+                      <TableCell className="text-xs">{new Date(tx.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell className="font-medium">${tx.amount.toFixed(2)}</TableCell>
                       <TableCell className="text-right">
-                        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-[10px]">
+                        <Badge variant="outline" className="text-[10px]">
                           {tx.status}
                         </Badge>
                       </TableCell>

@@ -6,12 +6,14 @@ describe('role navigation deep-links', () => {
   it('keeps enterprise verifications and operations hub visible', () => {
     const paths = enterpriseNavItems.map((item) => item.path);
     expect(hasPath(paths, '/enterprise/verifications')).toBe(true);
+    expect(hasPath(paths, '/enterprise/email-verifications')).toBe(true);
     expect(hasPath(paths, '/enterprise/tools')).toBe(true);
   });
 
   it('keeps manager deep-links for relocated features', () => {
     const paths = managerNavItems.map((item) => item.path);
     expect(hasPath(paths, '/manager/verifications')).toBe(true);
+    expect(hasPath(paths, '/manager/email-verifications')).toBe(true);
     expect(hasPath(paths, '/manager/tools')).toBe(true);
   });
 
@@ -22,5 +24,6 @@ describe('role navigation deep-links', () => {
     expect(hasPath(paths, '/admin/tools/auditor')).toBe(true);
     expect(hasPath(paths, '/admin/tools/support')).toBe(true);
     expect(hasPath(paths, '/admin/tools/developer')).toBe(true);
+    expect(hasPath(paths, '/admin/security')).toBe(true);
   });
 });

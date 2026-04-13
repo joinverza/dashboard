@@ -31,7 +31,7 @@ export default function VerifierProfile() {
         // Fallback mock data for development if API fails
         setProfile({
           id: "v1",
-          name: "Verza Professional Services",
+          name: "Ontiver Professional Services",
           email: "verifier@verza.io",
           role: "verifier",
           status: "active",

@@ -82,7 +82,7 @@ const activityData = {
       {
         label: 'Verifications',
         data: [2, 5, 3, 8, 6, 1, 0],
-        backgroundColor: '#10b981',
+        backgroundColor: '#1ED760',
         borderRadius: 4,
       },
     ],
@@ -96,7 +96,7 @@ const credentialTypeData = {
         backgroundColor: [
           '#3b82f6',
           '#8b5cf6',
-          '#10b981',
+          '#1ED760',
           '#f59e0b',
           '#6b7280',
         ],
@@ -110,7 +110,7 @@ export default function UserAnalytics() {
 
   const metrics = [
     { label: "Total Spent", value: "$1,620", change: "+12%", icon: DollarSign, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { label: "Active Credentials", value: "12", change: "+2", icon: CheckCircle, color: "text-green-500", bg: "bg-green-500/10" },
+    { label: "Active Credentials", value: "12", change: "+2", icon: CheckCircle, color: "text-verza-emerald", bg: "bg-verza-emerald/10" },
     { label: "Pending Verifications", value: "3", change: "-1", icon: Clock, color: "text-yellow-500", bg: "bg-yellow-500/10" },
     { label: "Total Requests", value: "45", change: "+5", icon: Activity, color: "text-purple-500", bg: "bg-purple-500/10" },
   ];
@@ -171,7 +171,7 @@ export default function UserAnalytics() {
                   </div>
                 </div>
                 <div className="flex items-center mt-4 text-xs">
-                  <span className={`${metric.change.startsWith('+') ? 'text-green-500' : 'text-red-500'} font-medium`}>
+                  <span className={`${metric.change.startsWith('+') ? 'text-verza-emerald' : 'text-red-500'} font-medium`}>
                     {metric.change}
                   </span>
                   <span className="text-muted-foreground ml-1">from last month</span>
@@ -268,7 +268,7 @@ export default function UserAnalytics() {
                                     <p className="text-xs text-muted-foreground">{item.date}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className={`text-sm font-medium ${item.amount.startsWith('+') ? 'text-green-500' : 'text-foreground'}`}>
+                                    <p className={`text-sm font-medium ${item.amount.startsWith('+') ? 'text-verza-emerald' : 'text-foreground'}`}>
                                         {item.amount}
                                     </p>
                                     <p className="text-xs text-muted-foreground">{item.status}</p>

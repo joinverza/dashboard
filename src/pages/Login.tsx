@@ -8,26 +8,18 @@ import {
   Zap,
   Globe
 } from "lucide-react";
-import versalogo from "@/assets/versalogoSVG.svg";
+import versalogo from "@/assets/ONTIVER white.svg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth, type UserRole } from "@/features/auth/AuthContext";
+import { useAuth } from "@/features/auth/AuthContext";
 import { Separator } from "@/components/ui/separator";
 import { AuthApiError } from "@/services/authService";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export default function LoginPage() {
   const { login, verifyMfa, verifyMfaRecoveryCode, mfaChallenge, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authKey, setAuthKey] = useState("");
-  const [role, setRole] = useState<UserRole>("enterprise");
   const [mfaCode, setMfaCode] = useState("");
   const [mfaMethod, setMfaMethod] = useState<"totp" | "recovery_code">("totp");
   const [mfaError, setMfaError] = useState("");
@@ -47,7 +39,7 @@ export default function LoginPage() {
       await login({
         email,
         password,
-        role: role === "admin" || role === "enterprise" || role === "verifier" ? role : "enterprise",
+        role: "user",
         authKey,
       });
     } catch (error) {
@@ -67,8 +59,8 @@ export default function LoginPage() {
         
         {/* Logo */}
         <div className="relative z-10 flex items-center justify-end gap-3">
-          <span className="text-xl font-bold tracking-tight text-white">Verza</span>
-          <img src={versalogo} alt="Verza" className="h-8 w-8" />
+          <span className="text-xl font-bold tracking-tight text-white">Ontiver</span>
+          <img src={versalogo} alt="Ontiver" className="h-8 w-8" />
         </div>
 
         {/* Hero Content */}
@@ -83,7 +75,7 @@ export default function LoginPage() {
               <span className="text-verza-emerald">digital trust</span>
             </h1>
             <p className="text-lg text-zinc-400 leading-relaxed mb-8">
-              Verza provides the infrastructure for verifiable credentials and decentralized identity. Secure, scalable, and built for the future of enterprise.
+              Ontiver provides the infrastructure for verifiable credentials and decentralized identity. Secure, scalable, and built for the future of enterprise.
             </p>
             
             <div className="flex flex-col gap-4 items-end">
@@ -106,7 +98,7 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="relative z-10 flex items-center justify-between text-xs text-zinc-500 uppercase tracking-widest font-medium">
           <span>Secure Enclave</span>
-          <span>© 2025 Verza Inc.</span>
+          <span>© 2025 Ontiver Inc.</span>
         </div>
       </div>
 
@@ -116,30 +108,16 @@ export default function LoginPage() {
           
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <img src={versalogo} alt="Verza" className="h-8 w-8" />
-            <span className="text-xl font-bold text-white">Verza</span>
+            <img src={versalogo} alt="Ontiver" className="h-8 w-8" />
+            <span className="text-xl font-bold text-white">Ontiver</span>
           </div>
 
           <div className="space-y-2 text-center lg:text-left">
-            <h2 className="text-3xl font-semibold tracking-tight text-white">Welcome back</h2>
-            <p className="text-zinc-400">Enter your email to sign in to your account</p>
+            <h2 className="text-3xl font-semibold tracking-tight text-white">User Login</h2>
+            <p className="text-zinc-400">Sign in to access your personal dashboard</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">Role</label>
-              <Select value={role} onValueChange={(v: UserRole) => setRole(v)}>
-                <SelectTrigger className="bg-zinc-900/50 border-zinc-800 focus:ring-verza-emerald/20 h-11 text-white">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="enterprise">Enterprise</SelectItem>
-                  <SelectItem value="verifier">Verifier</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-300">Email</label>
               <Input 
@@ -242,10 +220,10 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center text-sm text-zinc-400">
-            Don't have an account?{" "}
+            Don&apos;t have a user account?{" "}
             <Link href="/signup">
               <span className="text-verza-emerald hover:text-verza-kelly font-medium cursor-pointer transition-colors">
-                Sign up
+                User signup
               </span>
             </Link>
           </p>

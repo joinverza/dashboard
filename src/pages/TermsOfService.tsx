@@ -8,7 +8,7 @@ export default function TermsOfServicePage() {
     {
       title: "Acceptance of Terms",
       icon: FileCheck,
-      content: "By accessing and using Verza, you accept and agree to be bound by the terms and provision of this agreement."
+      content: "By accessing and using Ontiver, you accept and agree to be bound by the terms and provision of this agreement."
     },
     {
       title: "User Responsibilities",
@@ -18,12 +18,12 @@ export default function TermsOfServicePage() {
     {
       title: "Identity Verification Services",
       icon: ShieldAlert,
-      content: "Verza provides identity verification services. We do not guarantee the accuracy of third-party verifiers, though we vet them rigorously."
+      content: "Ontiver provides identity verification services. We do not guarantee the accuracy of third-party verifiers, though we vet them rigorously."
     },
     {
       title: "Intellectual Property",
       icon: Scale,
-      content: "The Service and its original content, features and functionality are and will remain the exclusive property of Verza and its licensors."
+      content: "The Service and its original content, features and functionality are and will remain the exclusive property of Ontiver and its licensors."
     },
     {
       title: "Governing Law",
@@ -59,7 +59,7 @@ export default function TermsOfServicePage() {
         
         <div className="prose prose-invert max-w-none">
           <p className="text-lg text-muted-foreground leading-relaxed">
-            Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the Verza website and the Verza mobile application (the "Service") operated by Verza ("us", "we", or "our"). Your access to and use of the Service is conditioned on your acceptance of and compliance with these Terms.
+            Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the Ontiver website and the Ontiver mobile application (the "Service") operated by Ontiver ("us", "we", or "our"). Your access to and use of the Service is conditioned on your acceptance of and compliance with these Terms.
           </p>
         </div>
 

@@ -1,5 +1,6 @@
 import { Activity, BarChart, LineChart, PieChart, Download, Calendar, Plus, FileText, Trash2, RefreshCw, TrendingUp, Users, Shield, DollarSign, Loader2, CheckCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from '@/components/ui/button';
 import { 
   Card, 
@@ -21,72 +22,59 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useEffect, useState } from 'react';
-import { bankingService } from '@/services/bankingService';
-import type { VerificationStatsResponse } from "@/types/banking";
-
-// Mock Data for Saved Reports (since we don't have an endpoint for saved report configurations, only generated reports)
-const SAVED_REPORTS_MOCK = [
-  { id: 1, name: "Monthly User Growth", type: "User", lastRun: "2025-03-15", schedule: "Monthly" },
-  { id: 2, name: "Weekly Revenue", type: "Financial", lastRun: "2025-03-14", schedule: "Weekly" },
-  { id: 3, name: "Verifier Performance Q1", type: "Performance", lastRun: "2025-03-01", schedule: "Quarterly" },
-  { id: 4, name: "Fraud Detection Summary", type: "Security", lastRun: "2025-03-15", schedule: "Daily" },
-];
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
+import { useAuth } from '@/features/auth/AuthContext';
 
 export default function Analytics() {
-  const [stats, setStats] = useState<VerificationStatsResponse | null>(null);
-  const [isLoadingStats, setIsLoadingStats] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const data = await bankingService.getVerificationStats();
-        setStats(data);
-      } catch (error) {
-        console.error("Failed to fetch verification stats", error);
-        // Fallback to some default stats if API fails
-        setStats({
-          totalVerifications: 0,
-          approved: 0,
-          rejected: 0,
-          pending: 0,
-          averageTime: 0,
-          successful: 0,
-          failed: 0,
-          dailyBreakdown: []
-        });
-      } finally {
-        setIsLoadingStats(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
+  const { hasPermission } = useAuth();
+  const queryClient = useQueryClient();
+  const canReadAnalytics = hasPermission("admin:read") && hasPermission("analytics:read");
+  const statsQuery = useQuery({
+    queryKey: ["admin", "analytics", "verification-stats"],
+    queryFn: () => bankingService.getVerificationStats(),
+    enabled: canReadAnalytics,
+  });
+  const reportsQuery = useQuery({
+    queryKey: ["admin", "analytics", "reports"],
+    queryFn: () => bankingService.listReports(),
+    enabled: canReadAnalytics,
+  });
 
   const handleGenerateReport = async (type: 'compliance' | 'audit' | 'activity', name: string) => {
-    try {
-      setIsGenerating(true);
+    generateMutation.mutate({ type, name });
+  };
+
+  const generateMutation = useMutation({
+    mutationFn: async ({ type }: { type: 'compliance' | 'audit' | 'activity'; name: string }) => {
       const today = new Date();
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(today.getDate() - 30);
-      
-      await bankingService.createReport({
+      return bankingService.createReport({
         type,
-        dateRange: {
-          start: thirtyDaysAgo.toISOString(),
-          end: today.toISOString()
-        }
+        dateRange: { start: thirtyDaysAgo.toISOString(), end: today.toISOString() },
       });
-      
-      toast.success(`${name} generated successfully`);
-    } catch (error) {
-      console.error(`Failed to generate ${name}`, error);
-      toast.error(`Failed to generate ${name}`);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+    },
+    onSuccess: async (_, payload) => {
+      toast.success(`${payload.name} generated successfully`);
+      await queryClient.invalidateQueries({ queryKey: ["admin", "analytics", "reports"] });
+    },
+    onError: (error, payload) => {
+      toast.error(getBankingErrorMessage(error, `Failed to generate ${payload.name}`));
+    },
+  });
+  const stats = statsQuery.data;
+  const isForbidden =
+    (statsQuery.error as { status?: number } | null)?.status === 403 ||
+    (reportsQuery.error as { status?: number } | null)?.status === 403;
+
+  if (!canReadAnalytics || isForbidden) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-3xl font-bold tracking-tight">Analytics & Reports</h1>
+        <p className="text-muted-foreground">You do not have access to perform this action.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -120,7 +108,7 @@ export default function Analytics() {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="text-2xl font-bold">
-              {isLoadingStats ? <Loader2 className="h-4 w-4 animate-spin" /> : stats?.totalVerifications.toLocaleString()}
+              {statsQuery.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : stats?.totalVerifications.toLocaleString()}
             </div>
           </CardContent>
         </Card>
@@ -128,10 +116,10 @@ export default function Analytics() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between space-y-0 pb-2">
               <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-verza-emerald" />
             </div>
             <div className="text-2xl font-bold">
-              {isLoadingStats ? <Loader2 className="h-4 w-4 animate-spin" /> : 
+              {statsQuery.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> :
                 stats && stats.totalVerifications > 0 
                   ? `${Math.round((stats.successful / stats.totalVerifications) * 100)}%` 
                   : '0%'}
@@ -145,7 +133,7 @@ export default function Analytics() {
               <Clock className="h-4 w-4 text-blue-500" />
             </div>
             <div className="text-2xl font-bold">
-              {isLoadingStats ? <Loader2 className="h-4 w-4 animate-spin" /> : 
+              {statsQuery.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> :
                 stats ? `${Math.round(stats.averageTime / 60)}m` : '0m'}
             </div>
           </CardContent>
@@ -157,11 +145,12 @@ export default function Analytics() {
               <Activity className="h-4 w-4 text-yellow-500" />
             </div>
             <div className="text-2xl font-bold">
-              {isLoadingStats ? <Loader2 className="h-4 w-4 animate-spin" /> : stats?.pending.toLocaleString()}
+              {statsQuery.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : stats?.pending.toLocaleString()}
             </div>
           </CardContent>
         </Card>
       </div>
+      {statsQuery.error ? <div className="text-sm text-red-400">{getBankingErrorMessage(statsQuery.error, "Failed to load verification stats.")}</div> : null}
 
       <Tabs defaultValue="prebuilt" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
@@ -185,9 +174,9 @@ export default function Analytics() {
                   variant="outline" 
                   className="w-full group-hover:bg-primary group-hover:text-primary-foreground" 
                   onClick={() => handleGenerateReport('activity', 'User Growth Report')}
-                  disabled={isGenerating}
+                  disabled={generateMutation.isPending}
                 >
-                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Generate Report
                 </Button>
               </CardContent>
@@ -195,8 +184,8 @@ export default function Analytics() {
 
             <Card className="bg-card/80 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-colors cursor-pointer group">
               <CardHeader>
-                <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                  <TrendingUp className="h-5 w-5 text-green-500" />
+                <div className="h-10 w-10 rounded-lg bg-verza-emerald/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="h-5 w-5 text-verza-emerald" />
                 </div>
                 <CardTitle>Verification Trends</CardTitle>
                 <CardDescription>Volume, success rates, and turnaround times</CardDescription>
@@ -206,9 +195,9 @@ export default function Analytics() {
                   variant="outline" 
                   className="w-full group-hover:bg-primary group-hover:text-primary-foreground" 
                   onClick={() => handleGenerateReport('activity', 'Verification Trends Report')}
-                  disabled={isGenerating}
+                  disabled={generateMutation.isPending}
                 >
-                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Generate Report
                 </Button>
               </CardContent>
@@ -227,9 +216,9 @@ export default function Analytics() {
                   variant="outline" 
                   className="w-full group-hover:bg-primary group-hover:text-primary-foreground" 
                   onClick={() => handleGenerateReport('activity', 'Financial Summary Report')}
-                  disabled={isGenerating}
+                  disabled={generateMutation.isPending}
                 >
-                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Generate Report
                 </Button>
               </CardContent>
@@ -248,9 +237,9 @@ export default function Analytics() {
                   variant="outline" 
                   className="w-full group-hover:bg-primary group-hover:text-primary-foreground" 
                   onClick={() => handleGenerateReport('audit', 'Verifier Performance Report')}
-                  disabled={isGenerating}
+                  disabled={generateMutation.isPending}
                 >
-                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Generate Report
                 </Button>
               </CardContent>
@@ -269,9 +258,9 @@ export default function Analytics() {
                   variant="outline" 
                   className="w-full group-hover:bg-primary group-hover:text-primary-foreground" 
                   onClick={() => handleGenerateReport('compliance', 'Compliance Audit Report')}
-                  disabled={isGenerating}
+                  disabled={generateMutation.isPending}
                 >
-                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Generate Report
                 </Button>
               </CardContent>
@@ -361,8 +350,8 @@ export default function Analytics() {
 
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => toast.success("Report template saved")}>Save as Template</Button>
-                <Button onClick={() => handleGenerateReport('activity', 'Custom Report')} disabled={isGenerating}>
-                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                <Button onClick={() => handleGenerateReport('activity', 'Custom Report')} disabled={generateMutation.isPending}>
+                  {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Generate Report
                 </Button>
               </div>
@@ -388,14 +377,14 @@ export default function Analytics() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {SAVED_REPORTS_MOCK.map((report) => (
+                  {(reportsQuery.data ?? []).map((report) => (
                     <TableRow key={report.id}>
                       <TableCell className="font-medium">{report.name}</TableCell>
                       <TableCell>
                         <Badge variant="outline">{report.type}</Badge>
                       </TableCell>
-                      <TableCell>{report.lastRun}</TableCell>
-                      <TableCell>{report.schedule}</TableCell>
+                      <TableCell>{report.date}</TableCell>
+                      <TableCell>{report.status}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button variant="ghost" size="icon" onClick={() => toast.success("Report data refreshed")}>

@@ -1,15 +1,18 @@
 import { motion } from 'framer-motion';
 import { Check, X } from 'lucide-react';
+import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useState } from 'react';
+import { TabHelpCard } from '@/components/shared/TabHelpCard';
 
 const PLANS = [
   {
+    id: 'starter',
     name: 'Starter',
-    price: '$499',
+    monthlyPrice: 499,
     description: 'Perfect for small businesses getting started with verification.',
     features: [
       '500 verifications / month',
@@ -27,8 +30,9 @@ const PLANS = [
     current: false,
   },
   {
+    id: 'business',
     name: 'Business',
-    price: '$2,450',
+    monthlyPrice: 2450,
     description: 'For growing companies with higher volume needs.',
     features: [
       '5,000 verifications / month',
@@ -47,8 +51,9 @@ const PLANS = [
     popular: true,
   },
   {
+    id: 'enterprise',
     name: 'Enterprise',
-    price: 'Custom',
+    monthlyPrice: null,
     description: 'Tailored solutions for large organizations.',
     features: [
       'Unlimited verifications',
@@ -69,6 +74,24 @@ const PLANS = [
 
 export default function EnterprisePricingPlans() {
   const [isAnnual, setIsAnnual] = useState(true);
+  const [, setLocation] = useLocation();
+
+  const toDisplayPrice = (monthlyPrice: number | null): string => {
+    if (monthlyPrice === null) return 'Custom';
+    const yearlyMonthlyEquivalent = Math.round(monthlyPrice * 0.8);
+    const value = isAnnual ? yearlyMonthlyEquivalent : monthlyPrice;
+    return `$${value.toLocaleString()}`;
+  };
+
+  const handlePlanAction = (planId: string, isCurrent: boolean, isEnterprise: boolean) => {
+    if (isCurrent) return;
+    if (isEnterprise) {
+      window.open('mailto:sales@ontiver.com?subject=Enterprise%20Plan%20Inquiry', '_self');
+      return;
+    }
+    const interval = isAnnual ? 'yearly' : 'monthly';
+    setLocation(`/enterprise/billing/checkout?plan=${planId}&interval=${interval}`);
+  };
 
   return (
     <motion.div
@@ -76,6 +99,10 @@ export default function EnterprisePricingPlans() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8"
     >
+      <TabHelpCard
+        title="Pricing Plans"
+        description="Choose monthly or yearly billing and continue to payment to complete plan upgrades or downgrades."
+      />
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold tracking-tight text-foreground">Simple, Transparent Pricing</h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -86,7 +113,7 @@ export default function EnterprisePricingPlans() {
           <span className={`text-sm ${!isAnnual ? 'font-bold' : 'text-muted-foreground'}`}>Monthly</span>
           <Switch checked={isAnnual} onCheckedChange={setIsAnnual} />
           <span className={`text-sm ${isAnnual ? 'font-bold' : 'text-muted-foreground'}`}>
-            Annually <span className="text-emerald-500 font-normal">(Save 20%)</span>
+            Annually <span className="text-verza-emerald font-normal">(Save 20%)</span>
           </span>
         </div>
       </div>
@@ -109,14 +136,14 @@ export default function EnterprisePricingPlans() {
             </CardHeader>
             <CardContent className="flex-1 space-y-6">
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold">{plan.price}</span>
-                {plan.price !== 'Custom' && <span className="text-muted-foreground">/month</span>}
+                <span className="text-4xl font-bold">{toDisplayPrice(plan.monthlyPrice)}</span>
+                {plan.monthlyPrice !== null && <span className="text-muted-foreground">/{isAnnual ? 'month (annual billing)' : 'month'}</span>}
               </div>
 
               <div className="space-y-3">
                 {plan.features.map((feature) => (
                   <div key={feature} className="flex items-start gap-3 text-sm">
-                    <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                    <Check className="h-4 w-4 text-verza-emerald mt-0.5 shrink-0" />
                     <span>{feature}</span>
                   </div>
                 ))}
@@ -133,8 +160,9 @@ export default function EnterprisePricingPlans() {
                 className="w-full" 
                 variant={plan.current ? "outline" : (plan.popular ? "default" : "secondary")}
                 disabled={plan.current}
+                onClick={() => handlePlanAction(plan.id, plan.current, plan.monthlyPrice === null)}
               >
-                {plan.current ? "Current Plan" : (plan.price === 'Custom' ? "Contact Sales" : "Upgrade")}
+                {plan.current ? "Current Plan" : (plan.monthlyPrice === null ? "Contact Sales" : "Continue")}
               </Button>
             </CardFooter>
           </Card>
@@ -146,7 +174,9 @@ export default function EnterprisePricingPlans() {
         <p className="text-muted-foreground mb-4">
           We offer tailored packages for large enterprises with specific compliance and volume requirements.
         </p>
-        <Button variant="outline">Contact Enterprise Sales</Button>
+        <Button variant="outline" onClick={() => window.open('mailto:sales@ontiver.com?subject=Enterprise%20Pricing%20Inquiry', '_self')}>
+          Contact Enterprise Sales
+        </Button>
       </div>
     </motion.div>
   );

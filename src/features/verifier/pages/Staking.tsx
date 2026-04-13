@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Shield, Lock, AlertTriangle, History } from "lucide-react";
+import { Shield, Lock, AlertTriangle, History, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,16 +16,40 @@ import {
     TableHeader,
     TableRow,
   } from "@/components/ui/table";
-
-const STAKE_HISTORY = [
-    { id: 1, date: "2025-05-15", action: "Stake", amount: "+5,000 VERZA", status: "Completed" },
-    { id: 2, date: "2025-04-01", action: "Stake", amount: "+10,000 VERZA", status: "Completed" },
-    { id: 3, date: "2025-03-10", action: "Reward", amount: "+250 VERZA", status: "Completed" },
-];
+import { toast } from "sonner";
+import { bankingService, getBankingErrorMessage } from "@/services/bankingService";
 
 export default function Staking() {
+  const queryClient = useQueryClient();
   const [stakeAmount, setStakeAmount] = useState("");
   const [unstakeAmount, setUnstakeAmount] = useState("");
+  const [overviewQuery, historyQuery] = useQueries({
+    queries: [
+      { queryKey: ["verifier", "staking", "overview"], queryFn: () => bankingService.getVerifierStakingOverview() },
+      { queryKey: ["verifier", "staking", "history"], queryFn: () => bankingService.listVerifierStakingHistory() },
+    ],
+  });
+
+  const stakeMutation = useMutation({
+    mutationFn: () => bankingService.stakeVerifierTokens({ amount: Number(stakeAmount) }),
+    onSuccess: async () => {
+      toast.success("Stake transaction submitted.");
+      setStakeAmount("");
+      await queryClient.invalidateQueries({ queryKey: ["verifier", "staking"] });
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Stake failed")),
+  });
+  const unstakeMutation = useMutation({
+    mutationFn: () => bankingService.unstakeVerifierTokens({ amount: Number(unstakeAmount) }),
+    onSuccess: async () => {
+      toast.success("Unstake request submitted.");
+      setUnstakeAmount("");
+      await queryClient.invalidateQueries({ queryKey: ["verifier", "staking"] });
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Unstake failed")),
+  });
+
+  const overview = overviewQuery.data;
 
   return (
     <motion.div
@@ -35,14 +60,16 @@ export default function Staking() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Staking</h1>
-          <p className="text-muted-foreground">Manage your VERZA stake to increase your verifier tier and rewards.</p>
+          <p className="text-muted-foreground">Manage your ONTIVER stake to increase your verifier tier and rewards.</p>
         </div>
         <div className="flex items-center gap-2">
             <Badge variant="outline" className="px-3 py-1 bg-verza-purple/10 text-verza-purple border-verza-purple/20">
-                <Shield className="mr-1 h-3 w-3" /> Tier 2 Verifier
+                <Shield className="mr-1 h-3 w-3" /> {overview?.currentTier ?? "Tier"}
             </Badge>
         </div>
       </div>
+      {overviewQuery.isLoading ? <div className="flex justify-center py-10"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div> : null}
+      {overviewQuery.error ? <div className="text-sm text-red-400">{getBankingErrorMessage(overviewQuery.error, "Failed to load staking overview.")}</div> : null}
 
       {/* Main Stake Display */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -53,21 +80,21 @@ export default function Staking() {
             </CardHeader>
             <CardContent>
                 <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-bold tracking-tight">15,250</span>
-                    <span className="text-xl text-muted-foreground">VERZA</span>
+                    <span className="text-5xl font-bold tracking-tight">{(overview?.stakedAmount ?? 0).toLocaleString()}</span>
+                    <span className="text-xl text-muted-foreground">ONTIVER</span>
                 </div>
                 <div className="mt-6 flex gap-8">
                     <div>
                         <p className="text-sm text-muted-foreground mb-1">APY</p>
-                        <p className="text-xl font-semibold text-green-500">8.5%</p>
+                        <p className="text-xl font-semibold text-verza-emerald">{overview?.apy ?? 0}%</p>
                     </div>
                     <div>
                         <p className="text-sm text-muted-foreground mb-1">Est. Monthly Reward</p>
-                        <p className="text-xl font-semibold">108 VERZA</p>
+                        <p className="text-xl font-semibold">{(overview?.estimatedMonthlyReward ?? 0).toLocaleString()} ONTIVER</p>
                     </div>
                     <div>
                         <p className="text-sm text-muted-foreground mb-1">Unstake Period</p>
-                        <p className="text-xl font-semibold">14 Days</p>
+                        <p className="text-xl font-semibold">{overview?.unstakePeriodDays ?? 0} Days</p>
                     </div>
                 </div>
             </CardContent>
@@ -76,14 +103,16 @@ export default function Staking() {
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
             <CardHeader>
                 <CardTitle>Tier Progress</CardTitle>
-                <CardDescription>Next Tier: Tier 3 (Authority)</CardDescription>
+                <CardDescription>Next Tier: {overview?.nextTier ?? "N/A"}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="flex justify-between text-sm">
-                    <span>15,250 / 25,000 VERZA</span>
-                    <span className="text-muted-foreground">61%</span>
+                    <span>{(overview?.stakedAmount ?? 0).toLocaleString()} / {(overview?.nextTierRequiredStake ?? 0).toLocaleString()} ONTIVER</span>
+                    <span className="text-muted-foreground">
+                      {Math.round(((overview?.stakedAmount ?? 0) / Math.max(1, overview?.nextTierRequiredStake ?? 1)) * 100)}%
+                    </span>
                 </div>
-                <Progress value={61} className="h-2" />
+                <Progress value={Math.round(((overview?.stakedAmount ?? 0) / Math.max(1, overview?.nextTierRequiredStake ?? 1)) * 100)} className="h-2" />
                 <div className="bg-muted p-3 rounded-md text-sm space-y-2">
                     <p className="font-semibold">Tier 3 Benefits:</p>
                     <ul className="list-disc list-inside text-muted-foreground">
@@ -117,12 +146,12 @@ export default function Staking() {
                                     className="pr-16"
                                 />
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                                    VERZA
+                                    ONTIVER
                                 </div>
                             </div>
                             <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Available: 2,450 VERZA</span>
-                                <button className="text-verza-emerald hover:underline" onClick={() => setStakeAmount("2450")}>Max</button>
+                                <span>Available: {(overview?.availableAmount ?? 0).toLocaleString()} ONTIVER</span>
+                                <button className="text-verza-emerald hover:underline" onClick={() => setStakeAmount(String(overview?.availableAmount ?? 0))}>Max</button>
                             </div>
                         </div>
 
@@ -133,7 +162,7 @@ export default function Staking() {
                             </p>
                         </div>
 
-                        <Button className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow">
+                        <Button className="w-full bg-verza-emerald hover:bg-verza-emerald/90 text-white shadow-glow" onClick={() => stakeMutation.mutate()} disabled={stakeMutation.isPending || Number(stakeAmount) <= 0}>
                             Confirm Stake
                         </Button>
                     </TabsContent>
@@ -149,12 +178,12 @@ export default function Staking() {
                                     className="pr-16"
                                 />
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                                    VERZA
+                                    ONTIVER
                                 </div>
                             </div>
                             <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Staked: 15,250 VERZA</span>
-                                <button className="text-verza-emerald hover:underline" onClick={() => setUnstakeAmount("15250")}>Max</button>
+                                <span>Staked: {(overview?.stakedAmount ?? 0).toLocaleString()} ONTIVER</span>
+                                <button className="text-verza-emerald hover:underline" onClick={() => setUnstakeAmount(String(overview?.stakedAmount ?? 0))}>Max</button>
                             </div>
                         </div>
 
@@ -165,7 +194,7 @@ export default function Staking() {
                             </p>
                         </div>
 
-                        <Button variant="outline" className="w-full border-red-500/50 text-red-500 hover:bg-red-500/10">
+                        <Button variant="outline" className="w-full border-red-500/50 text-red-500 hover:bg-red-500/10" onClick={() => unstakeMutation.mutate()} disabled={unstakeMutation.isPending || Number(unstakeAmount) <= 0}>
                             Initiate Unstake
                         </Button>
                     </TabsContent>
@@ -188,26 +217,13 @@ export default function Staking() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        <TableRow>
-                            <TableCell className="font-medium">Tier 1 (Novice)</TableCell>
-                            <TableCell>1,000 VERZA</TableCell>
-                            <TableCell><Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Achieved</Badge></TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell className="font-medium">Tier 2 (Pro)</TableCell>
-                            <TableCell>10,000 VERZA</TableCell>
-                            <TableCell><Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Current</Badge></TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell className="font-medium">Tier 3 (Authority)</TableCell>
-                            <TableCell>25,000 VERZA</TableCell>
-                            <TableCell><span className="text-muted-foreground text-sm">Locked</span></TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell className="font-medium">Tier 4 (Partner)</TableCell>
-                            <TableCell>100,000 VERZA</TableCell>
-                            <TableCell><span className="text-muted-foreground text-sm">Locked</span></TableCell>
-                        </TableRow>
+                        {(overview?.tiers ?? []).map((tier) => (
+                          <TableRow key={tier.tier}>
+                            <TableCell className="font-medium">{tier.tier}</TableCell>
+                            <TableCell>{tier.requiredStake.toLocaleString()} ONTIVER</TableCell>
+                            <TableCell>{tier.achieved ? <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">Achieved</Badge> : <span className="text-muted-foreground text-sm">Locked</span>}</TableCell>
+                          </TableRow>
+                        ))}
                     </TableBody>
                 </Table>
             </CardContent>
@@ -233,11 +249,11 @@ export default function Staking() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {STAKE_HISTORY.map((item) => (
-                        <TableRow key={item.id}>
-                            <TableCell>{item.date}</TableCell>
+                    {(historyQuery.data ?? []).map((item) => (
+                        <TableRow key={item.stakeEventId}>
+                            <TableCell>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
                             <TableCell>{item.action}</TableCell>
-                            <TableCell className="font-medium">{item.amount}</TableCell>
+                            <TableCell className="font-medium">{item.amount.toLocaleString()} ONTIVER</TableCell>
                             <TableCell>
                                 <Badge variant="secondary">{item.status}</Badge>
                             </TableCell>

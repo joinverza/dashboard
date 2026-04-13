@@ -71,7 +71,7 @@ export default function ResetPasswordPage() {
                 transition={{ duration: 0.3 }}
               >
                 <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6 mx-auto">
-                  <Key className="h-8 w-8 text-[#00FF87]" />
+                  <Key className="h-8 w-8 text-verza-emerald" />
                 </div>
 
                 <div className="text-center mb-8">
@@ -88,7 +88,7 @@ export default function ResetPasswordPage() {
                       <Input 
                         type={showPassword ? "text" : "password"} 
                         placeholder="Enter new password" 
-                        className="bg-black/20 border-white/10 focus:border-[#00FF87]/50 text-white pr-10"
+                        className="bg-black/20 border-white/10 focus:border-verza-emerald/50 text-white pr-10"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
@@ -109,7 +109,7 @@ export default function ResetPasswordPage() {
                       type="password" 
                       placeholder="Confirm new password" 
                       className={cn(
-                        "bg-black/20 border-white/10 focus:border-[#00FF87]/50 text-white",
+                        "bg-black/20 border-white/10 focus:border-verza-emerald/50 text-white",
                         confirmPassword && password !== confirmPassword && "border-red-500/50"
                       )}
                       value={confirmPassword}
@@ -124,7 +124,7 @@ export default function ResetPasswordPage() {
                     {requirements.map((req, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs">
                         {req.valid ? (
-                          <Check className="w-3 h-3 text-[#00FF87]" />
+                          <Check className="w-3 h-3 text-verza-emerald" />
                         ) : (
                           <div className="w-3 h-3 rounded-full border border-gray-600" />
                         )}
@@ -133,7 +133,7 @@ export default function ResetPasswordPage() {
                     ))}
                      <div className="flex items-center gap-2 text-xs pt-1 border-t border-white/5 mt-1">
                         {password === confirmPassword && password.length > 0 ? (
-                           <Check className="w-3 h-3 text-[#00FF87]" />
+                           <Check className="w-3 h-3 text-verza-emerald" />
                         ) : (
                            <div className="w-3 h-3 rounded-full border border-gray-600" />
                         )}
@@ -143,7 +143,7 @@ export default function ResetPasswordPage() {
 
                   <Button 
                     type="submit" 
-                    className="w-full h-11 bg-[#00B050] hover:bg-[#00FF87] text-black font-semibold shadow-[0_0_20px_-5px_rgba(0,255,135,0.4)] transition-all"
+                    className="w-full h-11 bg-verza-emerald hover:bg-verza-kelly text-black font-semibold shadow-[0_0_20px_-5px_rgba(30,215,96,0.4)] transition-all"
                     disabled={isLoading || !allValid}
                   >
                     {isLoading ? "Resetting..." : "Reset Password"}
@@ -159,8 +159,8 @@ export default function ResetPasswordPage() {
                 transition={{ duration: 0.4 }}
                 className="text-center"
               >
-                <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mb-6 mx-auto border border-green-500/20">
-                  <CheckCircle2 className="h-10 w-10 text-green-500" />
+                <div className="w-20 h-20 bg-verza-emerald/10 rounded-full flex items-center justify-center mb-6 mx-auto border border-verza-emerald/20">
+                  <CheckCircle2 className="h-10 w-10 text-verza-emerald" />
                 </div>
 
                 <h2 className="text-2xl font-bold mb-2">Password Reset!</h2>
@@ -173,7 +173,7 @@ export default function ResetPasswordPage() {
                 </p>
                 
                 <Button 
-                  className="w-full mt-6 bg-[#00B050] text-black hover:bg-[#00FF87]"
+                  className="w-full mt-6 bg-verza-emerald text-black hover:bg-verza-kelly"
                   onClick={() => setLocation("/login")}
                 >
                   Continue to Login

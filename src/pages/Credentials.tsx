@@ -251,7 +251,7 @@ export default function CredentialsPage() {
                   <div className="absolute top-4 right-4 z-20">
                     <span className={cn(
                       "px-2.5 py-1 rounded-lg text-xs font-medium backdrop-blur-md border",
-                      cred.status === "Verified" ? "bg-green-500/20 text-green-400 border-green-500/30" :
+                      cred.status === "Verified" ? "bg-verza-emerald/20 text-verza-emerald border-verza-emerald/30" :
                       cred.status === "Pending" ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" :
                       "bg-red-500/20 text-red-400 border-red-500/30"
                     )}>
@@ -377,7 +377,7 @@ export default function CredentialsPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={cn(
                           "px-2 py-1 rounded-full text-xs font-medium border",
-                          cred.status === "Verified" ? "bg-green-500/10 text-green-400 border-green-500/20" :
+                          cred.status === "Verified" ? "bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20" :
                           cred.status === "Pending" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" :
                           "bg-red-500/10 text-red-400 border-red-500/20"
                         )}>

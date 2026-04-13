@@ -57,7 +57,7 @@ export default function AuditTrail() {
   const getActionIcon = (action: string) => {
     if (action.includes('Login')) return <User className="h-4 w-4 text-blue-500" />;
     if (action.includes('API')) return <Settings className="h-4 w-4 text-purple-500" />;
-    if (action.includes('Verification')) return <Shield className="h-4 w-4 text-emerald-500" />;
+    if (action.includes('Verification')) return <Shield className="h-4 w-4 text-verza-emerald" />;
     if (action.includes('Report')) return <FileText className="h-4 w-4 text-orange-500" />;
     return <History className="h-4 w-4 text-gray-500" />;
   };
@@ -151,7 +151,7 @@ export default function AuditTrail() {
                           variant="outline" 
                           className={
                             log.status === 'success' 
-                              ? "bg-green-500/10 text-green-500 border-green-500/20" 
+                              ? "bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20" 
                               : "bg-red-500/10 text-red-500 border-red-500/20"
                           }
                         >

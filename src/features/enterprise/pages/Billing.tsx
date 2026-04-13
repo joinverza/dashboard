@@ -3,12 +3,15 @@ import {
   CreditCard, Check, Download, AlertTriangle, 
   Plus, Trash2, Shield, Calendar 
 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
+import { toast } from 'sonner';
+import { TabHelpCard } from '@/components/shared/TabHelpCard';
 
 // Mock data
 const BILLING_HISTORY = [
@@ -22,13 +25,75 @@ const PAYMENT_METHODS = [
   { id: 2, type: 'Mastercard', last4: '8888', expiry: '06/25', isDefault: false },
 ];
 
+const PLAN_PRICE_MAP = {
+  starter: { monthly: 499, yearly: 399 },
+  business: { monthly: 2450, yearly: 1960 },
+  enterprise: { monthly: null, yearly: null },
+} as const;
+
 export default function EnterpriseBilling() {
+  const [, setLocation] = useLocation();
+  const [paymentMethods, setPaymentMethods] = useState(PAYMENT_METHODS);
+  const [billingHistory] = useState(BILLING_HISTORY);
+  const [currentPlan] = useState<'starter' | 'business' | 'enterprise'>('business');
+  const [interval] = useState<'monthly' | 'yearly'>('monthly');
+  const [pendingPlan, setPendingPlan] = useState<{ plan: 'starter' | 'business' | 'enterprise'; interval: 'monthly' | 'yearly' } | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const planParam = params.get('plan');
+    const intervalParam = params.get('interval');
+    if (planParam === 'starter' || planParam === 'business' || planParam === 'enterprise') {
+      const selectedInterval = intervalParam === 'yearly' ? 'yearly' : 'monthly';
+      setPendingPlan({ plan: planParam, interval: selectedInterval });
+    }
+  }, []);
+
+  const displayPrice = useMemo(() => {
+    const price = PLAN_PRICE_MAP[currentPlan][interval];
+    return price === null ? 'Custom' : `$${price.toLocaleString()}`;
+  }, [currentPlan, interval]);
+
+  const promoteDefaultMethod = (id: number) => {
+    setPaymentMethods((current) =>
+      current.map((item) => ({ ...item, isDefault: item.id === id })),
+    );
+  };
+
+  const removeMethod = (id: number) => {
+    setPaymentMethods((current) => {
+      const filtered = current.filter((item) => item.id !== id);
+      if (filtered.length > 0 && !filtered.some((item) => item.isDefault)) {
+        filtered[0] = { ...filtered[0], isDefault: true };
+      }
+      return filtered;
+    });
+  };
+
+  const addPaymentMethod = () => {
+    const last = paymentMethods.length + 1;
+    setPaymentMethods((current) => [
+      ...current,
+      { id: Date.now(), type: 'Visa', last4: `${(1000 + last).toString().slice(-4)}`, expiry: '10/28', isDefault: current.length === 0 },
+    ]);
+    toast.success('Payment method added');
+  };
+
+  const continueToCheckout = () => {
+    if (!pendingPlan) return;
+    setLocation(`/enterprise/billing/checkout?plan=${pendingPlan.plan}&interval=${pendingPlan.interval}`);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8"
     >
+      <TabHelpCard
+        title="Billing & Plans"
+        description="Manage payment methods, invoices, and complete plan changes after successful payment."
+      />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Billing & Plans</h1>
@@ -39,20 +104,39 @@ export default function EnterpriseBilling() {
         </Button>
       </div>
 
+      {pendingPlan && (
+        <Card className="border-verza-primary/40 bg-verza-primary/5">
+          <CardHeader>
+            <CardTitle>Pending Plan Change</CardTitle>
+            <CardDescription>
+              {pendingPlan.plan.toUpperCase()} on {pendingPlan.interval} billing is ready. Upgrade applies after payment succeeds.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="gap-2">
+            <Button onClick={continueToCheckout}>
+              Continue To Secure Checkout
+            </Button>
+            <Button variant="outline" onClick={() => setPendingPlan(null)}>Cancel</Button>
+          </CardFooter>
+        </Card>
+      )}
+
       <div className="grid gap-6 md:grid-cols-2">
         {/* Current Plan Card */}
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Current Plan</CardTitle>
-              <Badge className="bg-emerald-500/10 text-emerald-500">Active</Badge>
+              <Badge className="bg-verza-emerald/10 text-verza-emerald">Active</Badge>
             </div>
-            <CardDescription>You are currently on the <span className="font-semibold text-foreground">Business Plan</span>.</CardDescription>
+            <CardDescription>
+              You are currently on the <span className="font-semibold text-foreground capitalize">{currentPlan} Plan</span>.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold">$2,450</span>
-              <span className="text-muted-foreground">/month</span>
+              <span className="text-3xl font-bold">{displayPrice}</span>
+              <span className="text-muted-foreground">/{interval}</span>
             </div>
             
             <div className="space-y-2">
@@ -61,13 +145,13 @@ export default function EnterpriseBilling() {
                 <span className="font-medium">5,000 / month</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Check className="h-4 w-4 text-emerald-500" /> API Access
+                <Check className="h-4 w-4 text-verza-emerald" /> API Access
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Check className="h-4 w-4 text-emerald-500" /> 5 Team Members
+                <Check className="h-4 w-4 text-verza-emerald" /> 5 Team Members
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Check className="h-4 w-4 text-emerald-500" /> Standard Support
+                <Check className="h-4 w-4 text-verza-emerald" /> Standard Support
               </div>
             </div>
 
@@ -127,13 +211,13 @@ export default function EnterpriseBilling() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Payment Methods</CardTitle>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={addPaymentMethod}>
                 <Plus className="mr-2 h-4 w-4" /> Add New
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {PAYMENT_METHODS.map((method) => (
+            {paymentMethods.map((method) => (
               <div key={method.id} className="flex items-center justify-between p-4 border border-border/50 rounded-lg">
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-14 bg-muted rounded flex items-center justify-center">
@@ -151,9 +235,9 @@ export default function EnterpriseBilling() {
                 </div>
                 <div className="flex gap-2">
                    {!method.isDefault && (
-                      <Button variant="ghost" size="sm">Make Default</Button>
+                      <Button variant="ghost" size="sm" onClick={() => promoteDefaultMethod(method.id)}>Make Default</Button>
                    )}
-                   <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                   <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => removeMethod(method.id)}>
                       <Trash2 className="h-4 w-4" />
                    </Button>
                 </div>
@@ -170,7 +254,7 @@ export default function EnterpriseBilling() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Billing Contact</CardTitle>
-              <Button variant="ghost" size="sm">Edit</Button>
+              <Button variant="ghost" size="sm" onClick={() => toast.success('Billing contact editor opened.')}>Edit</Button>
             </div>
           </CardHeader>
           <CardContent className="text-sm space-y-2">
@@ -202,16 +286,16 @@ export default function EnterpriseBilling() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {BILLING_HISTORY.map((invoice) => (
+              {billingHistory.map((invoice) => (
                 <TableRow key={invoice.id}>
                   <TableCell className="font-medium">{invoice.id}</TableCell>
                   <TableCell>{invoice.date}</TableCell>
                   <TableCell>{invoice.amount}</TableCell>
                   <TableCell>
-                    <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20">{invoice.status}</Badge>
+                    <Badge className="bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20">{invoice.status}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => toast.success(`Invoice ${invoice.id} download started.`)}>
                       <Download className="mr-2 h-4 w-4" /> PDF
                     </Button>
                   </TableCell>

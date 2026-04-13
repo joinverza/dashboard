@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { 
   Github,
@@ -8,29 +9,20 @@ import {
   Zap,
   Globe
 } from "lucide-react";
-import versalogo from "@/assets/versalogoSVG.svg";
+import versalogo from "@/assets/ONTIVER white.svg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth, type UserRole } from "@/features/auth/AuthContext";
+import { useAuth } from "@/features/auth/AuthContext";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function SignupPage() {
   const { signup, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("enterprise");
   const [organizationName, setOrganizationName] = useState("");
-  const [countryCode, setCountryCode] = useState("US");
-  const [registrationNumber, setRegistrationNumber] = useState("");
   const [verificationLicenseId, setVerificationLicenseId] = useState("");
   const [jurisdiction, setJurisdiction] = useState("");
   const [showKeyModal, setShowKeyModal] = useState(false);
@@ -39,29 +31,17 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const generatedKey =
-        role === "enterprise"
-          ? await signup({
-              role: "enterprise",
-              organizationName,
-              contactName: name,
-              email,
-              password,
-              countryCode,
-              registrationNumber,
-              consentAccepted: true,
-            })
-          : await signup({
-              role: "verifier",
-              organizationName,
-              contactName: name,
-              email,
-              password,
-              verificationLicenseId,
-              jurisdiction,
-              consentAccepted: true,
-            });
-      setGeneratedAuthKey(generatedKey);
+      const key = await signup({
+        role: "verifier",
+        organizationName,
+        contactName: name,
+        email,
+        password,
+        verificationLicenseId,
+        jurisdiction,
+        consentAccepted: true,
+      });
+      setGeneratedAuthKey(key);
       setShowKeyModal(true);
     } catch {
       return;
@@ -77,8 +57,8 @@ export default function SignupPage() {
         
         {/* Logo */}
         <div className="relative z-10 flex items-center justify-end gap-3">
-          <span className="text-xl font-bold tracking-tight text-white">Verza</span>
-          <img src={versalogo} alt="Verza" className="h-8 w-8" />
+          <span className="text-xl font-bold tracking-tight text-white">Ontiver</span>
+          <img src={versalogo} alt="Ontiver" className="h-8 w-8" />
         </div>
 
         {/* Hero Content */}
@@ -116,7 +96,7 @@ export default function SignupPage() {
         {/* Footer */}
         <div className="relative z-10 flex items-center justify-between text-xs text-zinc-500 uppercase tracking-widest font-medium">
           <span>Secure Enclave</span>
-          <span>© 2025 Verza Inc.</span>
+          <span>© 2025 Ontiver Inc.</span>
         </div>
       </div>
 
@@ -126,29 +106,16 @@ export default function SignupPage() {
           
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <img src={versalogo} alt="Verza" className="h-8 w-8" />
-            <span className="text-xl font-bold text-white">Verza</span>
+            <img src={versalogo} alt="Ontiver" className="h-8 w-8" />
+            <span className="text-xl font-bold text-white">Ontiver</span>
           </div>
 
           <div className="space-y-2 text-center lg:text-left">
-            <h2 className="text-3xl font-semibold tracking-tight text-white">Create an account</h2>
-            <p className="text-zinc-400">Enter your details below to create your account</p>
+            <h2 className="text-3xl font-semibold tracking-tight text-white">Verifier signup</h2>
+            <p className="text-zinc-400">Create your verifier account and generate an auth key</p>
           </div>
 
           <form onSubmit={handleSignup} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">Account Type</label>
-              <Select value={role} onValueChange={(v: UserRole) => setRole(v)}>
-                <SelectTrigger className="bg-zinc-900/50 border-zinc-800 focus:ring-verza-emerald/20 h-11 text-white">
-                  <SelectValue placeholder="Select account type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="enterprise">Enterprise</SelectItem>
-                  <SelectItem value="verifier">Verifier</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-300">Organization Name</label>
               <Input
@@ -194,60 +161,33 @@ export default function SignupPage() {
               <p className="text-xs text-zinc-500">Must be at least 12 characters.</p>
             </div>
 
-            {role === "enterprise" ? (
-              <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Country Code</label>
-                  <Input
-                    type="text"
-                    placeholder="US"
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
-                    className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors uppercase"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Registration Number</label>
-                  <Input
-                    type="text"
-                    placeholder="REG-12345"
-                    value={registrationNumber}
-                    onChange={(e) => setRegistrationNumber(e.target.value)}
-                    className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
-                  />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Verifier License ID</label>
-                  <Input
-                    type="text"
-                    placeholder="VL-9981"
-                    value={verificationLicenseId}
-                    onChange={(e) => setVerificationLicenseId(e.target.value)}
-                    className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Jurisdiction</label>
-                  <Input
-                    type="text"
-                    placeholder="NG"
-                    value={jurisdiction}
-                    onChange={(e) => setJurisdiction(e.target.value)}
-                    className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
-                  />
-                </div>
-              </>
-            )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">Verifier License ID</label>
+              <Input
+                type="text"
+                placeholder="VL-9981"
+                value={verificationLicenseId}
+                onChange={(e) => setVerificationLicenseId(e.target.value)}
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">Jurisdiction</label>
+              <Input
+                type="text"
+                placeholder="NG"
+                value={jurisdiction}
+                onChange={(e) => setJurisdiction(e.target.value)}
+                className="bg-zinc-900/50 border-zinc-800 focus:border-verza-emerald/50 h-11 text-white placeholder:text-zinc-600 transition-colors"
+              />
+            </div>
 
             <Button 
               type="submit" 
               className="w-full h-11 bg-white text-black hover:bg-zinc-200 font-medium transition-all mt-2"
               disabled={isLoading}
             >
-              {isLoading ? "Creating account..." : "Create account"}
+              {isLoading ? "Creating account..." : "Generate auth key"}
             </Button>
           </form>
 
@@ -273,21 +213,12 @@ export default function SignupPage() {
 
           <p className="text-center text-sm text-zinc-400">
             Already have an account?{" "}
-            <Link href="/login">
+            <Link href="/verifier/login">
               <span className="text-verza-emerald hover:text-verza-kelly font-medium cursor-pointer transition-colors">
                 Sign in
               </span>
             </Link>
           </p>
-          <p className="text-center text-sm text-zinc-500">
-            Need admin onboarding?{" "}
-            <Link href="/admin/signup">
-              <span className="text-verza-emerald hover:text-verza-kelly font-medium cursor-pointer transition-colors">
-                Register admin account
-              </span>
-            </Link>
-          </p>
-          
           <p className="text-center text-xs text-zinc-600 max-w-xs mx-auto">
             By clicking continue, you agree to our <span className="underline cursor-pointer hover:text-zinc-400">Terms of Service</span> and <span className="underline cursor-pointer hover:text-zinc-400">Privacy Policy</span>.
           </p>
@@ -296,19 +227,36 @@ export default function SignupPage() {
       <Dialog open={showKeyModal} onOpenChange={setShowKeyModal}>
         <DialogContent className="bg-[#09090b] border-zinc-800 text-white">
           <DialogHeader>
-            <DialogTitle className="text-xl">Auth Key Generated</DialogTitle>
+            <DialogTitle className="text-xl">Copy Your Auth Key</DialogTitle>
             <DialogDescription className="text-zinc-400">
-              Save this key now. You need it during login.
+              This key is required for login. Copy and store it securely before continuing.
             </DialogDescription>
           </DialogHeader>
           <div className="p-4 bg-zinc-900 rounded-lg border border-zinc-800 my-4">
-            <p className="font-mono text-lg text-verza-emerald break-all text-center select-all">
+            <p className="font-mono text-sm text-verza-emerald break-all text-center select-all">
               {generatedAuthKey}
             </p>
           </div>
-          <Button onClick={() => setShowKeyModal(false)} className="w-full bg-white text-black hover:bg-zinc-200">
-            Close
-          </Button>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-zinc-700 text-zinc-200"
+              onClick={() => {
+                if (!generatedAuthKey) return;
+                void navigator.clipboard.writeText(generatedAuthKey);
+              }}
+            >
+              Copy key
+            </Button>
+            <Button
+              type="button"
+              className="bg-white text-black hover:bg-zinc-200"
+              onClick={() => setLocation("/verifier/login")}
+            >
+              Continue to Login
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

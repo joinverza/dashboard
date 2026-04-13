@@ -2,8 +2,21 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { AlertCircle, Home, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/features/auth/AuthContext";
 
 export default function NotFound() {
+  const { user } = useAuth();
+  const dashboardRoute =
+    user?.role === "admin"
+      ? "/admin"
+      : user?.role === "verifier"
+        ? "/verifier"
+        : user?.role === "enterprise"
+          ? "/enterprise"
+          : user?.role === "manager"
+            ? "/manager"
+            : "/app";
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden p-6">
       {/* Background Gradients */}
@@ -32,12 +45,12 @@ export default function NotFound() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/app">
+          <Link href={dashboardRoute}>
             <Button className="w-full sm:w-auto bg-verza-emerald hover:bg-verza-kelly text-white shadow-glow">
               <Home className="w-4 h-4 mr-2" /> Back to Dashboard
             </Button>
           </Link>
-          <Link href="/">
+          <Link href={dashboardRoute}>
             <Button variant="outline" className="w-full sm:w-auto glass-button">
               <ArrowLeft className="w-4 h-4 mr-2" /> Go Home
             </Button>

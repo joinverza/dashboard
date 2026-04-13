@@ -30,9 +30,9 @@ export default function QuickActions() {
       label: "Request Verification",
       icon: FileCheck,
       href: "/app/request-verification",
-      color: "text-[#00FF87]",
-      bg: "bg-[#00FF87]/10",
-      border: "border-[#00FF87]/20"
+      color: "text-verza-emerald",
+      bg: "bg-verza-emerald/10",
+      border: "border-verza-emerald/20"
     },
     {
       label: "Upload Credential",
@@ -71,7 +71,7 @@ export default function QuickActions() {
                 <action.icon className={`w-5 h-5 ${action.color}`} />
               </div>
               <div>
-                <h3 className="font-semibold text-white group-hover:text-[#00FF87] transition-colors">
+                <h3 className="font-semibold text-white group-hover:text-verza-emerald transition-colors">
                   {action.label}
                 </h3>
                 <p className="text-xs text-gray-400">Click to start</p>
@@ -95,7 +95,7 @@ export default function QuickActions() {
                   <action.icon className={`w-5 h-5 ${action.color}`} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white group-hover:text-[#00FF87] transition-colors">
+                  <h3 className="font-semibold text-white group-hover:text-verza-emerald transition-colors">
                     {action.label}
                   </h3>
                   <p className="text-xs text-gray-400">Click to start</p>

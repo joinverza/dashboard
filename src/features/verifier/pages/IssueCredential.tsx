@@ -7,9 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Shield, AlertCircle, FileCheck, Key, Loader2, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useRoute } from "wouter";
-import { bankingService } from '@/services/bankingService';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 import { toast } from "sonner";
-import type {  } from '@/types/banking';
 import {
   Dialog,
   DialogContent,
@@ -49,43 +48,21 @@ export default function IssueCredential() {
     setIsLoading(true);
     try {
         const data = await bankingService.getVerificationStatus(verificationId);
-        
-        // Pre-fill form data if available in details (mock logic for now as details might be generic)
-        if (data.details) {
-            setFormData({
-                firstName: data.details.firstName || 'Sarah', // Fallback for demo if API returns empty details
-                lastName: data.details.lastName || 'Connor',
-                dob: data.details.dob || '1985-05-12',
-                docNumber: data.details.documentNumber || 'A12345678',
-                expiry: data.details.expiryDate || '2030-05-12',
-                nationality: data.details.nationality || 'United States',
-                notes: ''
-            });
-        } else {
-             // Fallback mock data for demo purposes if API doesn't return rich details yet
-             setFormData({
-                firstName: 'Sarah',
-                lastName: 'Connor',
-                dob: '1985-05-12',
-                docNumber: 'A12345678',
-                expiry: '2030-05-12',
-                nationality: 'United States',
-                notes: ''
-            });
+        if (!data.details) {
+          toast.error("Verification details are unavailable. Complete document review before issuing.");
+          return;
         }
-    } catch (error) {
-        console.error("Failed to fetch verification data", error);
-        toast.error("Failed to load verification details");
-        // Fallback for demo
         setFormData({
-            firstName: 'Sarah',
-            lastName: 'Connor',
-            dob: '1985-05-12',
-            docNumber: 'A12345678',
-            expiry: '2030-05-12',
-            nationality: 'United States',
-            notes: ''
+          firstName: data.details.firstName || '',
+          lastName: data.details.lastName || '',
+          dob: data.details.dob || '',
+          docNumber: data.details.documentNumber || data.details.idDocumentNumber || '',
+          expiry: data.details.expiryDate || '',
+          nationality: data.details.nationality || '',
+          notes: '',
         });
+    } catch (error) {
+        toast.error(getBankingErrorMessage(error, "Failed to load verification details"));
     } finally {
         setIsLoading(false);
     }
@@ -101,19 +78,22 @@ export default function IssueCredential() {
     
     setIsIssuing(true);
     try {
+        if (!formData.firstName || !formData.lastName || !formData.docNumber) {
+          toast.error("Missing required subject data from verification details.");
+          return;
+        }
         await bankingService.issueCredential({
             verificationId: id,
-            recipientDid: `did:verza:${id.substring(0, 8)}`, // Mock DID generation
+            recipientDid: `did:verza:${id.substring(0, 8)}`,
             credentialType: 'IdentityVerification',
             data: formData,
             notes: formData.notes
         });
         toast.success("Credential issued successfully");
         setIsConfirmOpen(false);
-        // Could redirect here
+        setTimeout(() => { window.location.href = "/verifier/completed"; }, 1200);
     } catch (error) {
-        console.error("Failed to issue credential", error);
-        toast.error("Failed to issue credential");
+        toast.error(getBankingErrorMessage(error, "Failed to issue credential"));
     } finally {
         setIsIssuing(false);
     }

@@ -41,7 +41,7 @@ const TRACKING_DATA = {
   verifier: {
     name: "Sarah Jenkins",
     role: "Senior Education Verifier",
-    organization: "Verza Global Verification",
+    organization: "Ontiver Global Verification",
     rating: 4.9,
     verifications: 1240,
     avatar: "https://i.pravatar.cc/150?u=sarah"
@@ -299,7 +299,7 @@ export default function VerificationStatusPage() {
                 <CardTitle className="text-base">Payment Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-between items-center p-3 rounded-lg bg-green-500/5 border border-green-500/10">
+                <div className="flex justify-between items-center p-3 rounded-lg bg-verza-emerald/5 border border-verza-emerald/10">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-verza-emerald" />
                     <span className="text-sm font-medium text-verza-emerald">Paid Successfully</span>
@@ -359,7 +359,7 @@ export default function VerificationStatusPage() {
                 <Button 
                   variant="outline" 
                   className="w-full justify-start gap-2"
-                  onClick={() => window.open(`mailto:support@verza.com?subject=Issue%20with%20Verification%20${encodeURIComponent(TRACKING_DATA.id)}`, "_self")}
+                  onClick={() => window.open(`mailto:support@ontiver.com?subject=Issue%20with%20Verification%20${encodeURIComponent(TRACKING_DATA.id)}`, "_self")}
                 >
                   <AlertCircle className="w-4 h-4" /> Report an Issue
                 </Button>
@@ -396,12 +396,12 @@ export default function VerificationStatusPage() {
                       <AvatarImage src={TRACKING_DATA.verifier.avatar} />
                       <AvatarFallback>SJ</AvatarFallback>
                     </Avatar>
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-background" />
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-verza-emerald border-2 border-background" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm">{TRACKING_DATA.verifier.name}</h3>
-                    <p className="text-xs text-green-500 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Online
+                    <p className="text-xs text-verza-emerald flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-verza-emerald animate-pulse" /> Online
                     </p>
                   </div>
                 </div>

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from 'framer-motion';
 import { 
   Search, Filter, MoreHorizontal, User as UserIcon, 
   Shield, Building2, Ban, Trash2, Mail,
-  Download,
+  Download, Loader2,
 } from 'lucide-react';
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -21,90 +22,43 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { bankingService } from '@/services/bankingService';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 import type { User } from '@/types/banking';
 
 export default function UserManagement() {
+  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const data = await bankingService.getUsers();
-        setUsers(data);
-      } catch (error) {
-        console.error("Failed to fetch users", error);
-        // Fallback to mock data
-        setUsers([
-          {
-            id: '1',
-            name: 'Alice Johnson',
-            email: 'alice@example.com',
-            role: 'user',
-            status: 'active',
-            joinedAt: '2023-01-15',
-            lastActive: '2 mins ago',
-          },
-          {
-            id: '2',
-            name: 'Bob Smith',
-            email: 'bob@verifier.com',
-            role: 'verifier',
-            organizationName: 'VeriTech Solutions',
-            status: 'active',
-            joinedAt: '2023-02-20',
-            lastActive: '1 hour ago',
-          },
-          {
-            id: '3',
-            name: 'Acme Corp',
-            email: 'admin@acme.com',
-            role: 'enterprise',
-            organizationName: 'Acme Corp',
-            status: 'active',
-            joinedAt: '2023-03-10',
-            lastActive: '1 day ago',
-          },
-          {
-            id: '4',
-            name: 'Charlie Brown',
-            email: 'charlie@example.com',
-            role: 'user',
-            status: 'suspended',
-            joinedAt: '2023-04-05',
-            lastActive: '5 days ago',
-          },
-          {
-            id: '5',
-            name: 'Global Verify Ltd',
-            email: 'contact@globalverify.com',
-            role: 'verifier',
-            organizationName: 'Global Verify Ltd',
-            status: 'banned',
-            joinedAt: '2023-01-20',
-            lastActive: '1 month ago',
-          },
-        ]);
-      }
-    };
-    fetchUsers();
-  }, []);
-
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = 
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesType = typeFilter === 'all' || user.role === typeFilter;
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-
-    return matchesSearch && matchesType && matchesStatus;
+  const usersQuery = useQuery({
+    queryKey: ["admin", "users", typeFilter, statusFilter, searchTerm],
+    queryFn: () =>
+      bankingService.getUsers({
+        role: typeFilter === "all" ? undefined : typeFilter,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        search: searchTerm || undefined,
+      }),
   });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ userId, status }: { userId: string; status: string }) => bankingService.updateAdminUserStatus(userId, status),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to update user status")),
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: string) => bankingService.deleteAdminUser(userId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to delete user")),
+  });
+
+  const filteredUsers: User[] = useMemo(() => usersQuery.data ?? [], [usersQuery.data]);
 
   const toggleUserSelection = (userId: string) => {
     if (selectedUsers.includes(userId)) {
@@ -133,7 +87,7 @@ export default function UserManagement() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active': return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Active</Badge>;
+      case 'active': return <Badge variant="outline" className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">Active</Badge>;
       case 'suspended': return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Suspended</Badge>;
       case 'banned': return <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">Banned</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
@@ -154,7 +108,8 @@ export default function UserManagement() {
         <div className="flex gap-2">
            {selectedUsers.length > 0 && (
              <Button variant="destructive" size="sm" onClick={() => {
-               toast.success(`${selectedUsers.length} users deleted successfully`);
+               selectedUsers.forEach((userId) => deleteUserMutation.mutate(userId));
+               toast.success(`Delete requested for ${selectedUsers.length} users`);
                setSelectedUsers([]);
              }}>
                <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedUsers.length})
@@ -213,6 +168,8 @@ export default function UserManagement() {
           </div>
         </CardHeader>
         <CardContent>
+          {usersQuery.isLoading ? <div className="flex justify-center py-10"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div> : null}
+          {usersQuery.error ? <div className="text-sm text-red-400 mb-4">{getBankingErrorMessage(usersQuery.error, "Failed to load users.")}</div> : null}
           <div className="rounded-md border border-border/50">
             <Table>
               <TableHeader>
@@ -288,10 +245,10 @@ export default function UserManagement() {
                               Edit Profile
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-yellow-500" onClick={() => toast.warning("User suspended")}>
+                            <DropdownMenuItem className="text-yellow-500" onClick={() => updateStatusMutation.mutate({ userId: user.id, status: "suspended" })}>
                               <Ban className="mr-2 h-4 w-4" /> Suspend User
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-500" onClick={() => toast.error("User deleted")}>
+                            <DropdownMenuItem className="text-red-500" onClick={() => deleteUserMutation.mutate(user.id)}>
                               <Trash2 className="mr-2 h-4 w-4" /> Delete User
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -307,7 +264,7 @@ export default function UserManagement() {
           {/* Pagination (Mock) */}
           <div className="flex items-center justify-between space-x-2 py-4">
             <div className="text-sm text-muted-foreground">
-              Showing <strong>{filteredUsers.length}</strong> of <strong>{users.length}</strong> users
+              Showing <strong>{filteredUsers.length}</strong> users
             </div>
             <div className="flex items-center space-x-2">
               <Button variant="outline" size="sm" disabled>Previous</Button>

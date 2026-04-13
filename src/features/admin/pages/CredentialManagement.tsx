@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   Search, Filter, MoreHorizontal, FileText, 
-  Shield, Eye, Download, Calendar, XCircle
+  Shield, Eye, Download, Calendar, XCircle, Loader2
 } from 'lucide-react';
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -18,86 +19,32 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-
-interface CredentialData {
-  id: string;
-  type: string;
-  holder: string;
-  issuer: string;
-  status: 'valid' | 'revoked' | 'expired' | 'pending';
-  issuedDate: string;
-  expiryDate: string;
-}
-
-const MOCK_CREDENTIALS: CredentialData[] = [
-  {
-    id: 'VC-2025-001',
-    type: 'University Degree',
-    holder: 'Alice Johnson',
-    issuer: 'University of Tech',
-    status: 'valid',
-    issuedDate: '2023-06-15',
-    expiryDate: 'Never',
-  },
-  {
-    id: 'VC-2025-002',
-    type: 'Employment Record',
-    holder: 'Bob Smith',
-    issuer: 'Acme Corp',
-    status: 'valid',
-    issuedDate: '2023-08-01',
-    expiryDate: '2025-08-01',
-  },
-  {
-    id: 'VC-2025-003',
-    type: 'Professional License',
-    holder: 'Charlie Brown',
-    issuer: 'Medical Board',
-    status: 'revoked',
-    issuedDate: '2023-01-10',
-    expiryDate: '2025-01-10',
-  },
-  {
-    id: 'VC-2025-004',
-    type: 'Identity Verification',
-    holder: 'David Lee',
-    issuer: 'Global Verify Ltd',
-    status: 'expired',
-    issuedDate: '2022-05-20',
-    expiryDate: '2023-05-20',
-  },
-  {
-    id: 'VC-2025-005',
-    type: 'Skill Certificate',
-    holder: 'Eve Wilson',
-    issuer: 'Code Academy',
-    status: 'pending',
-    issuedDate: '2025-03-20',
-    expiryDate: 'Never',
-  },
-];
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 
 export default function CredentialManagement() {
+  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const filteredCredentials = MOCK_CREDENTIALS.filter(cred => {
-    const matchesSearch = 
-      cred.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cred.holder.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cred.issuer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cred.type.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || cred.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
+  const credentialsQuery = useQuery({
+    queryKey: ["admin", "credentials", searchTerm, statusFilter],
+    queryFn: () => bankingService.listCredentialRegistry({ search: searchTerm || undefined, status: statusFilter === "all" ? undefined : statusFilter, page: 1, limit: 100 }),
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: (credentialId: string) => bankingService.revokeCredential(credentialId),
+    onSuccess: async () => {
+      toast.success("Credential revoked.");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "credentials"] });
+    },
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to revoke credential")),
   });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'valid':
-        return <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">Valid</Badge>;
+        return <Badge className="bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20 border-verza-emerald/20">Valid</Badge>;
       case 'revoked':
         return <Badge className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20">Revoked</Badge>;
       case 'expired':
@@ -158,6 +105,8 @@ export default function CredentialManagement() {
           </div>
         </CardHeader>
         <CardContent>
+          {credentialsQuery.isLoading ? <div className="flex justify-center py-10"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div> : null}
+          {credentialsQuery.error ? <div className="text-sm text-red-400 mb-4">{getBankingErrorMessage(credentialsQuery.error, "Failed to load credentials.")}</div> : null}
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -172,22 +121,22 @@ export default function CredentialManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCredentials.map((cred) => (
-                  <TableRow key={cred.id}>
-                    <TableCell className="font-medium font-mono text-xs">{cred.id}</TableCell>
+                {(credentialsQuery.data?.items ?? []).map((cred) => (
+                  <TableRow key={cred.credentialId}>
+                    <TableCell className="font-medium font-mono text-xs">{cred.credentialId}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-muted-foreground" />
                         {cred.type}
                       </div>
                     </TableCell>
-                    <TableCell>{cred.holder}</TableCell>
-                    <TableCell>{cred.issuer}</TableCell>
+                    <TableCell>{cred.holderName}</TableCell>
+                    <TableCell>{cred.issuerName}</TableCell>
                     <TableCell>{getStatusBadge(cred.status)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-3 w-3" />
-                        {cred.issuedDate}
+                        {new Date(cred.issuedAt).toLocaleDateString()}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -200,7 +149,7 @@ export default function CredentialManagement() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => setLocation(`/admin/credentials/${cred.id}`)}>
+                          <DropdownMenuItem onClick={() => setLocation(`/admin/credentials/${cred.credentialId}`)}>
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
@@ -209,7 +158,7 @@ export default function CredentialManagement() {
                             Verify On-Chain
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-500" onClick={() => toast.error("Credential revoked")}>
+                          <DropdownMenuItem className="text-red-500" onClick={() => revokeMutation.mutate(cred.credentialId)}>
                             <XCircle className="mr-2 h-4 w-4" />
                             Revoke Credential
                           </DropdownMenuItem>

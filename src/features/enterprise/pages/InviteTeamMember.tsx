@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { toast } from 'sonner';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 
 export default function InviteTeamMember() {
   const [, setLocation] = useLocation();
@@ -24,20 +26,18 @@ export default function InviteTeamMember() {
     setIsLoading(true);
     setError('');
 
-    // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      if (email.includes('error')) {
-        throw new Error('Failed to send invitation. Please try again.');
-      }
-
+      const result = await bankingService.inviteTeamMember({
+        email: email.trim(),
+        role,
+        message: message.trim() || undefined,
+      });
+      toast.success(result.status === 'queued' ? 'Invitation queued until backend email service is enabled.' : 'Invitation email sent.');
       setSuccess(true);
-      // Reset form after success if needed
-      // setEmail('');
-      // setMessage('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const parsedError = getBankingErrorMessage(err, 'Failed to send invitation. Please try again.');
+      setError(parsedError);
+      toast.error(parsedError);
     } finally {
       setIsLoading(false);
     }

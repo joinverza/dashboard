@@ -70,7 +70,7 @@ export default function VerificationRequests() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'verified': return <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Approved</Badge>;
+      case 'verified': return <Badge className="bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20">Approved</Badge>;
       case 'in_progress': return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20">In Progress</Badge>;
       case 'pending': return <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Pending</Badge>;
       case 'review_needed': return <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/20">Review Needed</Badge>;
@@ -145,9 +145,9 @@ export default function VerificationRequests() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Approved</p>
-                <h3 className="text-2xl font-bold mt-1 text-green-500">{stats?.successful || 0}</h3>
+                <h3 className="text-2xl font-bold mt-1 text-verza-emerald">{stats?.successful || 0}</h3>
               </div>
-              <div className="p-3 bg-green-500/10 rounded-full text-green-500">
+              <div className="p-3 bg-verza-emerald/10 rounded-full text-verza-emerald">
                 <CheckCircle className="h-5 w-5" />
               </div>
             </div>

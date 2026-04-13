@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-[#0D0D0D] text-white flex items-center justify-center p-6 relative overflow-hidden font-sans">
       {/* Background Effects */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[20%] w-[500px] h-[500px] rounded-full blur-[100px] bg-[#00FF87]/5" />
+        <div className="absolute top-[-20%] left-[20%] w-[500px] h-[500px] rounded-full blur-[100px] bg-verza-emerald/5" />
       </div>
 
       <motion.div 
@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
                 transition={{ duration: 0.3 }}
               >
                 <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6 mx-auto">
-                  <Lock className="h-8 w-8 text-[#00FF87]" />
+                  <Lock className="h-8 w-8 text-verza-emerald" />
                 </div>
 
                 <div className="text-center mb-8">
@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
                       <Input 
                         type="email" 
                         placeholder="name@example.com" 
-                        className="bg-black/20 border-white/10 focus:border-[#00FF87]/50 text-white pl-10"
+                        className="bg-black/20 border-white/10 focus:border-verza-emerald/50 text-white pl-10"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
@@ -101,7 +101,7 @@ export default function ForgotPasswordPage() {
 
                   <Button 
                     type="submit" 
-                    className="w-full h-11 bg-[#00B050] hover:bg-[#00FF87] text-black font-semibold shadow-[0_0_20px_-5px_rgba(0,255,135,0.4)] transition-all"
+                    className="w-full h-11 bg-verza-emerald hover:bg-verza-kelly text-black font-semibold shadow-[0_0_20px_-5px_rgba(30,215,96,0.4)] transition-all"
                     disabled={isLoading}
                   >
                     {isLoading ? "Sending Link..." : "Send Reset Link"}
@@ -117,8 +117,8 @@ export default function ForgotPasswordPage() {
                 transition={{ duration: 0.4 }}
                 className="text-center"
               >
-                <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mb-6 mx-auto border border-green-500/20">
-                  <CheckCircle2 className="h-10 w-10 text-green-500" />
+                <div className="w-20 h-20 bg-verza-emerald/10 rounded-full flex items-center justify-center mb-6 mx-auto border border-verza-emerald/20">
+                  <CheckCircle2 className="h-10 w-10 text-verza-emerald" />
                 </div>
 
                 <h2 className="text-2xl font-bold mb-2">Check your email</h2>
@@ -128,7 +128,7 @@ export default function ForgotPasswordPage() {
                 </p>
 
                 <div className="bg-white/5 rounded-lg p-4 mb-6 text-sm text-gray-400">
-                  Didn't receive the email? <button className="text-[#00FF87] hover:underline" onClick={() => setIsSuccess(false)}>Click to resend</button>
+                  Didn't receive the email? <button className="text-verza-emerald hover:underline" onClick={() => setIsSuccess(false)}>Click to resend</button>
                 </div>
 
                 <p className="text-xs text-gray-500">

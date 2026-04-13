@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Activity,
@@ -14,8 +14,10 @@ import {
   Plus,
   RefreshCw,
   Server,
+  Settings2,
   Shield,
-  Trash2
+  Trash2,
+  Webhook
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -30,37 +32,137 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
-import { getBankingErrorMessage } from '@/services/bankingService';
+import { TabHelpCard } from '@/components/shared/TabHelpCard';
+import { useAuth } from '@/features/auth/AuthContext';
+import { BANKING_REQUEST_DIAGNOSTIC_EVENT, getBankingErrorMessage } from '@/services/bankingService';
+import { bankingService } from '@/services/bankingService';
 import { apiKeysService, apiManagementEndpointMappings, webhooksService } from '@/services/apiManagementService';
-import type { ApiKeyResponse, WebhookResponse } from '@/types/banking';
+import type { ApiKeyResponse, ApiSecuritySettings, BankingRequestDiagnosticEvent, WebhookResponse } from '@/types/banking';
+
+const REQUEST_HISTORY_STORAGE_KEY = 'verza:banking:requestHistory';
+const API_SETTINGS_STORAGE_KEY = 'verza:api:settings';
+type ApiKeyEnvironment = 'production' | 'sandbox';
+type ApiKeyFilter = 'all' | ApiKeyEnvironment;
 
 export default function ApiManagement() {
+  const { user, hasPermission } = useAuth();
   const [apiKeys, setApiKeys] = useState<ApiKeyResponse[]>([]);
+  const [filteredApiKeys, setFilteredApiKeys] = useState<ApiKeyResponse[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookResponse[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [pageError, setPageError] = useState('');
   const [isCreatingKey, setIsCreatingKey] = useState(false);
-  const [isTestingWebhookId, setIsTestingWebhookId] = useState<string | null>(null);
   const [isDeletingWebhookId, setIsDeletingWebhookId] = useState<string | null>(null);
   const [isDeletingKeyId, setIsDeletingKeyId] = useState<string | null>(null);
   const [newKeyName, setNewKeyName] = useState('');
-  const [isCreatingWebhook, setIsCreatingWebhook] = useState(false);
+  const [isWebhookDialogOpen, setIsWebhookDialogOpen] = useState(false);
+  const [isSubmittingWebhook, setIsSubmittingWebhook] = useState(false);
   const [newWebhookUrl, setNewWebhookUrl] = useState('');
   const [newWebhookEvents, setNewWebhookEvents] = useState<string[]>([]);
-  const [sandboxMode, setSandboxMode] = useState(true);
+  const [apiKeyFilter, setApiKeyFilter] = useState<ApiKeyFilter>('all');
+  const [createKeyEnvironment, setCreateKeyEnvironment] = useState<ApiKeyEnvironment | null>(null);
+  const [isCreateKeyDialogOpen, setIsCreateKeyDialogOpen] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
+  const [rawApiKey, setRawApiKey] = useState('');
+  const [latestCreatedKeyPrefix, setLatestCreatedKeyPrefix] = useState('');
+  const [latestCreatedKeyEnvironment, setLatestCreatedKeyEnvironment] = useState<ApiKeyEnvironment>('production');
+  const [isRevealDialogOpen, setIsRevealDialogOpen] = useState(false);
+  const [hasConfirmedCopy, setHasConfirmedCopy] = useState(false);
+  const [rawApiKeyExpiresAt, setRawApiKeyExpiresAt] = useState<number | null>(null);
+  const [requestHistory, setRequestHistory] = useState<BankingRequestDiagnosticEvent[]>([]);
+  const [autoRotateSecrets, setAutoRotateSecrets] = useState(false);
+  const [ipWhitelistEnabled, setIpWhitelistEnabled] = useState(false);
+  const [allowedIps, setAllowedIps] = useState('');
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isTestingWebhookId, setIsTestingWebhookId] = useState<string | null>(null);
+  const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
+  const [isRetryingRequestId, setIsRetryingRequestId] = useState<string | null>(null);
+  const [isCancellingRequestId, setIsCancellingRequestId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
+    void loadData(apiKeyFilter);
+  }, [apiKeyFilter]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(REQUEST_HISTORY_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as BankingRequestDiagnosticEvent[];
+      if (Array.isArray(parsed)) {
+        setRequestHistory(parsed.slice(0, 80));
+      }
+    } catch {
+      setRequestHistory([]);
+    }
   }, []);
 
-  const loadData = async () => {
+  useEffect(() => {
+    const onDiagnosticEvent = (event: Event) => {
+      const detail = (event as CustomEvent<BankingRequestDiagnosticEvent>).detail;
+      if (!detail) return;
+      setRequestHistory((current) => {
+        const next = [detail, ...current].slice(0, 80);
+        window.localStorage.setItem(REQUEST_HISTORY_STORAGE_KEY, JSON.stringify(next));
+        return next;
+      });
+    };
+    window.addEventListener(BANKING_REQUEST_DIAGNOSTIC_EVENT, onDiagnosticEvent);
+    return () => {
+      window.removeEventListener(BANKING_REQUEST_DIAGNOSTIC_EVENT, onDiagnosticEvent);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!rawApiKey || !rawApiKeyExpiresAt) return;
+    const timeoutMs = Math.max(0, rawApiKeyExpiresAt - Date.now());
+    const timeoutId = window.setTimeout(() => {
+      setRawApiKey('');
+      setRawApiKeyExpiresAt(null);
+    }, timeoutMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [rawApiKey, rawApiKeyExpiresAt]);
+
+  useEffect(() => {
+    void loadApiSettings();
+  }, []);
+
+  const loadApiSettings = async () => {
+    try {
+      const response = await bankingService.getApiSecuritySettings();
+      setAutoRotateSecrets(response.autoRotateSecrets);
+      setIpWhitelistEnabled(response.ipWhitelistEnabled);
+      setAllowedIps((response.allowedIps || []).join(', '));
+      return;
+    } catch {
+      try {
+        const raw = window.localStorage.getItem(API_SETTINGS_STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw) as { autoRotateSecrets?: boolean; ipWhitelistEnabled?: boolean; allowedIps?: string[] };
+        setAutoRotateSecrets(Boolean(parsed.autoRotateSecrets));
+        setIpWhitelistEnabled(Boolean(parsed.ipWhitelistEnabled));
+        setAllowedIps(Array.isArray(parsed.allowedIps) ? parsed.allowedIps.join(', ') : '');
+      } catch {
+        setAutoRotateSecrets(false);
+        setIpWhitelistEnabled(false);
+        setAllowedIps('');
+      }
+    }
+  };
+
+  const loadData = async (filter: ApiKeyFilter) => {
     setIsLoadingData(true);
     setPageError('');
     try {
-      const [keys, hooks] = await Promise.all([apiKeysService.list(), webhooksService.list()]);
-      setApiKeys(keys);
+      const environmentFilter = filter === 'all' ? undefined : filter;
+      const [allKeys, keysByFilter, hooks] = await Promise.all([
+        apiKeysService.list(),
+        apiKeysService.list(environmentFilter),
+        webhooksService.list()
+      ]);
+      setApiKeys(allKeys);
+      setFilteredApiKeys(keysByFilter);
       setWebhooks(hooks);
     } catch (error) {
       const message = getBankingErrorMessage(error, 'Failed to load API management data');
@@ -86,20 +188,33 @@ export default function ApiManagement() {
       toast.error('Key name must be 1-128 characters');
       return;
     }
+    if (!createKeyEnvironment) {
+      toast.error('Select an environment before creating the key');
+      return;
+    }
     setIsCreatingKey(true);
     try {
       const created = await apiKeysService.create({
         keyName: trimmedName,
+        environment: createKeyEnvironment,
         permissions: ['api_keys:read', 'api_keys:write', 'webhooks:read', 'webhooks:write']
       });
       setNewKeyName('');
-      await loadData();
+      setIsCreateKeyDialogOpen(false);
+      await loadData(apiKeyFilter);
       toast.success('API Key created successfully');
       if (created.apiKey) {
-        void navigator.clipboard.writeText(created.apiKey);
+        setRawApiKey(created.apiKey);
+        setLatestCreatedKeyPrefix(created.keyPrefix || '');
+        setLatestCreatedKeyEnvironment(created.environment || createKeyEnvironment);
+        setHasConfirmedCopy(false);
+        setIsRevealDialogOpen(true);
+        setRawApiKeyExpiresAt(Date.now() + 30000);
       }
     } catch (error) {
-      toast.error(getBankingErrorMessage(error, 'Failed to create API key'));
+      const message = getBankingErrorMessage(error, 'Failed to create API key');
+      const rateLimited = /429|rate limit/i.test(message);
+      toast.error(rateLimited ? 'Rate limit reached. Please wait and try again in a moment.' : message);
     } finally {
       setIsCreatingKey(false);
     }
@@ -110,6 +225,7 @@ export default function ApiManagement() {
     try {
       await apiKeysService.revoke(id);
       setApiKeys((current) => current.filter((item) => item.id !== id));
+      setFilteredApiKeys((current) => current.filter((item) => item.id !== id));
       toast.success('API Key revoked');
     } catch (error) {
       toast.error(getBankingErrorMessage(error, 'Failed to revoke API key'));
@@ -123,7 +239,7 @@ export default function ApiManagement() {
       toast.error('Enter a valid webhook URL');
       return;
     }
-    setIsCreatingWebhook(true);
+    setIsSubmittingWebhook(true);
     try {
       await webhooksService.register({
         url: newWebhookUrl.trim(),
@@ -131,12 +247,13 @@ export default function ApiManagement() {
       });
       setNewWebhookUrl('');
       setNewWebhookEvents([]);
-      await loadData();
+      await loadData(apiKeyFilter);
+      setIsWebhookDialogOpen(false);
       toast.success('Webhook registered successfully');
     } catch (error) {
       toast.error(getBankingErrorMessage(error, 'Failed to register webhook'));
     } finally {
-      setIsCreatingWebhook(false);
+      setIsSubmittingWebhook(false);
     }
   };
 
@@ -153,26 +270,127 @@ export default function ApiManagement() {
     }
   };
 
-  const handleTestWebhook = async (id: string) => {
-    setIsTestingWebhookId(id);
-    try {
-      const response = await webhooksService.test({
-        webhookId: id,
-        eventType: 'verification.completed',
-        payload: { source: 'api-management' }
-      });
-      toast.success(`Webhook test status: ${response.status}`);
-    } catch (error) {
-      toast.error(getBankingErrorMessage(error, 'Failed to test webhook'));
-    } finally {
-      setIsTestingWebhookId(null);
-    }
-  };
-
   const copyText = async (value: string): Promise<void> => {
     if (!value.trim()) return;
     await navigator.clipboard.writeText(value);
     toast.success('Copied to clipboard');
+  };
+
+  const clearRequestHistory = () => {
+    setRequestHistory([]);
+    window.localStorage.removeItem(REQUEST_HISTORY_STORAGE_KEY);
+  };
+
+  const persistRequestHistory = (next: BankingRequestDiagnosticEvent[]) => {
+    setRequestHistory(next);
+    window.localStorage.setItem(REQUEST_HISTORY_STORAGE_KEY, JSON.stringify(next));
+  };
+
+  const cancelDiagnosticRequest = async (item: BankingRequestDiagnosticEvent) => {
+    setIsCancellingRequestId(item.requestId);
+    try {
+      const next = [
+        {
+          ...item,
+          stage: 'failed' as const,
+          status: 499,
+          message: 'Retry cancelled by user',
+          retryInMs: undefined,
+          occurredAt: new Date().toISOString(),
+        },
+        ...requestHistory.filter((entry) => !(entry.requestId === item.requestId && entry.stage === 'retrying')),
+      ].slice(0, 80);
+      persistRequestHistory(next);
+      toast.success('Retry cancelled for this request');
+    } finally {
+      setIsCancellingRequestId(null);
+    }
+  };
+
+  const retryDiagnosticRequest = async (item: BankingRequestDiagnosticEvent) => {
+    setIsRetryingRequestId(item.requestId);
+    try {
+      if (item.method === 'GET' && item.path.includes('/api-keys')) {
+        await loadData(apiKeyFilter);
+      } else if (item.method === 'GET' && item.path.includes('/webhooks')) {
+        const hooks = await webhooksService.list();
+        setWebhooks(hooks);
+      } else if (item.method === 'GET' && item.path.includes('/api/settings')) {
+        await loadApiSettings();
+      } else {
+        toast.info('This request type cannot be auto-retried. Repeat the original action from the page controls.');
+        return;
+      }
+
+      const event: BankingRequestDiagnosticEvent = {
+        requestId: item.requestId,
+        path: item.path,
+        method: item.method,
+        stage: 'succeeded',
+        status: 200,
+        attempt: (item.attempt ?? 0) + 1,
+        message: 'Retried by user from diagnostics',
+        occurredAt: new Date().toISOString(),
+      };
+      const next = [event, ...requestHistory].slice(0, 80);
+      persistRequestHistory(next);
+      toast.success('Request retried successfully');
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Retry failed'));
+    } finally {
+      setIsRetryingRequestId(null);
+    }
+  };
+
+  const requestHistoryRows = useMemo(() => requestHistory.slice(0, 20), [requestHistory]);
+  const canViewApiKeys = hasPermission('api_keys:read') || user?.role === 'admin' || user?.role === 'manager' || user?.role === 'enterprise';
+  const getApiKeyEnvironment = (key: ApiKeyResponse): ApiKeyEnvironment => {
+    const explicit = String((key as ApiKeyResponse & { environment?: string }).environment ?? '').toLowerCase();
+    if (explicit === 'production' || explicit === 'sandbox') return explicit;
+    const hint = `${key.name} ${key.keyPrefix}`.toLowerCase();
+    return hint.includes('sandbox') || hint.includes('test') || hint.includes('dev') ? 'sandbox' : 'production';
+  };
+  const productionKeyCount = useMemo(() => apiKeys.filter((key) => getApiKeyEnvironment(key) === 'production').length, [apiKeys]);
+  const sandboxKeyCount = useMemo(() => apiKeys.filter((key) => getApiKeyEnvironment(key) === 'sandbox').length, [apiKeys]);
+
+  const saveApiSettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      const payload: ApiSecuritySettings = {
+        autoRotateSecrets,
+        ipWhitelistEnabled,
+        allowedIps: allowedIps
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean),
+      };
+      await bankingService.updateApiSecuritySettings(payload);
+      window.localStorage.setItem(
+        API_SETTINGS_STORAGE_KEY,
+        JSON.stringify(payload),
+      );
+      toast.success('API settings saved');
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to save API settings'));
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleTestWebhook = async (webhookId: string) => {
+    setIsTestingWebhookId(webhookId);
+    try {
+      const result = await webhooksService.test({
+        webhookId,
+        eventType: 'verification.completed',
+        payload: { source: 'api-management' },
+      });
+      toast.success(`Webhook test ${result.status}`);
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Failed to test webhook endpoint'));
+    } finally {
+      setIsTestingWebhookId(null);
+    }
   };
 
   return (
@@ -190,24 +408,40 @@ export default function ApiManagement() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border border-border/50">
             <Button 
-              variant={!sandboxMode ? "secondary" : "ghost"} 
+              variant={apiKeyFilter === 'all' ? 'secondary' : 'ghost'}
               size="sm" 
-              onClick={() => setSandboxMode(false)}
+              onClick={() => setApiKeyFilter('all')}
+              className="text-xs"
+            >
+              All
+            </Button>
+            <Button 
+              variant={apiKeyFilter === 'production' ? 'secondary' : 'ghost'}
+              size="sm" 
+              onClick={() => setApiKeyFilter('production')}
               className="text-xs"
             >
               Production
             </Button>
             <Button 
-              variant={sandboxMode ? "secondary" : "ghost"} 
+              variant={apiKeyFilter === 'sandbox' ? 'secondary' : 'ghost'} 
               size="sm" 
-              onClick={() => setSandboxMode(true)}
+              onClick={() => setApiKeyFilter('sandbox')}
               className="text-xs"
             >
               Sandbox
             </Button>
           </div>
           
-          <Dialog>
+          <Dialog
+            open={isCreateKeyDialogOpen}
+            onOpenChange={(open) => {
+              setIsCreateKeyDialogOpen(open);
+              if (open) {
+                setCreateKeyEnvironment(null);
+              }
+            }}
+          >
             <DialogTrigger asChild>
                 <Button className="gap-2 bg-verza-primary hover:bg-verza-primary/90">
                     <Plus className="h-4 w-4" />
@@ -231,9 +465,37 @@ export default function ApiManagement() {
                             onChange={(e) => setNewKeyName(e.target.value)}
                         />
                     </div>
+                    <div className="space-y-3">
+                      <Label>Environment</Label>
+                      <RadioGroup value={createKeyEnvironment ?? ''} onValueChange={(value) => setCreateKeyEnvironment(value as ApiKeyEnvironment)}>
+                        <Label
+                          htmlFor="api-key-env-production"
+                          className="flex cursor-pointer items-start justify-between rounded-lg border p-3 hover:bg-muted/50"
+                        >
+                          <div className="space-y-1">
+                            <div className="text-sm font-medium">Production</div>
+                            <p className="text-xs text-muted-foreground">Production keys access live workflows.</p>
+                          </div>
+                          <RadioGroupItem id="api-key-env-production" value="production" />
+                        </Label>
+                        <Label
+                          htmlFor="api-key-env-sandbox"
+                          className="flex cursor-pointer items-start justify-between rounded-lg border p-3 hover:bg-muted/50"
+                        >
+                          <div className="space-y-1">
+                            <div className="text-sm font-medium">Sandbox</div>
+                            <p className="text-xs text-muted-foreground">Sandbox keys are for test and simulation workflows.</p>
+                          </div>
+                          <RadioGroupItem id="api-key-env-sandbox" value="sandbox" />
+                        </Label>
+                      </RadioGroup>
+                      {!createKeyEnvironment ? (
+                        <p className="text-xs text-muted-foreground">Choose one environment to continue.</p>
+                      ) : null}
+                    </div>
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleCreateKey} disabled={!newKeyName || isCreatingKey}>
+                    <Button onClick={handleCreateKey} disabled={!newKeyName.trim() || !createKeyEnvironment || isCreatingKey}>
                         {isCreatingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Key"}
                     </Button>
                 </DialogFooter>
@@ -248,7 +510,7 @@ export default function ApiManagement() {
           <AlertDescription>
             <div className="flex items-center justify-between gap-2">
               <span>{pageError}</span>
-              <Button variant="outline" size="sm" onClick={loadData} disabled={isLoadingData}>
+              <Button variant="outline" size="sm" onClick={() => void loadData(apiKeyFilter)} disabled={isLoadingData}>
                 {isLoadingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                 Retry
               </Button>
@@ -256,6 +518,69 @@ export default function ApiManagement() {
           </AlertDescription>
         </Alert>
       )}
+      <Dialog
+        open={isRevealDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !hasConfirmedCopy) return;
+          setIsRevealDialogOpen(open);
+          if (!open) {
+            setHasConfirmedCopy(false);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New API Key Created</DialogTitle>
+            <DialogDescription>
+              This key is shown once. Copy and store it now.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center gap-2">
+              <Badge variant={latestCreatedKeyEnvironment === 'production' ? 'destructive' : 'secondary'}>
+                {latestCreatedKeyEnvironment.toUpperCase()}
+              </Badge>
+              {latestCreatedKeyPrefix ? (
+                <Badge variant="outline" className="font-mono text-xs">
+                  {latestCreatedKeyPrefix}
+                </Badge>
+              ) : null}
+            </div>
+            <div className="rounded-md border bg-muted/20 p-3 font-mono text-xs break-all">
+              {rawApiKey || 'Key expired. Please create a new key.'}
+            </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={async () => {
+                if (!rawApiKey) return;
+                await copyText(rawApiKey);
+                setHasConfirmedCopy(true);
+              }}
+              disabled={!rawApiKey}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              Copy API Key
+            </Button>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="confirm-key-copied"
+                checked={hasConfirmedCopy}
+                onCheckedChange={(checked) => setHasConfirmedCopy(Boolean(checked))}
+              />
+              <Label htmlFor="confirm-key-copied" className="text-sm">
+                I copied this key
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground">For security, this value clears automatically after 30 seconds.</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsRevealDialogOpen(false)} disabled={!hasConfirmedCopy}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {isLoadingData && (
         <Card>
           <CardContent className="py-8 flex justify-center">
@@ -288,7 +613,7 @@ export default function ApiManagement() {
           <CardContent>
             <div className="text-2xl font-bold">124ms</div>
             <div className="flex items-center gap-1 mt-1">
-              <span className="text-green-500 text-xs font-medium flex items-center">
+              <span className="text-verza-emerald text-xs font-medium flex items-center">
                 <CheckCircle className="h-3 w-3 mr-1" /> Healthy
               </span>
               <span className="text-xs text-muted-foreground">Global edge network</span>
@@ -308,6 +633,199 @@ export default function ApiManagement() {
           </CardContent>
         </Card>
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className={apiKeyFilter === 'production' ? 'border-blue-500/40' : ''}>
+          <CardHeader>
+            <CardTitle className="text-base">Production Environment</CardTitle>
+            <CardDescription>Live credentials and traffic</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{productionKeyCount}</div>
+            <p className="text-xs text-muted-foreground">Active keys in production</p>
+          </CardContent>
+        </Card>
+        <Card className={apiKeyFilter === 'sandbox' ? 'border-blue-500/40' : ''}>
+          <CardHeader>
+            <CardTitle className="text-base">Sandbox Environment</CardTitle>
+            <CardDescription>Testing and staging credentials</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{sandboxKeyCount}</div>
+            <p className="text-xs text-muted-foreground">Active keys in sandbox</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle>Request Diagnostics</CardTitle>
+            <CardDescription>Persistent history of request IDs, retries, and outcomes</CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsDiagnosticsOpen(true)} disabled={requestHistory.length === 0}>
+              View Full Screen
+            </Button>
+            <Button variant="outline" size="sm" onClick={clearRequestHistory} disabled={requestHistory.length === 0}>
+              Clear History
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {requestHistoryRows.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-3">
+              No request diagnostics yet. Run API actions to populate this panel.
+            </div>
+          ) : (
+            <div className="rounded-md border max-h-[360px] overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Stage</TableHead>
+                    <TableHead>Method</TableHead>
+                    <TableHead>Path</TableHead>
+                    <TableHead>Request ID</TableHead>
+                    <TableHead>Retry</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {requestHistoryRows.map((item) => (
+                    <TableRow key={`${item.requestId}-${item.stage}-${item.occurredAt}-${item.attempt || 0}`}>
+                      <TableCell className="text-xs">{new Date(item.occurredAt).toLocaleTimeString()}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            item.stage === 'failed' ? 'destructive' : item.stage === 'retrying' ? 'secondary' : 'outline'
+                          }
+                          className="uppercase text-[10px]"
+                        >
+                          {item.stage}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{item.method}</TableCell>
+                      <TableCell className="font-mono text-xs">{item.path}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        <button onClick={() => copyText(item.requestId)} className="hover:underline">
+                          {item.requestId}
+                        </button>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {item.attempt ? `#${item.attempt}${item.retryInMs ? ` · ${Math.round(item.retryInMs / 1000)}s` : ''}` : '-'}
+                      </TableCell>
+                      <TableCell>{item.status ?? '-'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => retryDiagnosticRequest(item)}
+                            disabled={isRetryingRequestId === item.requestId}
+                          >
+                            {isRetryingRequestId === item.requestId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Retry'}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => cancelDiagnosticRequest(item)}
+                            disabled={isCancellingRequestId === item.requestId}
+                          >
+                            {isCancellingRequestId === item.requestId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Cancel'}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      <Dialog open={isDiagnosticsOpen} onOpenChange={setIsDiagnosticsOpen}>
+        <DialogContent className="w-[95vw] max-w-[95vw] h-[90vh] p-0 flex flex-col">
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle>Request Diagnostics (Full Screen)</DialogTitle>
+            <DialogDescription>
+              Complete request log history with request IDs, retry attempts, and statuses.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 pb-6 pt-4 flex-1 min-h-0">
+            {requestHistory.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-3">
+                No request diagnostics yet. Run API actions to populate this panel.
+              </div>
+            ) : (
+              <div className="rounded-md border h-full overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Stage</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Path</TableHead>
+                      <TableHead>Request ID</TableHead>
+                      <TableHead>Retry</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {requestHistory.map((item) => (
+                      <TableRow key={`fullscreen-${item.requestId}-${item.stage}-${item.occurredAt}-${item.attempt || 0}`}>
+                        <TableCell className="text-xs">{new Date(item.occurredAt).toLocaleTimeString()}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={item.stage === 'failed' ? 'destructive' : item.stage === 'retrying' ? 'secondary' : 'outline'}
+                            className="uppercase text-[10px]"
+                          >
+                            {item.stage}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{item.method}</TableCell>
+                        <TableCell className="font-mono text-xs">{item.path}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          <button onClick={() => copyText(item.requestId)} className="hover:underline">
+                            {item.requestId}
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {item.attempt ? `#${item.attempt}${item.retryInMs ? ` · ${Math.round(item.retryInMs / 1000)}s` : ''}` : '-'}
+                        </TableCell>
+                        <TableCell>{item.status ?? '-'}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => retryDiagnosticRequest(item)}
+                              disabled={isRetryingRequestId === item.requestId}
+                            >
+                              {isRetryingRequestId === item.requestId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Retry'}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => cancelDiagnosticRequest(item)}
+                              disabled={isCancellingRequestId === item.requestId}
+                            >
+                              {isCancellingRequestId === item.requestId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Cancel'}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Tabs defaultValue="keys" className="space-y-6">
         <TabsList>
@@ -317,6 +835,15 @@ export default function ApiManagement() {
         </TabsList>
 
         <TabsContent value="keys" className="space-y-6">
+          <TabHelpCard
+            title="API Keys Tab"
+            description="Create and rotate keys for production or sandbox usage. Key visibility is restricted to privileged team members."
+            icon={Key}
+            sectionLabel="Authentication"
+            tone="blue"
+            useWhen="you need to issue credentials for backend services or rotate compromised keys."
+            highlights={['Create keys', 'Revoke keys', 'Copy prefixes', 'Environment split']}
+          />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -329,11 +856,17 @@ export default function ApiManagement() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {!canViewApiKeys ? (
+                  <div className="text-sm text-muted-foreground rounded-md border p-4">
+                    You do not have permission to view API keys. Ask an Admin or Manager for `api_keys:read` access.
+                  </div>
+                ) : (
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
+                        <TableHead>Environment</TableHead>
                         <TableHead>Key Prefix</TableHead>
                         <TableHead>Created</TableHead>
                         <TableHead>Last Used</TableHead>
@@ -342,7 +875,7 @@ export default function ApiManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {apiKeys.map((key) => (
+                      {filteredApiKeys.map((key) => (
                         <TableRow key={key.id}>
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
@@ -350,12 +883,17 @@ export default function ApiManagement() {
                               {key.name}
                             </div>
                           </TableCell>
+                          <TableCell>
+                            <Badge variant={getApiKeyEnvironment(key) === 'production' ? 'destructive' : 'secondary'}>
+                              {getApiKeyEnvironment(key).toUpperCase()}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="font-mono text-xs">{key.keyPrefix}</TableCell>
                           <TableCell>{new Date(key.createdAt).toLocaleDateString()}</TableCell>
                           <TableCell>{key.lastUsed ? new Date(key.lastUsed).toLocaleDateString() : 'Never'}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-                              ACTIVE
+                            <Badge variant={String(key.status || 'active').toLowerCase() === 'revoked' ? 'destructive' : 'outline'}>
+                              {String(key.status || 'active').toUpperCase()}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
@@ -363,7 +901,7 @@ export default function ApiManagement() {
                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyText(key.keyPrefix || '')}>
                                 <Copy className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={loadData} disabled={isLoadingData}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => void loadData(apiKeyFilter)} disabled={isLoadingData}>
                                 <RefreshCw className="h-4 w-4" />
                               </Button>
                               <Button 
@@ -379,9 +917,19 @@ export default function ApiManagement() {
                           </TableCell>
                         </TableRow>
                       ))}
+                      {filteredApiKeys.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
+                            {apiKeyFilter === 'all'
+                              ? 'No API keys found.'
+                              : `No ${apiKeyFilter} API keys found.`}
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -442,12 +990,21 @@ export default function ApiManagement() {
         </TabsContent>
 
         <TabsContent value="webhooks" className="space-y-6">
+          <TabHelpCard
+            title="Webhooks Tab"
+            description="Register callback endpoints to receive verification events and monitor delivery status."
+            icon={Webhook}
+            sectionLabel="Event Delivery"
+            tone="violet"
+            useWhen="your system needs real-time updates without polling the API."
+            highlights={['Register endpoint', 'Choose events', 'Delivery status', 'Secret handling']}
+          />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
             <div className="flex justify-end mb-4">
-                 <Dialog open={isCreatingWebhook} onOpenChange={setIsCreatingWebhook}>
+                 <Dialog open={isWebhookDialogOpen} onOpenChange={setIsWebhookDialogOpen}>
                     <DialogTrigger asChild>
                         <Button className="gap-2 bg-verza-primary hover:bg-verza-primary/90">
                             <Plus className="h-4 w-4" />
@@ -526,8 +1083,8 @@ export default function ApiManagement() {
                               </div>
                         </div>
                         <DialogFooter>
-                            <Button onClick={handleCreateWebhook} disabled={!newWebhookUrl || isCreatingWebhook}>
-                                {isCreatingWebhook ? <Loader2 className="h-4 w-4 animate-spin" /> : "Register Webhook"}
+                            <Button onClick={handleCreateWebhook} disabled={!newWebhookUrl || isSubmittingWebhook}>
+                                {isSubmittingWebhook ? <Loader2 className="h-4 w-4 animate-spin" /> : "Register Webhook"}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -581,6 +1138,15 @@ export default function ApiManagement() {
         </TabsContent>
 
         <TabsContent value="settings">
+            <TabHelpCard
+              title="Settings Tab"
+              description="Configure global API behavior and maintain endpoint-to-page mapping used by the dashboard."
+              icon={Settings2}
+              sectionLabel="Configuration"
+              tone="emerald"
+              useWhen="you need to harden API security controls and align endpoint ownership."
+              highlights={['Auto-rotation', 'IP restrictions', 'Endpoint mapping']}
+            />
             <Card>
                 <CardHeader>
                     <CardTitle>API Settings</CardTitle>
@@ -596,7 +1162,7 @@ export default function ApiManagement() {
                                 Automatically rotate secret keys every 90 days.
                             </p>
                         </div>
-                        <Switch />
+                        <Switch checked={autoRotateSecrets} onCheckedChange={setAutoRotateSecrets} />
                     </div>
                     <Separator />
                     <div className="flex items-center justify-between">
@@ -606,7 +1172,16 @@ export default function ApiManagement() {
                                 Restrict API access to specific IP addresses.
                             </p>
                         </div>
-                        <Switch />
+                        <Switch checked={ipWhitelistEnabled} onCheckedChange={setIpWhitelistEnabled} />
+                    </div>
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label>Allowed IPs (comma-separated)</Label>
+                      <Input
+                        placeholder="203.0.113.10/32, 198.51.100.0/24"
+                        value={allowedIps}
+                        onChange={(event) => setAllowedIps(event.target.value)}
+                      />
                     </div>
                     <Separator />
                     <div className="space-y-3">
@@ -633,6 +1208,12 @@ export default function ApiManagement() {
                           </TableBody>
                         </Table>
                       </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button onClick={saveApiSettings} disabled={isSavingSettings}>
+                        {isSavingSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Save API Settings
+                      </Button>
                     </div>
                 </CardContent>
             </Card>

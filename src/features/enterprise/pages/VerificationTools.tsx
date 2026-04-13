@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
+import { TabHelpCard } from '@/components/shared/TabHelpCard';
 import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 import { webhooksService } from '@/services/apiManagementService';
 import type { AuditLogResponse, LicenseUsageMetrics, RiskSimulationResponse, WebhookResponse, WebhookRetryItem } from '@/types/banking';
@@ -203,9 +204,13 @@ export default function VerificationTools() {
   };
 
   const changePlan = async (targetPlan: 'starter' | 'growth' | 'enterprise') => {
-    await bankingService.changeLicensePlan(targetPlan);
-    toast.success(`Plan change request submitted: ${targetPlan}`);
-    await loadUsage();
+    try {
+      await bankingService.changeLicensePlan(targetPlan);
+      toast.success(`Plan change request submitted: ${targetPlan}`);
+      await loadUsage();
+    } catch (error) {
+      toast.error(getBankingErrorMessage(error, 'Plan change endpoint is not available yet.'));
+    }
   };
 
   return (
@@ -216,7 +221,7 @@ export default function VerificationTools() {
         <p className="text-muted-foreground mt-1">Enterprise onboarding, risk, governance, webhook, and SLA tooling.</p>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
           <TabsTrigger value="bulk">Bulk KYC</TabsTrigger>
           <TabsTrigger value="risk">Risk Sandbox</TabsTrigger>
           <TabsTrigger value="audit">Audit Explorer</TabsTrigger>
@@ -224,6 +229,15 @@ export default function VerificationTools() {
           <TabsTrigger value="sla">Usage & SLA</TabsTrigger>
         </TabsList>
         <TabsContent value="bulk">
+          <TabHelpCard
+            title="Bulk KYC"
+            description="Upload and validate onboarding files before importing records."
+            icon={FileSpreadsheet}
+            sectionLabel="Onboarding"
+            tone="blue"
+            useWhen="you need to process many customer verifications in one batch."
+            highlights={['CSV upload', 'Validation issues', 'Import accepted rows']}
+          />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><FileSpreadsheet className="h-5 w-5" />Bulk-Customer KYC Upload Wizard</CardTitle>
@@ -255,6 +269,15 @@ export default function VerificationTools() {
           </Card>
         </TabsContent>
         <TabsContent value="risk">
+          <TabHelpCard
+            title="Risk Sandbox"
+            description="Test and tune risk weights with instant what-if scoring simulations."
+            icon={SlidersHorizontal}
+            sectionLabel="Risk Modeling"
+            tone="amber"
+            useWhen="you want to evaluate policy changes before applying them to production."
+            highlights={['What-if analysis', 'Weight tuning', 'Export report']}
+          />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><SlidersHorizontal className="h-5 w-5" />Risk-Scoring Sandbox</CardTitle>
@@ -283,6 +306,15 @@ export default function VerificationTools() {
           </Card>
         </TabsContent>
         <TabsContent value="audit">
+          <TabHelpCard
+            title="Audit Explorer"
+            description="Search audit events by date/entity and export signed evidence logs."
+            icon={Clock3}
+            sectionLabel="Governance"
+            tone="emerald"
+            useWhen="compliance, legal, or security teams request verifiable audit evidence."
+            highlights={['Date filters', 'Entity filters', 'Signed export']}
+          />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Clock3 className="h-5 w-5" />Audit-Trail Explorer</CardTitle>
@@ -312,6 +344,15 @@ export default function VerificationTools() {
           </Card>
         </TabsContent>
         <TabsContent value="webhooks">
+          <TabHelpCard
+            title="Webhook Manager"
+            description="Register endpoints, run delivery tests, rotate secrets, and monitor retries."
+            icon={Webhook}
+            sectionLabel="Integrations"
+            tone="violet"
+            useWhen="you need reliable event delivery into downstream systems."
+            highlights={['Register endpoint', 'Test delivery', 'Rotate secret', 'Retry queue']}
+          />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Webhook className="h-5 w-5" />Webhook Endpoint Manager</CardTitle>
@@ -347,6 +388,15 @@ export default function VerificationTools() {
           </Card>
         </TabsContent>
         <TabsContent value="sla">
+          <TabHelpCard
+            title="Usage & SLA"
+            description="Review quota consumption and request plan changes from one place."
+            icon={ShieldCheck}
+            sectionLabel="Operations"
+            tone="blue"
+            useWhen="you need to monitor limits, uptime commitments, and plan capacity."
+            highlights={['Quota tracking', 'Anomaly alerts', 'Plan controls']}
+          />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5" />License-Usage & SLA Dashboard</CardTitle>

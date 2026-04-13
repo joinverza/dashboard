@@ -74,7 +74,7 @@ export default function PrivacyPolicyPage() {
         
         <div className="prose prose-invert max-w-none">
           <p className="text-lg text-muted-foreground leading-relaxed">
-            At Verza, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or use our decentralized identity verification platform. Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the site.
+            At Ontiver, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or use our decentralized identity verification platform. Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the site.
           </p>
         </div>
 

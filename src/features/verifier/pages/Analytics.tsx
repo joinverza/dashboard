@@ -68,7 +68,7 @@ const completionData = {
     {
       label: 'Jobs Completed',
       data: [12, 19, 15, 25, 22, 10, 8],
-      borderColor: '#10b981',
+      borderColor: '#1ED760',
       backgroundColor: 'rgba(16, 185, 129, 0.5)',
       tension: 0.4,
     },
@@ -93,7 +93,7 @@ const typeData = {
       {
         data: [35, 25, 20, 15, 5],
         backgroundColor: [
-          '#10b981',
+          '#1ED760',
           '#3b82f6',
           '#8b5cf6',
           '#f59e0b',
@@ -146,7 +146,7 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">1,284</div>
-                <p className="text-xs text-muted-foreground text-green-500 flex items-center mt-1">
+                <p className="text-xs text-muted-foreground text-verza-emerald flex items-center mt-1">
                     <TrendingUp className="h-3 w-3 mr-1" /> +12% from last month
                 </p>
             </CardContent>
@@ -158,7 +158,7 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">42m</div>
-                <p className="text-xs text-muted-foreground text-green-500 flex items-center mt-1">
+                <p className="text-xs text-muted-foreground text-verza-emerald flex items-center mt-1">
                     <TrendingUp className="h-3 w-3 mr-1" /> -5m faster than avg
                 </p>
             </CardContent>
@@ -170,7 +170,7 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">$12,450</div>
-                <p className="text-xs text-muted-foreground text-green-500 flex items-center mt-1">
+                <p className="text-xs text-muted-foreground text-verza-emerald flex items-center mt-1">
                     <TrendingUp className="h-3 w-3 mr-1" /> +8% from last month
                 </p>
             </CardContent>

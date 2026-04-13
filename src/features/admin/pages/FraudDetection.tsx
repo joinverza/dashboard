@@ -1,8 +1,10 @@
 import { 
   ShieldAlert, Eye, 
   CheckCircle, XCircle, AlertTriangle, FileText,
-  Search, Filter
+  Search, Loader2
 } from 'lucide-react';
+import { useMemo, useState } from "react";
+import { useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
@@ -26,6 +28,7 @@ import {
   ArcElement
 } from 'chart.js';
 import { Line, Doughnut } from 'react-chartjs-2';
+import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 
 ChartJS.register(
   CategoryScale,
@@ -40,44 +43,49 @@ ChartJS.register(
 );
 
 export default function FraudDetection() {
+  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
-  // Mock Data
-  const fraudAlerts = [
-    { 
-      id: 'ALRT-9021', 
-      docType: 'Passport', 
-      riskScore: 92, 
-      user: 'John Doe', 
-      verifier: 'QuickVerify Inc', 
-      date: '10 mins ago', 
-      status: 'pending' 
+  const [search, setSearch] = useState("");
+  const [trendsQuery, riskQuery, requestsQuery] = useQueries({
+    queries: [
+      { queryKey: ["admin", "fraud", "trends"], queryFn: () => bankingService.getFraudTrends({ range: "30d" }) },
+      { queryKey: ["admin", "fraud", "risk-distribution"], queryFn: () => bankingService.getRiskDistribution() },
+      { queryKey: ["admin", "fraud", "requests"], queryFn: () => bankingService.getVerificationRequests({ limit: 300 }) },
+    ],
+  });
+
+  const resolveMutation = useMutation({
+    mutationFn: ({ verificationId, status }: { verificationId: string; status: "verified" | "rejected" }) =>
+      bankingService.updateVerificationStatus(verificationId, status, "Fraud analyst decision"),
+    onSuccess: async () => {
+      toast.success("Fraud review decision submitted.");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "fraud", "requests"] });
     },
-    { 
-      id: 'ALRT-9020', 
-      docType: 'Driver License', 
-      riskScore: 88, 
-      user: 'Jane Smith', 
-      verifier: 'SecureID Ltd', 
-      date: '1 hour ago', 
-      status: 'reviewing' 
-    },
-    { 
-      id: 'ALRT-9019', 
-      docType: 'Bank Statement', 
-      riskScore: 75, 
-      user: 'Bob Johnson', 
-      verifier: 'BankAuth', 
-      date: '2 hours ago', 
-      status: 'resolved' 
-    },
-  ];
+    onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to submit fraud decision")),
+  });
+
+  const fraudAlerts = useMemo(() => {
+    const rows = requestsQuery.data ?? [];
+    return rows
+      .filter((row) => Number(row.details?.aiScore ?? 0) >= 70)
+      .map((row) => ({
+        id: row.verificationId,
+        docType: row.details?.documentType ?? row.type,
+        riskScore: Number(row.details?.aiScore ?? 0),
+        user: row.details?.firstName ? `${row.details.firstName} ${row.details.lastName}` : "Unknown user",
+        verifier: row.details?.verifier ?? "Assigned verifier",
+        date: new Date(row.createdAt).toLocaleString(),
+        status: row.status,
+      }))
+      .filter((row) => row.id.toLowerCase().includes(search.toLowerCase()) || row.user.toLowerCase().includes(search.toLowerCase()));
+  }, [requestsQuery.data, search]);
 
   const fraudTrendData = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    labels: (trendsQuery.data ?? []).map((i) => i.period),
     datasets: [
       {
         label: 'Fraud Attempts',
-        data: [12, 19, 15, 25, 22, 10, 8],
+        data: (trendsQuery.data ?? []).map((i) => i.count),
         borderColor: 'rgb(239, 68, 68)',
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         fill: true,
@@ -87,10 +95,10 @@ export default function FraudDetection() {
   };
 
   const fraudTypeData = {
-    labels: ['Identity Theft', 'Doc Forgery', 'Synthetic ID', 'Account Takeover'],
+    labels: (riskQuery.data ?? []).map((i) => i.bucket),
     datasets: [
       {
-        data: [40, 30, 20, 10],
+        data: (riskQuery.data ?? []).map((i) => i.percentage),
         backgroundColor: [
           'rgba(239, 68, 68, 0.8)',
           'rgba(249, 115, 22, 0.8)',
@@ -122,7 +130,7 @@ export default function FraudDetection() {
         <div className="flex gap-2">
           <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => toast.error("Critical alerts summary opened")}>
             <ShieldAlert className="h-4 w-4 mr-2" />
-            3 Critical Alerts
+            {(fraudAlerts.filter((a) => a.riskScore >= 90).length || 0)} Critical Alerts
           </Button>
         </div>
       </div>
@@ -134,6 +142,7 @@ export default function FraudDetection() {
           </CardHeader>
           <CardContent>
             <div className="h-[250px]">
+              {trendsQuery.isLoading ? <div className="h-full flex items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div> : null}
               <Line 
                 data={fraudTrendData} 
                 options={{
@@ -163,6 +172,7 @@ export default function FraudDetection() {
           </CardHeader>
           <CardContent>
             <div className="h-[250px] flex items-center justify-center">
+              {riskQuery.isLoading ? <Loader2 className="h-7 w-7 animate-spin text-primary" /> : null}
               <Doughnut 
                 data={fraudTypeData} 
                 options={{
@@ -187,15 +197,16 @@ export default function FraudDetection() {
                 <div className="flex gap-2">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search alerts..." className="pl-8 w-[200px]" />
+                    <Input placeholder="Search alerts..." className="pl-8 w-[200px]" value={search} onChange={(e) => setSearch(e.target.value)} />
                   </div>
-                  <Button variant="outline" size="icon">
-                    <Filter className="h-4 w-4" />
+                  <Button variant="outline" onClick={() => void requestsQuery.refetch()} disabled={requestsQuery.isFetching}>
+                    {requestsQuery.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
                   </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
+              {requestsQuery.error ? <div className="text-sm text-red-400 mb-3">{getBankingErrorMessage(requestsQuery.error, "Failed to load fraud alerts.")}</div> : null}
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -227,8 +238,8 @@ export default function FraudDetection() {
                       <TableCell>
                         <Badge variant="outline" className={
                           alert.status === 'pending' ? 'text-red-500 border-red-500/20' : 
-                          alert.status === 'reviewing' ? 'text-orange-500 border-orange-500/20' : 
-                          'text-green-500 border-green-500/20'
+                          alert.status === 'review_needed' ? 'text-orange-500 border-orange-500/20' : 
+                          'text-verza-emerald border-verza-emerald/20'
                         }>
                           {alert.status}
                         </Badge>
@@ -238,10 +249,10 @@ export default function FraudDetection() {
                           <Button variant="ghost" size="icon" title="View Details" onClick={() => setLocation(`/admin/fraud/${alert.id}`)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" title="Reject" className="text-red-500 hover:text-red-600" onClick={() => toast.success(`Alert ${alert.id} rejected`)}>
+                          <Button variant="ghost" size="icon" title="Reject" className="text-red-500 hover:text-red-600" onClick={() => resolveMutation.mutate({ verificationId: alert.id, status: "rejected" })}>
                             <XCircle className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" title="Approve (False Positive)" className="text-green-500 hover:text-green-600" onClick={() => toast.success(`Alert ${alert.id} marked as false positive`)}>
+                          <Button variant="ghost" size="icon" title="Approve (False Positive)" className="text-verza-emerald hover:text-verza-emerald" onClick={() => resolveMutation.mutate({ verificationId: alert.id, status: "verified" })}>
                             <CheckCircle className="h-4 w-4" />
                           </Button>
                         </div>
@@ -264,9 +275,9 @@ export default function FraudDetection() {
                 <div className="flex items-start gap-3">
                   <ShieldAlert className="h-5 w-5 text-red-500 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-medium text-red-500">Multiple Uploads</h4>
+                    <h4 className="text-sm font-medium text-red-500">High AI Risk Cluster</h4>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Same IP address (192.168.1.55) uploaded 15 different documents in 10 minutes.
+                      {fraudAlerts.filter((a) => a.riskScore >= 90).length} requests currently exceed the 90+ AI risk threshold.
                     </p>
                   </div>
                 </div>
@@ -275,9 +286,9 @@ export default function FraudDetection() {
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-medium text-orange-500">Repeated Rejections</h4>
+                    <h4 className="text-sm font-medium text-orange-500">Escalated Reviews</h4>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Verifier "QuickVerify" rejected 40% of requests in the last hour (avg: 5%).
+                      {(fraudAlerts.filter((a) => a.status === "review_needed").length || 0)} high-risk requests are waiting for manual review.
                     </p>
                   </div>
                 </div>
@@ -286,9 +297,9 @@ export default function FraudDetection() {
                 <div className="flex items-start gap-3">
                   <Eye className="h-5 w-5 text-yellow-500 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-medium text-yellow-500">Unusual Location</h4>
+                    <h4 className="text-sm font-medium text-yellow-500">Risk Distribution Drift</h4>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Spike in traffic from high-risk jurisdiction detected.
+                      Monitor bucket percentages from `/analytics/risk-distribution` for unexpected shifts.
                     </p>
                   </div>
                 </div>

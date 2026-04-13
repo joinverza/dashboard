@@ -100,7 +100,7 @@ export default function VerifierProfile({ params }: { params?: { id: string } })
                 alt={VERIFIER.name} 
                 className="w-full h-full object-cover rounded-xl"
               />
-              <div className="absolute -bottom-2 -right-2 bg-green-500 w-6 h-6 rounded-full border-4 border-black" />
+              <div className="absolute -bottom-2 -right-2 bg-verza-emerald w-6 h-6 rounded-full border-4 border-black" />
             </div>
             
             <div className="flex-1 pt-16 md:pt-0 mt-2">
@@ -184,7 +184,7 @@ export default function VerifierProfile({ params }: { params?: { id: string } })
                 {activeTab === tab && (
                   <motion.div 
                     layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-verza-emerald shadow-[0_0_10px_rgba(141,198,63,0.5)]" 
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-verza-emerald shadow-[0_0_10px_rgba(30,215,96,0.5)]" 
                   />
                 )}
               </button>
