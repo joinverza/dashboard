@@ -40,7 +40,7 @@ export default function Disputes() {
     onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to resolve dispute")),
   });
 
-  const rows = disputesQuery.data?.items ?? [];
+  const rows = useMemo(() => disputesQuery.data?.items ?? [], [disputesQuery.data?.items]);
   const filteredRows = useMemo(
     () =>
       rows.filter((item) => {

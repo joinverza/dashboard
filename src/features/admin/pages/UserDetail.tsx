@@ -21,24 +21,41 @@ export default function UserDetail() {
   const [match, params] = useRoute("/admin/users/:id");
   const [, setLocation] = useLocation();
   const [notes, setNotes] = useState("");
-  if (!match) return null;
+  const userId = params?.id ?? "";
+  const detailEnabled = match && Boolean(userId);
 
   const [userQuery, activityQuery, credentialsQuery, transactionsQuery] = useQueries({
     queries: [
-      { queryKey: ["admin", "user-detail", params.id], queryFn: () => bankingService.getAdminUserDetails(params.id) },
-      { queryKey: ["admin", "user-detail", params.id, "activity"], queryFn: () => bankingService.listUserActivity(params.id) },
-      { queryKey: ["admin", "user-detail", params.id, "credentials"], queryFn: () => bankingService.listUserCredentials(params.id) },
-      { queryKey: ["admin", "user-detail", params.id, "transactions"], queryFn: () => bankingService.listUserTransactions(params.id) },
+      {
+        queryKey: ["admin", "user-detail", userId],
+        queryFn: () => bankingService.getAdminUserDetails(userId),
+        enabled: detailEnabled,
+      },
+      {
+        queryKey: ["admin", "user-detail", userId, "activity"],
+        queryFn: () => bankingService.listUserActivity(userId),
+        enabled: detailEnabled,
+      },
+      {
+        queryKey: ["admin", "user-detail", userId, "credentials"],
+        queryFn: () => bankingService.listUserCredentials(userId),
+        enabled: detailEnabled,
+      },
+      {
+        queryKey: ["admin", "user-detail", userId, "transactions"],
+        queryFn: () => bankingService.listUserTransactions(userId),
+        enabled: detailEnabled,
+      },
     ],
   });
 
   const suspendMutation = useMutation({
-    mutationFn: () => bankingService.updateAdminUserStatus(params.id, "suspended"),
+    mutationFn: () => bankingService.updateAdminUserStatus(userId, "suspended"),
     onSuccess: () => toast.success("User suspended."),
     onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to suspend user")),
   });
   const deleteMutation = useMutation({
-    mutationFn: () => bankingService.deleteAdminUser(params.id),
+    mutationFn: () => bankingService.deleteAdminUser(userId),
     onSuccess: () => {
       toast.success("User deleted.");
       setLocation("/admin/users");
@@ -46,15 +63,17 @@ export default function UserDetail() {
     onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to delete user")),
   });
   const resetMutation = useMutation({
-    mutationFn: () => bankingService.resetAdminUserPassword(params.id),
+    mutationFn: () => bankingService.resetAdminUserPassword(userId),
     onSuccess: () => toast.success("Password reset queued."),
     onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to queue password reset")),
   });
   const impersonateMutation = useMutation({
-    mutationFn: () => bankingService.impersonateAdminUser(params.id),
+    mutationFn: () => bankingService.impersonateAdminUser(userId),
     onSuccess: () => toast.success("Impersonation session started."),
     onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to impersonate user")),
   });
+
+  if (!detailEnabled) return null;
 
   if (userQuery.isLoading) {
     return <div className="h-[50vh] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;

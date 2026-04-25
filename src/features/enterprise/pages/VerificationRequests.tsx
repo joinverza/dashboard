@@ -217,22 +217,22 @@ export default function VerificationRequests() {
     <div className="space-y-6 pb-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-verza-primary to-verza-secondary bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight text-ent-text">
             Verification Requests
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-verza-gray mt-1">
             Manage and track all your verification requests in one place
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2 bg-ent-text/10 border-ent-border hover:bg-ent-text/10 text-ent-text">
             <Download className="h-4 w-4" />
             Export Data
           </Button>
           
           <Dialog open={isNewRequestOpen} onOpenChange={setIsNewRequestOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2 bg-verza-primary hover:bg-verza-primary/90">
+              <Button className="gap-2 bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 transition-all rounded-full px-6">
                 <ArrowUpRight className="h-4 w-4" />
                 New Request
               </Button>
@@ -297,93 +297,91 @@ export default function VerificationRequests() {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalVerifications.toLocaleString() || "..."}</div>
-            <p className="text-xs text-muted-foreground flex items-center mt-1">
+        <div className="enterprise-card p-5">
+          <div className="flex items-center justify-between pb-2">
+            <span className="text-sm font-medium text-verza-gray">Total Requests</span>
+            <FileText className="h-4 w-4 text-verza-gray/60" />
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-ent-text">{stats?.totalVerifications.toLocaleString() || "..."}</div>
+            <p className="text-xs text-verza-gray flex items-center mt-1">
               <span className="text-verza-emerald flex items-center mr-1">
                 <ArrowUpRight className="h-3 w-3 mr-1" /> +12%
               </span>
               from last month
             </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+          </div>
+        </div>
+        <div className="enterprise-card p-5">
+          <div className="flex items-center justify-between pb-2">
+            <span className="text-sm font-medium text-verza-gray">Success Rate</span>
             <CheckCircle className="h-4 w-4 text-verza-emerald" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{successRate}%</div>
-            <p className="text-xs text-muted-foreground flex items-center mt-1">
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-ent-text">{successRate}%</div>
+            <p className="text-xs text-verza-gray flex items-center mt-1">
               <span className="text-verza-emerald flex items-center mr-1">
                 <ArrowUpRight className="h-3 w-3 mr-1" /> +2.1%
               </span>
               improvement
             </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <Clock className="h-4 w-4 text-verza-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.pending.toLocaleString() || "..."}</div>
-            <p className="text-xs text-muted-foreground flex items-center mt-1">
+          </div>
+        </div>
+        <div className="enterprise-card p-5">
+          <div className="flex items-center justify-between pb-2">
+            <span className="text-sm font-medium text-verza-gray">Pending</span>
+            <Clock className="h-4 w-4 text-verza-emerald" />
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-ent-text">{stats?.pending.toLocaleString() || "..."}</div>
+            <p className="text-xs text-verza-gray flex items-center mt-1">
               Awaiting verification
             </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Turnaround</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats ? (stats.averageTime / 60).toFixed(0) : "..."} min</div>
-            <p className="text-xs text-muted-foreground flex items-center mt-1">
+          </div>
+        </div>
+        <div className="enterprise-card p-5">
+          <div className="flex items-center justify-between pb-2">
+            <span className="text-sm font-medium text-verza-gray">Avg Turnaround</span>
+            <Clock className="h-4 w-4 text-verza-gray/60" />
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-ent-text">{stats ? (stats.averageTime / 60).toFixed(0) : "..."} min</div>
+            <p className="text-xs text-verza-gray flex items-center mt-1">
               <span className="text-verza-emerald flex items-center mr-1">
                 <ArrowUpRight className="h-3 w-3 mr-1" /> -30 min
               </span>
               faster than target
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="enterprise-card rounded-2xl p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <Tabs defaultValue="all" onValueChange={setActiveTab} className="w-full md:w-auto">
-              <TabsList className="grid w-full grid-cols-4 md:w-auto">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="pending">Pending</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-                <TabsTrigger value="failed">Failed</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 md:w-auto bg-ent-muted border border-ent-border rounded-xl p-1">
+                <TabsTrigger value="all" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">All</TabsTrigger>
+                <TabsTrigger value="pending" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Pending</TabsTrigger>
+                <TabsTrigger value="completed" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Completed</TabsTrigger>
+                <TabsTrigger value="failed" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Failed</TabsTrigger>
               </TabsList>
             </Tabs>
             
             <div className="flex items-center gap-2 w-full md:w-auto">
               <div className="relative flex-1 md:w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-verza-gray/60" />
                 <Input
                   type="search"
                   placeholder="Search requests..."
-                  className="pl-8 bg-background/50"
+                  className="pl-9 bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]"
                 />
               </div>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" className="bg-ent-text/10 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/10">
                 <Filter className="h-4 w-4" />
               </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+        <div>
           {pollingProgress && (
             <div className="mb-4 rounded-md border bg-muted/30 p-3">
               <div className="flex items-center justify-between gap-2">
@@ -400,7 +398,7 @@ export default function VerificationRequests() {
               </div>
             </div>
           )}
-          <div className="rounded-md border">
+          <div className="rounded-xl border border-ent-border bg-ent-text/5 overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -439,7 +437,7 @@ export default function VerificationRequests() {
                       key={req.verificationId}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="group hover:bg-muted/50 transition-colors"
+                      className="group hover:bg-ent-muted border-b border-ent-border transition-colors"
                     >
                       <TableCell>
                         <Checkbox 
@@ -447,9 +445,9 @@ export default function VerificationRequests() {
                           onCheckedChange={() => toggleSelect(req.verificationId)}
                         />
                       </TableCell>
-                      <TableCell className="font-mono text-xs font-medium">{req.verificationId}</TableCell>
-                      <TableCell className="capitalize">{req.type.replace('_', ' ')}</TableCell>
-                      <TableCell>{new Date(req.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell className="font-mono text-xs font-medium text-ent-text">{req.verificationId}</TableCell>
+                      <TableCell className="capitalize text-verza-gray">{req.type.replace('_', ' ')}</TableCell>
+                      <TableCell className="text-verza-gray">{new Date(req.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={
                           req.status === 'verified' ? 'bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20' :
@@ -467,7 +465,7 @@ export default function VerificationRequests() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-verza-gray hover:text-ent-text hover:bg-ent-text/10">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -503,8 +501,8 @@ export default function VerificationRequests() {
               Next
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

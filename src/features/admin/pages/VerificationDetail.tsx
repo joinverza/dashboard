@@ -18,14 +18,15 @@ import type { VerificationStatusResponse } from '@/types/banking';
 export default function VerificationDetail() {
   const [, setLocation] = useLocation();
   const [match, params] = useRoute("/admin/verifications/:id");
-  const id = params?.id;
-  if (!match || !id) return null;
+  const verificationId = params?.id ?? "";
+  const detailEnabled = match && Boolean(verificationId);
   const verificationQuery = useQuery({
-    queryKey: ["admin", "verification", id],
-    queryFn: () => bankingService.getVerificationStatus(id),
+    queryKey: ["admin", "verification", verificationId],
+    queryFn: () => bankingService.getVerificationStatus(verificationId),
+    enabled: detailEnabled,
   });
   const updateMutation = useMutation({
-    mutationFn: (newStatus: 'verified' | 'rejected') => bankingService.updateVerificationStatus(id, newStatus),
+    mutationFn: (newStatus: 'verified' | 'rejected') => bankingService.updateVerificationStatus(verificationId, newStatus),
     onSuccess: () => {
       verificationQuery.refetch();
       toast.success("Verification status updated.");
@@ -34,6 +35,8 @@ export default function VerificationDetail() {
   });
 
   const handleStatusUpdate = async (newStatus: 'verified' | 'rejected') => updateMutation.mutate(newStatus);
+
+  if (!detailEnabled) return null;
 
   if (verificationQuery.isLoading) {
     return (

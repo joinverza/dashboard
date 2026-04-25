@@ -265,6 +265,169 @@ const toDisplayName = (email: string): string => {
   return base.charAt(0).toUpperCase() + base.slice(1);
 };
 
+// TEMPORARY DEVELOPMENT ONLY:
+// Everything in this mock-auth block exists only to let the dashboard render while live auth is still being integrated.
+// Do not add future production auth behavior into this mock path; add live logic to the real request flow below instead.
+const MOCK_SESSION_TTL_SECONDS = 60 * 60;
+const MOCK_MFA_PREFIX = "mock-mfa:";
+const MOCK_BACKUP_CODES = [
+  "dev-482951",
+  "dev-583104",
+  "dev-674205",
+  "dev-765306",
+  "dev-856407",
+  "dev-947508",
+] as const;
+
+const mockPermissionsByRole: Record<BackendRole, string[]> = {
+  user: [
+    "profile:read",
+    "wallet:read",
+    "wallet:write",
+    "credentials:read",
+  ],
+  verifier: [
+    "verification:read",
+    "verification:write",
+    "documents:read",
+    "documents:write",
+    "settings:read",
+  ],
+  enterprise: [
+    "analytics:read",
+    "aml:write",
+    "api_keys:read",
+    "api_keys:write",
+    "api_settings:read",
+    "audit:read",
+    "biometrics:write",
+    "blockchain:read",
+    "diagnostics:read",
+    "documents:financial:verify",
+    "documents:read",
+    "documents:write",
+    "email_verification:read",
+    "email_verification:write",
+    "kyc:read",
+    "kyc:write",
+    "license:read",
+    "reports:write",
+    "screening:write",
+    "settings:read",
+    "verification:read",
+    "verification:review",
+    "verification:write",
+    "webhooks:read",
+    "webhooks:write",
+    "zk:read",
+    "zk:write",
+  ],
+  manager: [
+    "analytics:read",
+    "audit:read",
+    "documents:read",
+    "documents:write",
+    "email_verification:read",
+    "email_verification:write",
+    "kyc:read",
+    "kyc:write",
+    "settings:read",
+    "verification:read",
+    "verification:review",
+    "verification:write",
+  ],
+  admin: [
+    "admin:read",
+    "admin:write",
+    "analytics:read",
+    "api_keys:read",
+    "api_keys:write",
+    "api_settings:read",
+    "audit:read",
+    "documents:read",
+    "documents:write",
+    "license:read",
+    "reports:write",
+    "settings:read",
+    "verification:read",
+    "verification:review",
+    "verification:write",
+    "webhooks:read",
+    "webhooks:write",
+  ],
+};
+
+export const DEV_ROUTE_UNLOCK_PERMISSIONS: string[] = Array.from(
+  new Set(Object.values(mockPermissionsByRole).flat()),
+);
+
+const normalizeMockEmail = (email: string, role: BackendRole): string => {
+  const normalized = email.trim().toLowerCase();
+  return normalized || `${role}@mock.ontiver.dev`;
+};
+
+const createMockToken = (prefix: string): string => `${prefix}_${generateRequestId()}`;
+
+const createMockUserId = (role: BackendRole, email: string): string => {
+  const normalizedEmail = normalizeMockEmail(email, role).replace(/[^a-z0-9]+/gi, "_");
+  return `mock_${role}_${normalizedEmail}`;
+};
+
+const buildMockTokenResponse = (role: BackendRole, email: string): AuthTokenResponse => {
+  const normalizedEmail = normalizeMockEmail(email, role);
+  return {
+    accessToken: createMockToken("mock_access"),
+    refreshToken: createMockToken("mock_refresh"),
+    tokenType: "Bearer",
+    expiresIn: MOCK_SESSION_TTL_SECONDS,
+    user: {
+      id: createMockUserId(role, normalizedEmail),
+      email: normalizedEmail,
+      role,
+    },
+    permissions: [...(mockPermissionsByRole[role] ?? [])],
+  };
+};
+
+const encodeMockMfaChallenge = (role: BackendRole, email: string): string =>
+  `${MOCK_MFA_PREFIX}${encodeURIComponent(JSON.stringify({ role, email: normalizeMockEmail(email, role) }))}`;
+
+const decodeMockMfaChallenge = (challengeId: string): { role: BackendRole; email: string } | null => {
+  if (!challengeId.startsWith(MOCK_MFA_PREFIX)) return null;
+  try {
+    const parsed = JSON.parse(decodeURIComponent(challengeId.slice(MOCK_MFA_PREFIX.length))) as unknown;
+    if (!parsed || typeof parsed !== "object") return null;
+    const role = (parsed as { role?: BackendRole }).role;
+    const email = (parsed as { email?: string }).email;
+    if (!role || typeof email !== "string") return null;
+    return { role, email };
+  } catch {
+    return null;
+  }
+};
+
+const shouldUseMockMfa = (payload: LoginPayload): boolean => payload.authKey.trim().toLowerCase().includes("mfa");
+
+const assertMockTotpCode = (code: string): void => {
+  if (!/^\d{6}$/.test(code.trim())) {
+    throw new AuthApiError(401, "mfa_failed", "Enter any 6-digit code while mock auth is enabled.");
+  }
+};
+
+const assertMockRecoveryCode = (code: string): void => {
+  if (!code.trim()) {
+    throw new AuthApiError(401, "mfa_failed", "Enter any recovery code while mock auth is enabled.");
+  }
+};
+
+const getStoredMockSession = (): AuthSession => {
+  const currentSession = getStoredSession();
+  if (!currentSession) {
+    throw new AuthApiError(401, "token_invalid", "Missing mock session. Please sign in again.");
+  }
+  return currentSession;
+};
+
 export const saveSession = (session: AuthSession | null): void => {
   writeSessionState(session as SessionState | null);
 };
@@ -287,6 +450,24 @@ export const toSession = (tokens: AuthTokenResponse): AuthSession => ({
 });
 
 export const loginRequest = async (payload: LoginPayload): Promise<{ type: "tokens"; data: AuthTokenResponse } | { type: "mfa_required"; data: LoginMfaChallenge }> => {
+  if (env.mockAuthEnabled) {
+    // Temporary development bypass: skip the live `/login` request while mock auth is enabled.
+    // Turn off `VITE_MOCK_AUTH_ENABLED` later to fall back to the real request path below.
+    if (shouldUseMockMfa(payload)) {
+      return {
+        type: "mfa_required",
+        data: {
+          mfaRequired: true,
+          challengeId: encodeMockMfaChallenge(payload.role, payload.email),
+          methods: ["totp", "recovery_code"],
+        },
+      };
+    }
+    return {
+      type: "tokens",
+      data: buildMockTokenResponse(payload.role, payload.email),
+    };
+  }
   const { status, payload: response } = await request<AuthTokenResponse | LoginMfaChallenge>("POST", "/login", payload, undefined, payload.role);
   if (status === 202) {
     return {
@@ -304,6 +485,16 @@ export const loginRequest = async (payload: LoginPayload): Promise<{ type: "toke
 };
 
 export const verifyMfaRequest = async (payload: { challengeId: string; method: "totp"; code: string }): Promise<AuthTokenResponse> => {
+  if (env.mockAuthEnabled) {
+    // Temporary development bypass: keep MFA verification local so you can exercise the flow without the backend.
+    // Disable `VITE_MOCK_AUTH_ENABLED` to restore the live `/mfa/verify` request below.
+    const challenge = decodeMockMfaChallenge(payload.challengeId);
+    if (!challenge) {
+      throw new AuthApiError(401, "mfa_failed", "Mock MFA challenge is invalid or expired.");
+    }
+    assertMockTotpCode(payload.code);
+    return buildMockTokenResponse(challenge.role, challenge.email);
+  }
   const { status, payload: response } = await request<AuthTokenResponse>("POST", "/mfa/verify", payload);
   if (status !== 200) {
     throw toAuthApiError(status, response);
@@ -312,6 +503,16 @@ export const verifyMfaRequest = async (payload: { challengeId: string; method: "
 };
 
 export const verifyMfaRecoveryCodeRequest = async (payload: { challengeId: string; code: string }): Promise<AuthTokenResponse> => {
+  if (env.mockAuthEnabled) {
+    // Temporary development bypass: keep recovery-code verification local for development.
+    // Disable `VITE_MOCK_AUTH_ENABLED` to restore the live `/mfa/recovery-code/verify` request below.
+    const challenge = decodeMockMfaChallenge(payload.challengeId);
+    if (!challenge) {
+      throw new AuthApiError(401, "mfa_failed", "Mock MFA challenge is invalid or expired.");
+    }
+    assertMockRecoveryCode(payload.code);
+    return buildMockTokenResponse(challenge.role, challenge.email);
+  }
   const { status, payload: response } = await request<AuthTokenResponse>("POST", "/mfa/recovery-code/verify", payload);
   if (status !== 200) {
     throw toAuthApiError(status, response);
@@ -320,6 +521,18 @@ export const verifyMfaRecoveryCodeRequest = async (payload: { challengeId: strin
 };
 
 export const enrollMfaRequest = async (accessToken: string): Promise<MfaEnrollment> => {
+  if (env.mockAuthEnabled) {
+    // Temporary development bypass: return mock enrollment data so the MFA setup modal can still be exercised locally.
+    // Disable `VITE_MOCK_AUTH_ENABLED` to restore the live `/mfa/enroll` request below.
+    if (!accessToken.trim()) {
+      throw new AuthApiError(401, "token_invalid", "Missing active access token for mock MFA enrollment.");
+    }
+    const currentSession = getStoredMockSession();
+    return {
+      otpauthUri: `otpauth://totp/Ontiver:${encodeURIComponent(currentSession.user.email)}?secret=ONTIVERDEV123456&issuer=Ontiver`,
+      backupCodes: [...MOCK_BACKUP_CODES],
+    };
+  }
   const { status, payload: response } = await request<{
     qrCodeImageUrl?: string;
     otpauthUri?: string;
@@ -337,6 +550,15 @@ export const enrollMfaRequest = async (accessToken: string): Promise<MfaEnrollme
 };
 
 export const verifyMfaEnrollRequest = async (accessToken: string, code: string): Promise<void> => {
+  if (env.mockAuthEnabled) {
+    // Temporary development bypass: accept any 6-digit code so MFA enrollment can complete in local development.
+    // Disable `VITE_MOCK_AUTH_ENABLED` to restore the live `/mfa/enroll/verify` request below.
+    if (!accessToken.trim()) {
+      throw new AuthApiError(401, "token_invalid", "Missing active access token for mock MFA enrollment.");
+    }
+    assertMockTotpCode(code);
+    return;
+  }
   const { status, payload: response } = await request("POST", "/mfa/enroll/verify", { code }, accessToken);
   if (status !== 200 && status !== 204) {
     throw toAuthApiError(status, response);
@@ -344,6 +566,17 @@ export const verifyMfaEnrollRequest = async (accessToken: string, code: string):
 };
 
 export const signupRequest = async (payload: SignupPayload): Promise<SignupResponse> => {
+  if (env.mockAuthEnabled) {
+    // Temporary development bypass: keep signup local and return a mock auth key you can reuse later in the UI.
+    // Disable `VITE_MOCK_AUTH_ENABLED` to restore the live `/signup` request below.
+    const email = payload.email;
+    return {
+      userId: createMockUserId(payload.role, email),
+      role: payload.role,
+      status: "created",
+      generatedAuthKey: `mock-${payload.role}-auth-key`,
+    };
+  }
   const { status, payload: response } = await request<SignupResponse>("POST", "/signup", payload, undefined, payload.role);
   if (status !== 201) {
     throw toAuthApiError(status, response);
@@ -352,6 +585,15 @@ export const signupRequest = async (payload: SignupPayload): Promise<SignupRespo
 };
 
 export const refreshRequest = async (refreshToken: string): Promise<AuthTokenResponse> => {
+  if (env.mockAuthEnabled) {
+    // Temporary development bypass: rotate a fresh mock access token from the stored local session instead of the backend.
+    // Disable `VITE_MOCK_AUTH_ENABLED` to restore the live `/refresh` request below.
+    if (!refreshToken.trim()) {
+      throw new AuthApiError(401, "token_invalid", "Missing refresh token for mock session.");
+    }
+    const currentSession = getStoredMockSession();
+    return buildMockTokenResponse(currentSession.user.role, currentSession.user.email);
+  }
   const { status, payload: response } = await request<AuthTokenResponse>("POST", "/refresh", { refreshToken });
   if (status !== 200) {
     throw toAuthApiError(status, response);
@@ -360,6 +602,13 @@ export const refreshRequest = async (refreshToken: string): Promise<AuthTokenRes
 };
 
 export const logoutRequest = async (refreshToken: string, allSessions: boolean): Promise<void> => {
+  if (env.mockAuthEnabled) {
+    // Temporary development bypass: local mock auth only needs the client session cleared by the caller.
+    // Disable `VITE_MOCK_AUTH_ENABLED` to restore the live `/logout` request below.
+    void refreshToken;
+    void allSessions;
+    return;
+  }
   const { status, payload: response } = await request<undefined>("POST", "/logout", { refreshToken, allSessions });
   if (status !== 204) {
     throw toAuthApiError(status, response);
@@ -367,6 +616,14 @@ export const logoutRequest = async (refreshToken: string, allSessions: boolean):
 };
 
 export const forgotPasswordRequest = async (email: string): Promise<void> => {
+  if (env.mockAuthEnabled) {
+    // Temporary development bypass: allow the forgot-password screen to complete successfully without the backend.
+    // Disable `VITE_MOCK_AUTH_ENABLED` to restore the live `/forgot-password` request below.
+    if (!normalizeMockEmail(email, "user")) {
+      throw new AuthApiError(400, "validation_error", "Email is required.");
+    }
+    return;
+  }
   const { status, payload } = await request("POST", "/forgot-password", { email });
   if (status !== 202) {
     throw toAuthApiError(status, payload);
@@ -374,6 +631,14 @@ export const forgotPasswordRequest = async (email: string): Promise<void> => {
 };
 
 export const resetPasswordRequest = async (token: string, newPassword: string): Promise<void> => {
+  if (env.mockAuthEnabled) {
+    // Temporary development bypass: allow the reset-password screen to finish locally.
+    // Disable `VITE_MOCK_AUTH_ENABLED` to restore the live `/reset-password` request below.
+    if (!token.trim() || !newPassword.trim()) {
+      throw new AuthApiError(400, "validation_error", "Token and new password are required.");
+    }
+    return;
+  }
   const { status, payload } = await request("POST", "/reset-password", { token, newPassword });
   if (status !== 200) {
     throw toAuthApiError(status, payload);
@@ -381,6 +646,20 @@ export const resetPasswordRequest = async (token: string, newPassword: string): 
 };
 
 export const getMeRequest = async (accessToken: string): Promise<{ id: string; email: string; role: BackendRole; permissions: string[] }> => {
+  if (env.mockAuthEnabled) {
+    // Temporary development bypass: resolve `/me` from the local mock session so route guards still work.
+    // Disable `VITE_MOCK_AUTH_ENABLED` to restore the live `/me` request below.
+    if (!accessToken.trim()) {
+      throw new AuthApiError(401, "token_invalid", "Missing access token.");
+    }
+    const currentSession = getStoredMockSession();
+    return {
+      id: currentSession.user.id,
+      email: currentSession.user.email,
+      role: currentSession.user.role,
+      permissions: [...currentSession.permissions],
+    };
+  }
   const { status, payload } = await request<{ id: string; email: string; role: BackendRole; permissions: string[] }>("GET", "/me", undefined, accessToken);
   if (status !== 200) {
     throw toAuthApiError(status, payload);
@@ -526,6 +805,12 @@ export const mapAuthErrorToMessage = (error: unknown, operation?: AuthOperation)
 };
 
 export const stepUpAuth = async (payload?: Record<string, unknown>): Promise<AuthSession> => {
+  if (env.mockAuthEnabled) {
+    // Temporary development bypass: step-up returns the active mock session locally.
+    // Disable `VITE_MOCK_AUTH_ENABLED` to restore the live `/step-up` request below.
+    void payload;
+    return getStoredMockSession();
+  }
   const { status, payload: response } = await request<AuthSession>("POST", "/step-up", payload ?? {});
   return assertSuccess(status, response);
 };

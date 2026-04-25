@@ -296,52 +296,57 @@ export default function VerificationsHub() {
   return (
     <div className="space-y-6 pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Verifications</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-3xl font-bold tracking-tight text-ent-text">Verifications</h1>
+        <p className="text-verza-gray mt-1">
           Unified verification workspace for requests, direct checks, and batch processing.
         </p>
       </div>
 
       <Tabs value={surfaceTab} onValueChange={setSurfaceTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="requests">Requests</TabsTrigger>
-          <TabsTrigger value="workbench">Single Workbench</TabsTrigger>
-          <TabsTrigger value="batch">Batch Actions</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 bg-white/[0.05] p-1 rounded-xl h-12">
+          <TabsTrigger value="requests" className="data-[state=active]:bg-ent-card data-[state=active]:text-ent-text text-verza-gray rounded-lg transition-all h-full">Requests</TabsTrigger>
+          <TabsTrigger value="workbench" className="data-[state=active]:bg-ent-card data-[state=active]:text-ent-text text-verza-gray rounded-lg transition-all h-full">Single Workbench</TabsTrigger>
+          <TabsTrigger value="batch" className="data-[state=active]:bg-ent-card data-[state=active]:text-ent-text text-verza-gray rounded-lg transition-all h-full">Batch Actions</TabsTrigger>
         </TabsList>
 
         <TabsContent value="requests" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Total</CardTitle></CardHeader>
-              <CardContent className="text-2xl font-semibold">{statsQuery.data?.totalVerifications ?? 0}</CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Pending</CardTitle></CardHeader>
-              <CardContent className="text-2xl font-semibold">{statsQuery.data?.pending ?? 0}</CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Approved</CardTitle></CardHeader>
-              <CardContent className="text-2xl font-semibold">{statsQuery.data?.approved ?? 0}</CardContent>
-            </Card>
+            <div className="bg-ent-card border border-white/[0.05] rounded-2xl p-6">
+              <div className="text-sm font-semibold text-verza-gray mb-2">Total</div>
+              <div className="text-3xl font-bold text-ent-text">{statsQuery.data?.totalVerifications ?? 0}</div>
+            </div>
+            <div className="bg-ent-card border border-white/[0.05] rounded-2xl p-6">
+              <div className="text-sm font-semibold text-verza-gray mb-2">Pending</div>
+              <div className="text-3xl font-bold text-ent-text">{statsQuery.data?.pending ?? 0}</div>
+            </div>
+            <div className="bg-ent-card border border-white/[0.05] rounded-2xl p-6">
+              <div className="text-sm font-semibold text-verza-gray mb-2">Approved</div>
+              <div className="text-3xl font-bold text-ent-text">{statsQuery.data?.approved ?? 0}</div>
+            </div>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Verification Requests</span>
-                <Button variant="outline" onClick={refreshRequests} disabled={isRefreshing}>
-                  {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                </Button>
-              </CardTitle>
-              <CardDescription>Queue, status checks, and detail access in one table.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="enterprise-card rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-ent-text">Verification Requests</h3>
+                <p className="text-sm text-verza-gray">Queue, status checks, and detail access in one table.</p>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={refreshRequests} 
+                disabled={isRefreshing}
+                className="bg-ent-muted border-ent-border text-ent-text hover:bg-ent-text/10"
+              >
+                {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              </Button>
+            </div>
+            <div className="space-y-4">
               <div className="flex flex-col md:flex-row gap-2">
                 <Select value={requestsFilter} onValueChange={setRequestsFilter}>
-                  <SelectTrigger className="w-full md:w-48">
+                  <SelectTrigger className="w-full md:w-48 bg-ent-muted border-ent-border text-ent-text focus:ring-verza-emerald/20">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-ent-card border-ent-border text-ent-text">
                     <SelectItem value="all">All</SelectItem>
                     <SelectItem value="pending">Pending/In Progress</SelectItem>
                     <SelectItem value="verified">Verified</SelectItem>
@@ -349,37 +354,56 @@ export default function VerificationsHub() {
                   </SelectContent>
                 </Select>
                 <div className="relative w-full">
-                  <Search className="h-4 w-4 absolute left-2 top-3 text-muted-foreground" />
-                  <Input className="pl-8" placeholder="Search id, type, or subject..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} />
+                  <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-verza-gray" />
+                  <Input 
+                    className="pl-9 bg-ent-muted border-ent-border text-ent-text placeholder:text-verza-gray/50 focus:border-verza-emerald/30 focus:ring-0" 
+                    placeholder="Search id, type, or subject..." 
+                    value={searchValue} 
+                    onChange={(e) => setSearchValue(e.target.value)} 
+                  />
                 </div>
               </div>
 
-              <div className="rounded-md border">
+              <div className="rounded-xl border border-ent-border overflow-hidden bg-ent-text/5">
                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Request ID</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Action</TableHead>
+                  <TableHeader className="bg-ent-muted">
+                    <TableRow className="hover:bg-transparent border-ent-border">
+                      <TableHead className="text-verza-gray font-medium">Request ID</TableHead>
+                      <TableHead className="text-verza-gray font-medium">Type</TableHead>
+                      <TableHead className="text-verza-gray font-medium">Status</TableHead>
+                      <TableHead className="text-verza-gray font-medium">Date</TableHead>
+                      <TableHead className="text-verza-gray font-medium">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {requestsQuery.isLoading ? (
-                      <TableRow><TableCell colSpan={5}>Loading requests...</TableCell></TableRow>
+                      <TableRow className="border-ent-border"><TableCell colSpan={5} className="text-center py-8 text-verza-gray">Loading requests...</TableCell></TableRow>
                     ) : filteredRequests.length === 0 ? (
-                      <TableRow><TableCell colSpan={5}>No requests found.</TableCell></TableRow>
+                      <TableRow className="border-ent-border"><TableCell colSpan={5} className="text-center py-8 text-verza-gray">No requests found.</TableCell></TableRow>
                     ) : (
                       filteredRequests.slice(0, 100).map((req) => (
-                        <TableRow key={req.verificationId}>
-                          <TableCell className="font-mono text-xs">{req.verificationId}</TableCell>
-                          <TableCell className="capitalize">{req.type.replace("_", " ")}</TableCell>
-                          <TableCell><Badge variant="outline">{req.status}</Badge></TableCell>
-                          <TableCell>{new Date(req.createdAt).toLocaleDateString()}</TableCell>
+                        <TableRow key={req.verificationId} className="border-ent-border hover:bg-ent-muted transition-colors">
+                          <TableCell className="font-mono text-xs text-ent-text">{req.verificationId}</TableCell>
+                          <TableCell className="capitalize text-ent-text/90">{req.type.replace("_", " ")}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="border-ent-border text-verza-gray bg-ent-muted">
+                              {req.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-verza-gray text-sm">{new Date(req.createdAt).toLocaleDateString()}</TableCell>
                           <TableCell className="space-x-2">
-                            <Link href={`/enterprise/requests/${req.verificationId}`}><Button size="sm" variant="outline"><Eye className="h-4 w-4 mr-1" />View</Button></Link>
-                            <Button size="sm" variant="outline" onClick={() => checkStatus(req.verificationId)} disabled={pollingId === req.verificationId}>
+                             <Link href={`/enterprise/requests/${req.verificationId}`}>
+                              <Button size="sm" variant="outline" className="bg-ent-text/10 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/10">
+                                <Eye className="h-4 w-4 mr-1" />View
+                              </Button>
+                            </Link>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => checkStatus(req.verificationId)} 
+                              disabled={pollingId === req.verificationId}
+                              className="bg-ent-text/10 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/10"
+                            >
                               {pollingId === req.verificationId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4 mr-1" />}
                               Status
                             </Button>
@@ -388,15 +412,17 @@ export default function VerificationsHub() {
                               variant="outline"
                               onClick={() => openReverifyDialog(req.verificationId)}
                               disabled={lifecycleLoadingId === req.verificationId}
+                              className="bg-ent-text/10 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/10"
                             >
                               {lifecycleLoadingId === req.verificationId ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
                               Re-verify
                             </Button>
                             <Button
                               size="sm"
-                              variant="destructive"
+                              variant="ghost"
                               onClick={() => openRevokeDialog(req.verificationId)}
                               disabled={lifecycleLoadingId === req.verificationId}
+                              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                             >
                               Revoke
                             </Button>
@@ -404,6 +430,7 @@ export default function VerificationsHub() {
                               size="sm"
                               variant="outline"
                               onClick={() => openHistoryDrawer(req.verificationId)}
+                              className="bg-ent-text/10 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/10"
                             >
                               <Clock3 className="h-4 w-4 mr-1" />
                               History
@@ -415,8 +442,8 @@ export default function VerificationsHub() {
                   </TableBody>
                 </Table>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="workbench" className="space-y-4">

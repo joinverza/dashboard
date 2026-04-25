@@ -15,18 +15,22 @@ import { bankingService, getBankingErrorMessage } from "@/services/bankingServic
 export default function ProposalDetail() {
   const [match, params] = useRoute("/admin/governance/:id");
   const [, setLocation] = useLocation();
-  if (!match) return null;
+  const proposalId = params?.id ?? "";
+  const detailEnabled = match && Boolean(proposalId);
 
   const proposalQuery = useQuery({
-    queryKey: ["admin", "governance", params.id],
-    queryFn: () => bankingService.getGovernanceProposal(params.id),
+    queryKey: ["admin", "governance", proposalId],
+    queryFn: () => bankingService.getGovernanceProposal(proposalId),
+    enabled: detailEnabled,
   });
 
   const executeMutation = useMutation({
-    mutationFn: () => bankingService.executeGovernanceProposal(params.id),
+    mutationFn: () => bankingService.executeGovernanceProposal(proposalId),
     onSuccess: () => toast.success("Proposal execution queued."),
     onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to execute proposal")),
   });
+
+  if (!detailEnabled) return null;
 
   if (proposalQuery.isLoading) {
     return <div className="h-[50vh] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;

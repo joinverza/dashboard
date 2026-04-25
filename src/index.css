@@ -13,6 +13,12 @@
   --color-verza-gray: #9ca3af;
   --color-verza-kelly: #06140F;
 
+  /* Enterprise Dynamic Colors */
+  --color-ent-text: var(--enterprise-text);
+  --color-ent-bg: var(--enterprise-bg);
+  --color-ent-card: var(--enterprise-card-bg);
+  --color-ent-border: var(--enterprise-shell-border);
+
   /* UI System Colors */
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -63,9 +69,11 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* LIGHT MODE - Premium Ontiver Theme */
+/* ──────────────────────────────────────────────────────────
+   LIGHT MODE — Premium Ontiver Theme
+   ────────────────────────────────────────────────────────── */
 :root {
-  /* Brand Colors - Kept for reference/usage in other vars */
+  /* Brand Colors */
   --verza-forest: #06140F;
   --verza-emerald: #1ED760;
   --verza-lime: #a3e635;
@@ -77,47 +85,47 @@
   --verza-gray: #9ca3af;
   --verza-kelly: #06140F;
 
-  /* UI System Colors */
-  --background: 220 20% 98%;
-  --foreground: 220 20% 10%;
-  --border: 220 15% 90%;
-  --input: 220 15% 90%;
-  --ring: 88 50% 53%;
+  /* UI System Colors — Light */
+  --background: 140 18% 97%;
+  --foreground: 150 40% 6%;
+  --border: 140 12% 90%;
+  --input: 140 12% 90%;
+  --ring: 145 63% 42%;
   
   --card: 0 0% 100%;
-  --card-foreground: 220 20% 10%;
-  --card-border: 220 15% 92%;
+  --card-foreground: 150 40% 6%;
+  --card-border: 140 12% 91%;
   
   --popover: 0 0% 100%;
-  --popover-foreground: 220 20% 10%;
-  --popover-border: 220 15% 90%;
+  --popover-foreground: 150 40% 6%;
+  --popover-border: 140 12% 90%;
   
-  --primary: 88 50% 45%;
+  --primary: 145 63% 42%;
   --primary-foreground: 0 0% 100%;
   
-  --secondary: 220 20% 96%;
-  --secondary-foreground: 220 20% 10%;
+  --secondary: 140 16% 95%;
+  --secondary-foreground: 150 40% 6%;
   
-  --muted: 220 20% 96%;
-  --muted-foreground: 220 10% 40%;
+  --muted: 140 14% 95%;
+  --muted-foreground: 150 10% 42%;
   
-  --accent: 88 50% 90%;
-  --accent-foreground: 88 50% 20%;
+  --accent: 145 40% 92%;
+  --accent-foreground: 145 60% 22%;
   
   --destructive: 0 80% 60%;
   --destructive-foreground: 0 0% 98%;
 
-  --sidebar: 0 0% 100%;
-  --sidebar-foreground: 220 20% 10%;
-  --sidebar-border: 220 15% 90%;
-  --sidebar-primary: 88 50% 53%;
+  --sidebar: 150 24% 18%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-border: 150 18% 24%;
+  --sidebar-primary: 145 63% 42%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 220 20% 96%;
-  --sidebar-accent-foreground: 220 20% 10%;
-  --sidebar-ring: 88 50% 53%;
+  --sidebar-accent: 150 18% 22%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-ring: 145 63% 42%;
 
   /* Charts */
-  --chart-1: 88 50% 53%;
+  --chart-1: 145 63% 42%;
   --chart-2: 160 60% 45%;
   --chart-3: 30 80% 55%;
   --chart-4: 280 65% 60%;
@@ -126,10 +134,10 @@
   /* Elevation & Effects */
   --radius: 0.75rem;
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.04);
+  --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.15);
   --shadow-glow: 0 0 15px rgba(30, 215, 96, 0.3);
 
   /* Legacy / Compatibility Variables */
@@ -152,9 +160,24 @@
   --muted-border: hsl(var(--muted));
   --accent-border: hsl(var(--accent));
   --destructive-border: hsl(var(--destructive));
+
+  /* Enterprise Theme Variables — Light Mode */
+  --enterprise-bg: #f0f5f2;
+  --enterprise-text: #06140F;
+  --enterprise-card-bg: rgba(255, 255, 255, 0.72);
+  --enterprise-card-border: rgba(6, 20, 15, 0.08);
+  --enterprise-shell-bg: rgba(255, 255, 255, 0.65);
+  --enterprise-shell-border: rgba(6, 20, 15, 0.09);
+  --enterprise-sidebar-bg: #122a20;
+  --enterprise-header-bg: rgba(255, 255, 255, 0.82);
+  --enterprise-muted-bg: rgba(6, 20, 15, 0.03);
+  --enterprise-muted-border: rgba(6, 20, 15, 0.06);
+  --enterprise-grid-color: rgba(6, 20, 15, 0.03);
 }
 
-/* DARK MODE - God Mode */
+/* ──────────────────────────────────────────────────────────
+   DARK MODE — God Mode
+   ────────────────────────────────────────────────────────── */
 .dark {
   /* Brand Colors */
   --verza-forest: #06140F;
@@ -168,46 +191,46 @@
   --verza-gray: #9ca3af;
   --verza-kelly: #06140F;
 
-  /* UI System Colors */
-  --background: 240 10% 4%; /* #09090b - Deepest Zinc */
-  --foreground: 0 0% 98%;
-  --border: 240 5% 15%;
-  --input: 240 5% 15%;
-  --ring: 88 50% 53%;
+  /* UI System Colors — Dark */
+  --background: 160 20% 4%;
+  --foreground: 0 0% 97%;
+  --border: 160 10% 14%;
+  --input: 160 10% 14%;
+  --ring: 145 63% 42%;
 
-  --card: 240 10% 6%;
-  --card-foreground: 0 0% 98%;
-  --card-border: 240 5% 15%;
+  --card: 160 18% 6%;
+  --card-foreground: 0 0% 97%;
+  --card-border: 160 10% 14%;
 
-  --popover: 240 10% 5%;
-  --popover-foreground: 0 0% 98%;
-  --popover-border: 240 5% 15%;
+  --popover: 160 18% 5%;
+  --popover-foreground: 0 0% 97%;
+  --popover-border: 160 10% 14%;
 
-  --primary: 88 50% 53%;
+  --primary: 145 63% 46%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 240 5% 15%;
-  --secondary-foreground: 0 0% 98%;
+  --secondary: 160 10% 14%;
+  --secondary-foreground: 0 0% 97%;
 
-  --muted: 240 5% 15%;
-  --muted-foreground: 240 5% 65%;
+  --muted: 160 10% 14%;
+  --muted-foreground: 160 8% 58%;
 
-  --accent: 240 5% 15%;
-  --accent-foreground: 0 0% 98%;
+  --accent: 160 10% 14%;
+  --accent-foreground: 0 0% 97%;
 
   --destructive: 0 62% 30%;
   --destructive-foreground: 0 0% 98%;
 
-  --sidebar: 240 10% 4%;
+  --sidebar: 155 35% 7%;
   --sidebar-foreground: 0 0% 98%;
-  --sidebar-border: 240 5% 15%;
-  --sidebar-primary: 88 50% 53%;
+  --sidebar-border: 155 20% 14%;
+  --sidebar-primary: 145 63% 46%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 240 5% 15%;
+  --sidebar-accent: 155 20% 12%;
   --sidebar-accent-foreground: 0 0% 98%;
 
-  /* Charts - Neon/Glow optimized */
-  --chart-1: 88 60% 60%;
+  /* Charts */
+  --chart-1: 145 63% 50%;
   --chart-2: 160 70% 50%;
   --chart-3: 30 90% 60%;
   --chart-4: 280 75% 65%;
@@ -227,8 +250,24 @@
   --opaque-button-border-intensity: 9;
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
+
+  /* Enterprise Theme Variables — Dark Mode */
+  --enterprise-bg: #050f0a;
+  --enterprise-text: #f0f5f2;
+  --enterprise-card-bg: rgba(255, 255, 255, 0.028);
+  --enterprise-card-border: rgba(255, 255, 255, 0.065);
+  --enterprise-shell-bg: rgba(6, 20, 15, 0.55);
+  --enterprise-shell-border: rgba(255, 255, 255, 0.07);
+  --enterprise-sidebar-bg: rgba(6, 20, 15, 0.88);
+  --enterprise-header-bg: rgba(5, 15, 10, 0.78);
+  --enterprise-muted-bg: rgba(255, 255, 255, 0.018);
+  --enterprise-muted-border: rgba(255, 255, 255, 0.045);
+  --enterprise-grid-color: rgba(255, 255, 255, 0.015);
 }
 
+/* ──────────────────────────────────────────────────────────
+   BASE LAYER
+   ────────────────────────────────────────────────────────── */
 @layer base {
   * {
     @apply border-border;
@@ -236,24 +275,19 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    /* Premium Background Mesh */
-    background-image: 
-      radial-gradient(circle at 50% 0%, rgba(30, 215, 96, 0.03) 0%, transparent 50%),
-      radial-gradient(circle at 0% 50%, rgba(30, 215, 96, 0.02) 0%, transparent 40%),
-      radial-gradient(circle at 100% 100%, rgba(6, 20, 15, 0.05) 0%, transparent 40%);
-    background-attachment: fixed;
   }
   
   .dark body {
-    background-image: 
-      radial-gradient(circle at 50% 0%, rgba(30, 215, 96, 0.08) 0%, transparent 60%),
-      radial-gradient(circle at 0% 50%, rgba(30, 215, 96, 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 100% 100%, rgba(6, 20, 15, 0.1) 0%, transparent 50%);
+    @apply bg-background text-foreground;
   }
 }
 
+/* ──────────────────────────────────────────────────────────
+   UTILITY LAYER — Glass System, Enterprise Components
+   ────────────────────────────────────────────────────────── */
 @layer utilities {
-  /* Glassmorphism System */
+
+  /* ── Glass Panels (non-enterprise) ── */
   .glass-panel {
     @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm;
   }
@@ -282,7 +316,7 @@
     @apply bg-zinc-950/70 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-black/20;
   }
 
-  /* Typography Effects */
+  /* ── Typography Effects ── */
   .text-glow {
     text-shadow: 0 0 20px rgba(30, 215, 96, 0.5);
   }
@@ -291,7 +325,7 @@
     text-shadow: 0 1px 2px rgba(0,0,0,0.1);
   }
 
-  /* Utility Overrides */
+  /* ── Utility Overrides ── */
   input[type="search"]::-webkit-search-cancel-button {
     @apply hidden;
   }
@@ -305,7 +339,7 @@
   .no-default-hover-elevate { --empty-rule-fix: initial; }
   .no-default-active-elevate { --empty-rule-fix: initial; }
 
-  /* Elevate System Preservation */
+  /* ── Elevate System Preservation ── */
   .toggle-elevate::before,
   .toggle-elevate-2::before {
     content: "";
@@ -330,5 +364,241 @@
   .active-elevate-2:not(.no-default-active-elevate) {
     position: relative;
     z-index: 0;
+  }
+
+  /* ──────────────────────────────────────────────────────
+     ENTERPRISE DESIGN SYSTEM — Premium Green Glass
+     ────────────────────────────────────────────────────── */
+
+  /* ── Stage (page background) ── */
+  .enterprise-stage {
+    background-color: var(--enterprise-bg);
+    color: var(--enterprise-text);
+  }
+
+  /* ── Subtle Grid Overlay ── */
+  .enterprise-grid {
+    background-image: 
+      linear-gradient(var(--enterprise-grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--enterprise-grid-color) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  /* ── Shell (main content wrapper) ── */
+  .enterprise-shell {
+    background: var(--enterprise-shell-bg);
+    border: 1px solid var(--enterprise-shell-border);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(28px);
+  }
+
+  .dark .enterprise-shell {
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.4);
+  }
+
+  /* ── Glass Card (primary transparent card) ── */
+  .enterprise-card {
+    background: var(--enterprise-card-bg);
+    border: 1px solid var(--enterprise-card-border);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.04);
+    backdrop-filter: blur(20px);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark .enterprise-card {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  }
+
+  .enterprise-card:hover {
+    border-color: rgba(30, 215, 96, 0.22);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.08);
+  }
+
+  .dark .enterprise-card:hover {
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
+  }
+
+  /* ── Muted Card ── */
+  .enterprise-card-muted {
+    background: var(--enterprise-muted-bg);
+    border: 1px solid var(--enterprise-muted-border);
+    backdrop-filter: blur(16px);
+  }
+
+  /* ── Active / Highlighted Card ── */
+  .enterprise-active-card {
+    background: rgba(30, 215, 96, 0.04);
+    border: 1px solid rgba(30, 215, 96, 0.2);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(24px);
+  }
+
+  .dark .enterprise-active-card {
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  /* ── Pill badges ── */
+  .enterprise-pill {
+    background: var(--enterprise-muted-bg);
+    border: 1px solid var(--enterprise-muted-border);
+    backdrop-filter: blur(14px);
+    color: var(--enterprise-text);
+  }
+
+  .enterprise-glow-pill {
+    background: rgba(30, 215, 96, 0.1);
+    border: 1px solid rgba(30, 215, 96, 0.3);
+    color: #1ed760;
+    box-shadow: 0 0 15px rgba(30, 215, 96, 0.1);
+  }
+
+  /* ── Sidebar ── */
+  .enterprise-sidebar {
+    background: var(--enterprise-sidebar-bg);
+    border-right: none;
+    backdrop-filter: blur(34px);
+    border-radius: 0 24px 24px 0;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .enterprise-sidebar {
+    box-shadow: 8px 0 60px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Sidebar background image overlay */
+  .enterprise-sidebar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: var(--sidebar-bg-image);
+    background-size: cover;
+    background-position: center;
+    opacity: 0.3;
+    z-index: 0;
+    border-radius: inherit;
+  }
+
+  .dark .enterprise-sidebar::before {
+    opacity: 0.18;
+  }
+
+  /* Sidebar inner gradient overlay for readability */
+  .enterprise-sidebar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(6, 20, 15, 0.3) 0%, rgba(6, 20, 15, 0.6) 50%, rgba(6, 20, 15, 0.4) 100%);
+    z-index: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .enterprise-sidebar > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  .enterprise-header {
+    background: var(--enterprise-header-bg);
+    border-bottom: 1px solid var(--enterprise-shell-border);
+    backdrop-filter: blur(24px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  }
+
+  .dark .enterprise-header {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  }
+
+  /* ── Decorative Light Streak ── */
+  .enterprise-light-streak {
+    background: linear-gradient(90deg, transparent, rgba(30, 215, 96, 0.15), transparent);
+    filter: blur(15px);
+    pointer-events: none;
+  }
+
+  /* ── Table Rows ── */
+  .enterprise-table-row {
+    background: var(--enterprise-muted-bg);
+    border-bottom: 1px solid var(--enterprise-muted-border);
+    transition: background 0.2s ease;
+  }
+
+  .enterprise-table-row:hover {
+    background: var(--enterprise-muted-bg);
+    filter: brightness(1.02);
+  }
+
+  .enterprise-table-row:last-child {
+    border-bottom: 0;
+  }
+
+  /* ── World Glow Dot ── */
+  .enterprise-world-glow {
+    background: #1ed760;
+    box-shadow: 0 0 12px rgba(30, 215, 96, 0.6);
+  }
+
+  /* ── Monitor Shell (Dashboard wrapper) ── */
+  .enterprise-monitor-shell {
+    background: var(--enterprise-shell-bg);
+    border: 1px solid var(--enterprise-shell-border);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.06);
+  }
+
+  .dark .enterprise-monitor-shell {
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ── Sidebar Group Header ── */
+  .sidebar-group-label {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.35);
+    padding: 0 0.75rem;
+    margin-bottom: 0.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .sidebar-group-label:first-child {
+    margin-top: 0;
+  }
+
+  /* ── Nav Item Active Left Bar ── */
+  .sidebar-nav-active-bar {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    border-radius: 0 4px 4px 0;
+    background: #1ED760;
+    box-shadow: 0 0 12px rgba(30, 215, 96, 0.6);
+  }
+
+  /* ── Scrollbar Styling ── */
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
   }
 }

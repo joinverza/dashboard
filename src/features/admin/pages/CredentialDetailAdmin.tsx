@@ -17,23 +17,27 @@ export default function CredentialDetailAdmin() {
   const queryClient = useQueryClient();
   const [match, params] = useRoute("/admin/credentials/:id");
   const [, setLocation] = useLocation();
-  if (!match) return null;
+  const credentialId = params?.id ?? "";
+  const detailEnabled = match && Boolean(credentialId);
 
   const credentialQuery = useQuery({
-    queryKey: ["admin", "credentials", params.id],
-    queryFn: () => bankingService.getCredentialDetail(params.id),
+    queryKey: ["admin", "credentials", credentialId],
+    queryFn: () => bankingService.getCredentialDetail(credentialId),
+    enabled: detailEnabled,
   });
   const revokeMutation = useMutation({
-    mutationFn: () => bankingService.revokeCredential(params.id),
+    mutationFn: () => bankingService.revokeCredential(credentialId),
     onSuccess: async () => {
       toast.success("Credential revoked.");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin", "credentials"] }),
-        queryClient.invalidateQueries({ queryKey: ["admin", "credentials", params.id] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "credentials", credentialId] }),
       ]);
     },
     onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to revoke credential")),
   });
+
+  if (!detailEnabled) return null;
 
   if (credentialQuery.isLoading) {
     return <div className="h-[50vh] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;

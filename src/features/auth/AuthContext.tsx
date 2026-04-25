@@ -2,7 +2,9 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { env } from "@/config/env";
 import {
+  DEV_ROUTE_UNLOCK_PERMISSIONS,
   type AuthSession,
   type LoginMfaChallenge,
   type LoginPayload,
@@ -59,6 +61,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const MFA_FIRST_LOGIN_PENDING_STORAGE_KEY = "verza:auth:mfa:firstLoginPending";
+
+// TEMPORARY DEVELOPMENT ONLY:
+// This file currently supports mock-auth and temporary role/permission overrides for local editing.
+// Future live auth work should be added against the normal session flow, not layered into the temporary bypasses.
 
 const getMfaPendingMap = (): Record<string, true> => {
   if (typeof window === "undefined") return {};
@@ -378,14 +384,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMfaBackupCodes([]);
   };
 
-  const hasPermission = (permission: string): boolean => permissions.includes(permission);
+  // Temporary development bypass: expose a wide permission set while cross-role route unlock is enabled.
+  // Set `VITE_DEV_UNLOCK_ALL_ROUTES=false` later to go back to the session's real role permissions.
+  const effectivePermissions = env.devUnlockAllRoutes ? DEV_ROUTE_UNLOCK_PERMISSIONS : permissions;
+  const hasPermission = (permission: string): boolean =>
+    env.devUnlockAllRoutes || effectivePermissions.includes(permission);
 
   return (
     <AuthContext.Provider
       value={{
         user,
         isAuthenticated: !!user,
-        permissions,
+        permissions: effectivePermissions,
         mfaChallenge,
         mfaEnrollment,
         mfaBackupCodes,

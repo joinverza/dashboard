@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { bankingService } from '@/services/bankingService';
 import type { ComplianceReport } from '@/types/banking';
+import BackButton from '@/components/shared/BackButton';
 
 export default function ComplianceReports() {
   const [filterType, setFilterType] = useState('all');
@@ -90,6 +91,7 @@ export default function ComplianceReports() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
+      <BackButton to="/enterprise/reports" label="Back to Reports" />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Compliance Reports</h1>
@@ -102,7 +104,7 @@ export default function ComplianceReports() {
           
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-verza-primary hover:bg-verza-primary/90 text-white shadow-glow">
+              <Button className="bg-verza-primary hover:bg-verza-primary/90 text-ent-text shadow-glow">
                 <FileText className="mr-2 h-4 w-4" /> Generate New Report
               </Button>
             </DialogTrigger>

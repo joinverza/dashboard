@@ -26,6 +26,7 @@ export interface NavItem {
   path: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  group?: string;
 }
 
 export const userNavItems: NavItem[] = [
@@ -50,13 +51,13 @@ export const verifierNavItems: NavItem[] = [
 ];
 
 export const enterpriseNavItems: NavItem[] = [
-  { path: "/enterprise", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/enterprise/verifications", label: "Verifications", icon: Shield },
-  { path: "/enterprise/email-verifications", label: "Email Verification", icon: MailCheck },
-  { path: "/enterprise/tools", label: "Operations Hub", icon: Wrench },
-  { path: "/enterprise/users", label: "Users", icon: Users },
-  { path: "/enterprise/reports", label: "Reports", icon: BarChart3 },
-  { path: "/enterprise/platform", label: "Platform", icon: Wrench },
+  { path: "/enterprise", label: "Dashboard", icon: LayoutDashboard, group: "MAIN" },
+  { path: "/enterprise/verifications", label: "Verifications", icon: Shield, group: "MAIN" },
+  { path: "/enterprise/email-verifications", label: "Email Verification", icon: MailCheck, group: "MAIN" },
+  { path: "/enterprise/tools", label: "Operations Hub", icon: Wrench, group: "OPERATIONS" },
+  { path: "/enterprise/users", label: "Users", icon: Users, group: "OPERATIONS" },
+  { path: "/enterprise/reports", label: "Reports", icon: BarChart3, group: "REPORTS" },
+  { path: "/enterprise/platform", label: "Platform", icon: Wrench, group: "REPORTS" },
 ];
 
 export const managerNavItems: NavItem[] = [

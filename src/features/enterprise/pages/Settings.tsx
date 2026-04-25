@@ -17,6 +17,7 @@ import { bankingService } from '@/services/bankingService';
 import type { ApiSecuritySettings, CompanySettings } from '@/types/banking';
 import { toast } from 'sonner';
 import { TabHelpCard } from '@/components/shared/TabHelpCard';
+import BackButton from '@/components/shared/BackButton';
 
 export default function EnterpriseSettings() {
   const [isLoading, setIsLoading] = useState(true);
@@ -111,15 +112,16 @@ export default function EnterpriseSettings() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
+      <BackButton to="/enterprise/platform" label="Back to Platform" />
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
-        <p className="text-muted-foreground">Manage your company profile and preferences.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-ent-text">Settings</h1>
+        <p className="text-verza-gray">Manage your company profile and preferences.</p>
       </div>
       <Tabs defaultValue="company" className="space-y-6">
-        <TabsList className="bg-card/50 backdrop-blur-sm border border-border/50 p-1">
-          <TabsTrigger value="company">Company Profile</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
+        <TabsList className="bg-ent-muted backdrop-blur-md border border-ent-border p-1 rounded-xl">
+          <TabsTrigger value="company" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Company Profile</TabsTrigger>
+          <TabsTrigger value="notifications" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Notifications</TabsTrigger>
+          <TabsTrigger value="security" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Security</TabsTrigger>
         </TabsList>
 
         <TabsContent value="company">
@@ -132,12 +134,12 @@ export default function EnterpriseSettings() {
             useWhen="you need to update legal/contact information or branding assets."
             highlights={['Business details', 'Contact fields', 'Logo management']}
           />
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardHeader>
-              <CardTitle>Company Information</CardTitle>
-              <CardDescription>Update your company details and public profile.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-8">
+          <div className="enterprise-card rounded-2xl p-6 shadow-none">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-ent-text">Company Information</h2>
+              <p className="text-sm text-verza-gray mt-1">Update your company details and public profile.</p>
+            </div>
+            <div className="space-y-8">
               <input
                 ref={logoInputRef}
                 type="file"
@@ -152,22 +154,22 @@ export default function EnterpriseSettings() {
                   <AvatarFallback>{settings?.companyName?.substring(0, 2).toUpperCase() || 'CP'}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
-                  <h3 className="font-medium">Company Logo</h3>
+                  <h3 className="font-medium text-ent-text">Company Logo</h3>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => logoInputRef.current?.click()}>Upload New</Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={handleLogoRemove}>Remove</Button>
+                    <Button variant="outline" size="sm" onClick={() => logoInputRef.current?.click()} className="border-ent-border bg-ent-text/10 text-ent-text hover:bg-ent-text/10 hover:border-ent-border">Upload New</Button>
+                    <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handleLogoRemove}>Remove</Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Recommended size: 400x400px. Max size: 2MB.</p>
+                  <p className="text-xs text-verza-gray/60">Recommended size: 400x400px. Max size: 2MB.</p>
                 </div>
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Company Name</Label>
+                  <Label className="text-verza-gray">Company Name</Label>
                   <div className="relative">
-                    <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Building2 className="absolute left-3 top-3 h-4 w-4 text-verza-gray/60" />
                     <Input 
-                      className="pl-9" 
+                      className="pl-9 bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]" 
                       value={settings?.companyName || ''} 
                       onChange={(e) => setSettings({...settings!, companyName: e.target.value})}
                     />
@@ -175,12 +177,12 @@ export default function EnterpriseSettings() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Industry</Label>
+                  <Label className="text-verza-gray">Industry</Label>
                   <Select 
                     value={settings?.industry || 'tech'} 
                     onValueChange={(v) => setSettings({...settings!, industry: v})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]">
                       <SelectValue placeholder="Select industry" />
                     </SelectTrigger>
                     <SelectContent>
@@ -194,11 +196,11 @@ export default function EnterpriseSettings() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Website</Label>
+                  <Label className="text-verza-gray">Website</Label>
                   <div className="relative">
-                    <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Globe className="absolute left-3 top-3 h-4 w-4 text-verza-gray/60" />
                     <Input 
-                      className="pl-9" 
+                      className="pl-9 bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]" 
                       value={settings?.website || ''} 
                       onChange={(e) => setSettings({...settings!, website: e.target.value})}
                     />
@@ -206,19 +208,20 @@ export default function EnterpriseSettings() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Tax ID / EIN</Label>
+                  <Label className="text-verza-gray">Tax ID / EIN</Label>
                   <Input 
+                    className="bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]"
                     value={settings?.taxId || ''} 
                     onChange={(e) => setSettings({...settings!, taxId: e.target.value})}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Email Address</Label>
+                  <Label className="text-verza-gray">Email Address</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-verza-gray/60" />
                     <Input 
-                      className="pl-9" 
+                      className="pl-9 bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]" 
                       value={settings?.email || ''} 
                       onChange={(e) => setSettings({...settings!, email: e.target.value})}
                     />
@@ -226,11 +229,11 @@ export default function EnterpriseSettings() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Phone Number</Label>
+                  <Label className="text-verza-gray">Phone Number</Label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-verza-gray/60" />
                     <Input 
-                      className="pl-9" 
+                      className="pl-9 bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]" 
                       value={settings?.phone || ''} 
                       onChange={(e) => setSettings({...settings!, phone: e.target.value})}
                     />
@@ -238,25 +241,25 @@ export default function EnterpriseSettings() {
                 </div>
 
                 <div className="col-span-2 space-y-2">
-                  <Label>Address</Label>
+                  <Label className="text-verza-gray">Address</Label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-verza-gray/60" />
                     <Textarea 
-                      className="pl-9 min-h-[80px]" 
+                      className="pl-9 min-h-[80px] bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]" 
                       value={settings?.address || ''} 
                       onChange={(e) => setSettings({...settings!, address: e.target.value})}
                     />
                   </div>
                 </div>
               </div>
-            </CardContent>
-            <CardFooter className="flex justify-end border-t border-border/50 pt-6">
-              <Button onClick={handleSave} disabled={isSaving}>
+            </div>
+            <div className="flex justify-end border-t border-ent-border mt-8 pt-6">
+              <Button onClick={handleSave} disabled={isSaving} className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 transition-all rounded-full px-8">
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} 
                 Save Changes
               </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="notifications">
@@ -269,20 +272,20 @@ export default function EnterpriseSettings() {
             useWhen="different teams need different channels for critical and non-critical updates."
             highlights={['Email alerts', 'SMS alerts', 'Webhook notifications']}
           />
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>Manage how you receive updates and alerts.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <div className="enterprise-card rounded-2xl p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-ent-text">Notification Preferences</h2>
+              <p className="text-sm text-verza-gray mt-1">Manage how you receive updates and alerts.</p>
+            </div>
+            <div className="space-y-6">
                <div className="flex items-center justify-between">
                  <div className="flex items-center gap-4">
-                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                   <div className="h-10 w-10 rounded-full bg-verza-emerald/10 flex items-center justify-center text-verza-emerald">
                      <Bell className="h-5 w-5" />
                    </div>
                    <div>
-                     <div className="font-medium">Email Notifications</div>
-                     <div className="text-sm text-muted-foreground">Receive daily summaries and critical alerts.</div>
+                     <div className="font-medium text-ent-text">Email Notifications</div>
+                     <div className="text-sm text-verza-gray">Receive daily summaries and critical alerts.</div>
                    </div>
                  </div>
                  <Switch 
@@ -292,12 +295,12 @@ export default function EnterpriseSettings() {
                </div>
                <div className="flex items-center justify-between">
                  <div className="flex items-center gap-4">
-                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                   <div className="h-10 w-10 rounded-full bg-verza-emerald/10 flex items-center justify-center text-verza-emerald">
                      <Phone className="h-5 w-5" />
                    </div>
                    <div>
-                     <div className="font-medium">SMS Notifications</div>
-                     <div className="text-sm text-muted-foreground">Receive urgent alerts via SMS.</div>
+                     <div className="font-medium text-ent-text">SMS Notifications</div>
+                     <div className="text-sm text-verza-gray">Receive urgent alerts via SMS.</div>
                    </div>
                  </div>
                  <Switch 
@@ -307,12 +310,12 @@ export default function EnterpriseSettings() {
                </div>
                <div className="flex items-center justify-between">
                  <div className="flex items-center gap-4">
-                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                   <div className="h-10 w-10 rounded-full bg-verza-emerald/10 flex items-center justify-center text-verza-emerald">
                      <Globe className="h-5 w-5" />
                    </div>
                    <div>
-                     <div className="font-medium">Webhook Notifications</div>
-                     <div className="text-sm text-muted-foreground">Receive real-time events via webhooks.</div>
+                     <div className="font-medium text-ent-text">Webhook Notifications</div>
+                     <div className="text-sm text-verza-gray">Receive real-time events via webhooks.</div>
                    </div>
                  </div>
                  <Switch 
@@ -320,14 +323,14 @@ export default function EnterpriseSettings() {
                     onCheckedChange={(c) => setSettings({...settings!, notifications: {...settings!.notifications, webhook: c}})}
                  />
                </div>
-            </CardContent>
-            <CardFooter className="flex justify-end border-t border-border/50 pt-6">
-              <Button onClick={handleSave} disabled={isSaving}>
+            </div>
+            <div className="flex justify-end border-t border-ent-border mt-8 pt-6">
+              <Button onClick={handleSave} disabled={isSaving} className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 transition-all rounded-full px-8">
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} 
                 Save Preferences
               </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="security">
@@ -340,20 +343,20 @@ export default function EnterpriseSettings() {
             useWhen="you are hardening production access and reducing account compromise risk."
             highlights={['MFA controls', 'Secret rotation', 'IP whitelist rules']}
           />
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-              <CardDescription>Manage password and authentication settings.</CardDescription>
-            </CardHeader>
-             <CardContent className="space-y-6">
+          <div className="enterprise-card rounded-2xl p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-ent-text">Security Settings</h2>
+              <p className="text-sm text-verza-gray mt-1">Manage password and authentication settings.</p>
+            </div>
+             <div className="space-y-6">
                <div className="flex items-center justify-between">
                  <div className="flex items-center gap-4">
                    <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
                      <Shield className="h-5 w-5" />
                    </div>
                    <div>
-                     <div className="font-medium">Two-Factor Authentication</div>
-                     <div className="text-sm text-muted-foreground">Add an extra layer of security to your account.</div>
+                     <div className="font-medium text-ent-text">Two-Factor Authentication</div>
+                     <div className="text-sm text-verza-gray">Add an extra layer of security to your account.</div>
                    </div>
                  </div>
                  <Switch 
@@ -367,8 +370,8 @@ export default function EnterpriseSettings() {
                      <Shield className="h-5 w-5" />
                    </div>
                    <div>
-                     <div className="font-medium">Auto Rotate API Secrets</div>
-                     <div className="text-sm text-muted-foreground">Enable periodic API secret rotation.</div>
+                     <div className="font-medium text-ent-text">Auto Rotate API Secrets</div>
+                     <div className="text-sm text-verza-gray">Enable periodic API secret rotation.</div>
                    </div>
                  </div>
                  <Switch
@@ -382,8 +385,8 @@ export default function EnterpriseSettings() {
                      <Shield className="h-5 w-5" />
                    </div>
                    <div>
-                     <div className="font-medium">IP Whitelist</div>
-                     <div className="text-sm text-muted-foreground">Restrict API access to approved IP/CIDR ranges.</div>
+                     <div className="font-medium text-ent-text">IP Whitelist</div>
+                     <div className="text-sm text-verza-gray">Restrict API access to approved IP/CIDR ranges.</div>
                    </div>
                  </div>
                  <Switch
@@ -392,9 +395,9 @@ export default function EnterpriseSettings() {
                  />
                </div>
                <div className="space-y-2">
-                 <Label>Allowed IPs (comma separated)</Label>
+                 <Label className="text-verza-gray">Allowed IPs (comma separated)</Label>
                  <Textarea
-                   className="min-h-[80px]"
+                   className="min-h-[80px] bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]"
                    value={(apiSecurity?.allowedIps || []).join(', ')}
                    onChange={(e) => {
                      const ips = e.target.value
@@ -405,14 +408,14 @@ export default function EnterpriseSettings() {
                    }}
                  />
                </div>
-            </CardContent>
-            <CardFooter className="flex justify-end border-t border-border/50 pt-6">
-              <Button onClick={handleSave} disabled={isSaving}>
+            </div>
+            <div className="flex justify-end border-t border-ent-border mt-8 pt-6">
+              <Button onClick={handleSave} disabled={isSaving} className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 transition-all rounded-full px-8">
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} 
                 Save Security Settings
               </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </motion.div>

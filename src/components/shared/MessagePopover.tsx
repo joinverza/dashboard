@@ -13,7 +13,7 @@ import { Link } from "wouter";
 import { useMockData } from "@/contexts/MockDataContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
-export default function MessagePopover() {
+export default function MessagePopover({ variant = "default" }: { variant?: "default" | "enterprise" }) {
   const { messages = [] } = useMockData();
   const { theme } = useTheme();
   const unreadCount = messages?.filter((m) => !m.isRead).length || 0;
@@ -24,7 +24,12 @@ export default function MessagePopover() {
         <Button
           variant="ghost"
           size="icon"
-          className={cn("relative", theme === "dark" ? "bg-black" : "bg-white")}
+          className={cn(
+            "relative transition-all", 
+            variant === "enterprise" 
+              ? "bg-ent-muted border border-ent-border hover:bg-ent-card rounded-xl text-ent-text" 
+              : "bg-transparent hover:bg-secondary text-foreground"
+          )}
           data-testid="button-messages"
         >
           <MessageSquare className="h-5 w-5" />
@@ -39,7 +44,7 @@ export default function MessagePopover() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className={cn("w-80 p-0", theme === "dark" ? "bg-black" : "bg-white")} align="end">
+      <PopoverContent className={cn("w-80 p-0 bg-background border-border")} align="end">
         <div className="p-4 border-b border-border">
           <h3 className="font-semibold">Messages</h3>
           <p className="text-sm text-muted-foreground">

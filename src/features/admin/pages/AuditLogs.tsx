@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { 
   Search, Filter, Shield, 
@@ -19,9 +19,14 @@ import type { AuditLogResponse } from '@/types/banking';
 export default function AuditLogs() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [logs, setLogs] = useState<AuditLogResponse[]>([]);
-  const fromDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const toDate = new Date().toISOString();
+  const [dateWindow] = useState(() => {
+    const now = Date.now();
+    return {
+      fromDate: new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      toDate: new Date(now).toISOString(),
+    };
+  });
+  const { fromDate, toDate } = dateWindow;
 
   const logsQuery = useQuery({
     queryKey: ["admin", "audit-logs", fromDate, toDate, typeFilter],
@@ -35,10 +40,7 @@ export default function AuditLogs() {
       return data.length ? data : bankingService.getAuditLogs();
     },
   });
-
-  useEffect(() => {
-    setLogs(logsQuery.data ?? []);
-  }, [logsQuery.data]);
+  const logs: AuditLogResponse[] = logsQuery.data ?? [];
 
   const exportMutation = useMutation({
     mutationFn: () =>

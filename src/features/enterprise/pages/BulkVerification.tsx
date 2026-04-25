@@ -177,35 +177,39 @@ export default function BulkVerification() {
     <div className="space-y-6 pb-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-verza-primary to-verza-secondary bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight text-ent-text">
             Bulk Verification
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-verza-gray mt-1">
             Upload and process multiple verification requests at once
           </p>
         </div>
-        <Button variant="outline" className="gap-2" onClick={downloadTemplate}>
+        <Button 
+          variant="outline" 
+          className="gap-2 border-ent-border bg-ent-text/10 text-ent-text hover:bg-ent-text/10" 
+          onClick={downloadTemplate}
+        >
           <Download className="h-4 w-4" />
           Download Template
         </Button>
       </div>
 
       {/* Progress Steps */}
-      <div className="relative">
-        <div className="absolute top-1/2 left-0 right-0 h-1 bg-muted -z-10 transform -translate-y-1/2"></div>
+      <div className="relative mb-10">
+        <div className="absolute top-5 left-0 right-0 h-[2px] bg-ent-text/10 -z-10"></div>
         <div className="flex justify-between max-w-3xl mx-auto">
           {[1, 2, 3, 4].map((s) => (
-            <div key={s} className="flex flex-col items-center gap-2 bg-background px-2">
+            <div key={s} className="flex flex-col items-center gap-3 bg-[#06140F] px-4">
               <div 
-                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 font-bold transition-colors ${
+                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 font-bold transition-all duration-500 ${
                   step >= s 
-                    ? 'bg-verza-primary text-primary-foreground border-verza-primary' 
-                    : 'bg-muted text-muted-foreground border-transparent'
+                    ? 'bg-verza-emerald text-[#06140F] border-verza-emerald shadow-[0_0_20px_rgba(30,215,96,0.3)]' 
+                    : 'bg-ent-muted text-verza-gray/40 border-ent-border'
                 }`}
               >
                 {step > s ? <CheckCircle className="h-6 w-6" /> : s}
               </div>
-              <span className={`text-xs font-medium ${step >= s ? 'text-foreground' : 'text-muted-foreground'}`}>
+              <span className={`text-[10px] uppercase tracking-widest font-bold ${step >= s ? 'text-verza-emerald' : 'text-verza-gray/30'}`}>
                 {s === 1 ? 'Upload' : s === 2 ? 'Map Fields' : s === 3 ? 'Process' : 'Results'}
               </span>
             </div>
@@ -221,29 +225,29 @@ export default function BulkVerification() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
           >
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-              <CardHeader>
-                <CardTitle>Upload File</CardTitle>
-                <CardDescription>
+            <div className="enterprise-card rounded-2xl p-8">
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold text-ent-text">Upload File</h2>
+                <p className="text-sm text-verza-gray mt-1">
                   Upload a CSV or Excel file containing the verification requests.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+                </p>
+              </div>
+              <div className="space-y-6">
                 <div 
                   className={`border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center text-center transition-colors ${
-                    file ? 'border-verza-primary/50 bg-verza-primary/5' : 'border-muted-foreground/25 hover:border-verza-primary/50 hover:bg-muted/50'
+                    file ? 'border-verza-emerald/50 bg-verza-emerald/5' : 'border-ent-border hover:border-verza-emerald/50 hover:bg-ent-text/10'
                   }`}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleDrop}
                 >
                   {file ? (
                     <div className="space-y-4">
-                      <div className="w-16 h-16 rounded-full bg-verza-primary/10 flex items-center justify-center mx-auto text-verza-primary">
+                      <div className="w-16 h-16 rounded-full bg-verza-emerald/10 flex items-center justify-center mx-auto text-verza-emerald border border-verza-emerald/20">
                         <FileSpreadsheet className="h-8 w-8" />
                       </div>
                       <div>
-                        <p className="font-medium text-lg">{file.name}</p>
-                        <p className="text-sm text-muted-foreground">{(file.size / 1024).toFixed(2)} KB</p>
+                        <p className="font-medium text-lg text-ent-text">{file.name}</p>
+                        <p className="text-sm text-verza-gray">{(file.size / 1024).toFixed(2)} KB</p>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => setFile(null)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
                         <X className="h-4 w-4 mr-2" /> Remove
@@ -251,15 +255,15 @@ export default function BulkVerification() {
                     </div>
                   ) : (
                     <>
-                      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                        <Upload className="h-8 w-8 text-muted-foreground" />
+                      <div className="w-16 h-16 rounded-full bg-ent-text/10 flex items-center justify-center mb-4 border border-ent-border">
+                        <Upload className="h-8 w-8 text-verza-gray" />
                       </div>
-                      <h3 className="font-medium text-lg mb-1">Drag and drop your file here</h3>
-                      <p className="text-sm text-muted-foreground mb-6">
+                      <h3 className="font-medium text-lg mb-1 text-ent-text">Drag and drop your file here</h3>
+                      <p className="text-sm text-verza-gray mb-6">
                         Supported formats: .csv, .xls, .xlsx (Max 10MB)
                       </p>
                       <div className="relative">
-                        <Button variant="outline">Browse Files</Button>
+                        <Button variant="outline" className="border-ent-border bg-ent-text/10 text-ent-text hover:bg-ent-text/10">Browse Files</Button>
                         <input 
                           type="file" 
                           className="absolute inset-0 opacity-0 cursor-pointer" 
@@ -282,7 +286,7 @@ export default function BulkVerification() {
                 )}
 
                 <div className="flex justify-end">
-                  <Button onClick={startUpload} disabled={!file || isUploading}>
+                  <Button onClick={startUpload} disabled={!file || isUploading} className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 transition-all rounded-full px-6">
                     {isUploading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading
@@ -294,8 +298,8 @@ export default function BulkVerification() {
                     )}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </motion.div>
         )}
 
@@ -306,23 +310,23 @@ export default function BulkVerification() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
           >
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-              <CardHeader>
-                <CardTitle>Map Fields</CardTitle>
-                <CardDescription>
+            <div className="enterprise-card rounded-2xl p-8">
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold text-ent-text">Map Fields</h2>
+                <p className="text-sm text-verza-gray mt-1">
                   Map the columns from your file to the corresponding Ontiver fields.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+                </p>
+              </div>
+              <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>First Name Column</Label>
+                      <Label className="text-verza-gray">First Name Column</Label>
                       <Select value={fieldMapping.firstName} onValueChange={(v) => setFieldMapping({...fieldMapping, firstName: v})}>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-ent-muted border-ent-border text-ent-text">
                           <SelectValue placeholder="Select column" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-ent-card border-ent-border text-ent-text">
                           {headers.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
@@ -330,12 +334,12 @@ export default function BulkVerification() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Email Column</Label>
+                      <Label className="text-verza-gray">Email Column</Label>
                       <Select value={fieldMapping.email} onValueChange={(v) => setFieldMapping({...fieldMapping, email: v})}>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-ent-muted border-ent-border text-ent-text">
                           <SelectValue placeholder="Select column" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-ent-card border-ent-border text-ent-text">
                           {headers.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
@@ -345,12 +349,12 @@ export default function BulkVerification() {
                   </div>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Document ID Column</Label>
+                      <Label className="text-verza-gray">Document ID Column</Label>
                       <Select value={fieldMapping.idNumber} onValueChange={(v) => setFieldMapping({...fieldMapping, idNumber: v})}>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-ent-muted border-ent-border text-ent-text">
                           <SelectValue placeholder="Select column" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-ent-card border-ent-border text-ent-text">
                           {headers.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
@@ -358,12 +362,12 @@ export default function BulkVerification() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Last Name Column</Label>
+                      <Label className="text-verza-gray">Last Name Column</Label>
                       <Select value={fieldMapping.lastName} onValueChange={(v) => setFieldMapping({...fieldMapping, lastName: v})}>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-ent-muted border-ent-border text-ent-text">
                           <SelectValue placeholder="Select column" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-ent-card border-ent-border text-ent-text">
                           {headers.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
@@ -373,21 +377,21 @@ export default function BulkVerification() {
                   </div>
                 </div>
 
-                <div className="rounded-md border">
+                <div className="rounded-xl border border-ent-border overflow-hidden bg-ent-text/5">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Mapped Name</TableHead>
-                        <TableHead>Mapped Email</TableHead>
-                        <TableHead>Mapped ID</TableHead>
+                    <TableHeader className="bg-ent-muted">
+                      <TableRow className="border-ent-border hover:bg-transparent">
+                        <TableHead className="text-verza-gray font-medium">Mapped Name</TableHead>
+                        <TableHead className="text-verza-gray font-medium">Mapped Email</TableHead>
+                        <TableHead className="text-verza-gray font-medium">Mapped ID</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {parsedData.slice(0, 5).map((row, i) => (
-                        <TableRow key={i}>
-                          <TableCell>{row[fieldMapping.firstName]} {row[fieldMapping.lastName]}</TableCell>
-                          <TableCell>{row[fieldMapping.email]}</TableCell>
-                          <TableCell>{row[fieldMapping.idNumber]}</TableCell>
+                        <TableRow key={i} className="border-ent-border hover:bg-ent-muted">
+                          <TableCell className="text-ent-text">{row[fieldMapping.firstName]} {row[fieldMapping.lastName]}</TableCell>
+                          <TableCell className="text-ent-text">{row[fieldMapping.email]}</TableCell>
+                          <TableCell className="text-ent-text">{row[fieldMapping.idNumber]}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -400,13 +404,13 @@ export default function BulkVerification() {
                 </div>
 
                 <div className="flex justify-between">
-                  <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
-                  <Button onClick={startProcessing}>
+                  <Button variant="outline" onClick={() => setStep(1)} className="border-ent-border text-verza-gray hover:text-ent-text">Back</Button>
+                  <Button onClick={startProcessing} className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 rounded-full px-6">
                     Process Requests <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </motion.div>
         )}
 
@@ -418,8 +422,8 @@ export default function BulkVerification() {
             exit={{ opacity: 0, y: -20 }}
             className="text-center py-10"
           >
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-              <CardContent className="py-20 flex flex-col items-center justify-center space-y-8">
+            <div className="enterprise-card rounded-2xl">
+              <div className="py-20 flex flex-col items-center justify-center space-y-8">
                 <div className="relative w-32 h-32 flex items-center justify-center">
                   <svg className="w-full h-full" viewBox="0 0 100 100">
                     <circle
@@ -448,14 +452,14 @@ export default function BulkVerification() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold mb-2">Processing Requests...</h3>
-                  <p className="text-muted-foreground">
+                  <h3 className="text-xl font-bold mb-2 text-ent-text">Processing Requests...</h3>
+                  <p className="text-verza-gray">
                     Validating data and initiating verification requests.
                     <br />Please do not close this window.
                   </p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </motion.div>
         )}
 
@@ -466,26 +470,24 @@ export default function BulkVerification() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
           >
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Processing Complete</CardTitle>
-                    <CardDescription>
-                      Here's the summary of your bulk verification request.
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={downloadReport} disabled={!bulkResponse}>
-                      <Download className="h-4 w-4 mr-2" /> Download Report
-                    </Button>
-                    <Button onClick={() => setStep(1)}>
-                      New Upload
-                    </Button>
-                  </div>
+            <div className="enterprise-card rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-semibold text-ent-text">Processing Complete</h2>
+                  <p className="text-sm text-verza-gray mt-1">
+                    Here's the summary of your bulk verification request.
+                  </p>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={downloadReport} disabled={!bulkResponse} className="bg-ent-text/10 border-ent-border hover:bg-ent-text/10 text-ent-text">
+                    <Download className="h-4 w-4 mr-2" /> Download Report
+                  </Button>
+                  <Button onClick={() => setStep(1)} className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90">
+                    New Upload
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-verza-emerald/10 border border-verza-emerald/20 rounded-lg p-4 flex flex-col items-center justify-center text-center">
                     <CheckCircle className="h-8 w-8 text-verza-emerald mb-2" />
@@ -504,18 +506,18 @@ export default function BulkVerification() {
                   </div>
                 </div>
 
-                <div className="bg-muted/30 rounded-lg p-6 text-center space-y-4">
-                    <h3 className="text-lg font-medium">Bulk Verification Initiated Successfully</h3>
-                    <p className="text-muted-foreground max-w-lg mx-auto">
+                 <div className="bg-ent-muted border border-ent-border rounded-2xl p-8 text-center space-y-6">
+                    <h3 className="text-lg font-medium text-ent-text">Bulk Verification Initiated Successfully</h3>
+                    <p className="text-verza-gray max-w-lg mx-auto">
                         Your batch of {bulkResponse?.items.length} requests has been submitted for processing. 
                         You can track the status of individual requests in the Verification Requests page.
                     </p>
-                    <Button asChild>
+                    <Button asChild className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 rounded-full px-10">
                         <Link href="/enterprise/requests">View Requests</Link>
                     </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </motion.div>
         )}
       </div>

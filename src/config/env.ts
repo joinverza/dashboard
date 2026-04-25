@@ -43,6 +43,15 @@ export const env = {
   securityStepUpEnabled: asBool(import.meta.env.VITE_SECURITY_STEP_UP_ENABLED, true),
   securityNonceEnabled: asBool(import.meta.env.VITE_SECURITY_NONCE_ENABLED, true),
   securityPolicyUiEnabled: asBool(import.meta.env.VITE_SECURITY_POLICY_UI_ENABLED, true),
+  // TEMPORARY DEVELOPMENT ONLY:
+  // `mockAuthEnabled` and `devUnlockAllRoutes` exist only to support local editing before the live auth/RBAC flow is ready.
+  // Future production logic should not depend on these flags; keep live behavior separate from this mock/dev path.
+  // Mock auth stays on in local Vite development so dashboard pages remain reachable while the real auth backend is in progress.
+  // Set `VITE_MOCK_AUTH_ENABLED=false` later to restore the live auth requests without changing this file again.
+  mockAuthEnabled: asBool(import.meta.env.VITE_MOCK_AUTH_ENABLED, import.meta.env.DEV),
+  // Temporary route unlock for development: lets one signed-in session open user, verifier, enterprise, manager, and admin pages.
+  // Set `VITE_DEV_UNLOCK_ALL_ROUTES=false` later to restore the normal role-based route guards.
+  devUnlockAllRoutes: asBool(import.meta.env.VITE_DEV_UNLOCK_ALL_ROUTES, import.meta.env.DEV),
 } as const;
 
 export const envValidationWarnings = (() => {
@@ -55,7 +64,9 @@ export const envValidationWarnings = (() => {
   if (bankingRaw && isLikelyPlaceholder(bankingRaw)) {
     warnings.push("VITE_ONTIVER_BANKING_BASE_URL contains an unresolved placeholder. Use a full URL value.");
   }
-  if (!env.ontiverAuthBaseUrl) warnings.push("Missing VITE_ONTIVER_AUTH_BASE_URL (or VITE_ONTIVER_API_BASE_URL).");
+  if (!env.mockAuthEnabled && !env.ontiverAuthBaseUrl) warnings.push("Missing VITE_ONTIVER_AUTH_BASE_URL (or VITE_ONTIVER_API_BASE_URL).");
   if (!env.ontiverBankingBaseUrl) warnings.push("Missing VITE_ONTIVER_BANKING_BASE_URL (or VITE_ONTIVER_API_BASE_URL).");
+  if (env.mockAuthEnabled) warnings.push("Mock auth is enabled for local development. Set VITE_MOCK_AUTH_ENABLED=false to use live auth.");
+  if (env.devUnlockAllRoutes) warnings.push("All dashboard routes are temporarily unlocked for development. Set VITE_DEV_UNLOCK_ALL_ROUTES=false to restore role guards.");
   return warnings;
 })();

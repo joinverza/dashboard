@@ -13,12 +13,19 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/AuthContext";
 import { Separator } from "@/components/ui/separator";
 import { AuthApiError } from "@/services/authService";
+import { MockRoleSelector } from "@/components/auth/MockRoleSelector";
+import type { UserRole } from "@/features/auth/AuthContext";
+
+// TEMPORARY DEVELOPMENT ONLY:
+// The mock role selector on this screen exists only for local editing before live auth is finalized.
+// Do not couple future production login behavior to this temporary selector.
 
 export default function EnterpriseLoginPage() {
   const { login, verifyMfa, verifyMfaRecoveryCode, mfaChallenge, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authKey, setAuthKey] = useState("");
+  const [selectedRole, setSelectedRole] = useState<UserRole>("enterprise");
   const [mfaCode, setMfaCode] = useState("");
   const [mfaMethod, setMfaMethod] = useState<"totp" | "recovery_code">("totp");
   const [mfaError, setMfaError] = useState("");
@@ -38,7 +45,7 @@ export default function EnterpriseLoginPage() {
       await login({
         email,
         password,
-        role: "enterprise",
+        role: selectedRole,
         authKey,
       });
     } catch (error) {
@@ -117,6 +124,9 @@ export default function EnterpriseLoginPage() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
+            {/* TEMPORARY DEVELOPMENT ONLY: lets us choose which mock role session to create for local editing. */}
+            <MockRoleSelector selectedRole={selectedRole} onSelect={setSelectedRole} />
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-300">Email</label>
               <Input 

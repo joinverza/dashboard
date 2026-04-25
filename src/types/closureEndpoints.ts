@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type ClosureJson = Record<string, unknown> | Array<unknown> | string | number | boolean | null;
 
 export interface PostAuthStepUpRequest {

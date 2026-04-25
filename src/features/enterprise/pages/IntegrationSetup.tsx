@@ -49,8 +49,8 @@ export default function EnterpriseIntegrationSetup() {
       className="max-w-3xl mx-auto space-y-8"
     >
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Setup Integration</h1>
-        <p className="text-muted-foreground">Configure your connection with Salesforce.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-ent-text">Setup Integration</h1>
+        <p className="text-verza-gray">Configure your connection with Salesforce.</p>
       </div>
 
       {/* Stepper */}
@@ -81,17 +81,17 @@ export default function EnterpriseIntegrationSetup() {
         })}
       </div>
 
-      <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-        <CardHeader>
-          <CardTitle>{STEPS[currentStep - 1].name}</CardTitle>
-          <CardDescription>
+      <div className="enterprise-card rounded-2xl p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-ent-text">{STEPS[currentStep - 1].name}</h2>
+          <p className="text-sm text-verza-gray mt-1">
             {currentStep === 1 && "Authorize Ontiver to access your Salesforce account."}
             {currentStep === 2 && "Map Ontiver data fields to your Salesforce objects."}
             {currentStep === 3 && "Configure how often and what data to sync."}
             {currentStep === 4 && "Test the connection with sample data before activating."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+          </p>
+        </div>
+        <div className="space-y-6">
           {/* Step 1: Authorize */}
           {currentStep === 1 && (
             <div className="flex flex-col items-center justify-center py-8 space-y-4">
@@ -107,8 +107,8 @@ export default function EnterpriseIntegrationSetup() {
                 </div>
               </div>
               <div className="text-center space-y-2 max-w-sm">
-                <p>Ontiver will request permission to:</p>
-                <ul className="text-sm text-muted-foreground text-left list-disc pl-4 space-y-1">
+                <p className="text-ent-text">Ontiver will request permission to:</p>
+                <ul className="text-sm text-verza-gray text-left list-disc pl-4 space-y-1">
                   <li>Read lead and contact data</li>
                   <li>Update verification status fields</li>
                   <li>Create tasks for failed verifications</li>
@@ -132,9 +132,9 @@ export default function EnterpriseIntegrationSetup() {
                 { label: 'Verification Date', default: 'Ontiver_Date__c' },
               ].map((field, i) => (
                 <div key={i} className="grid grid-cols-2 gap-4 items-center">
-                  <div className="p-2 bg-muted/50 rounded-md text-sm">{field.label}</div>
+                  <div className="p-2 bg-ent-muted border border-ent-border rounded-md text-sm text-ent-text">{field.label}</div>
                   <Select defaultValue={field.default}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -153,11 +153,11 @@ export default function EnterpriseIntegrationSetup() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Sync Frequency</Label>
-                  <p className="text-sm text-muted-foreground">How often to push updates to Salesforce</p>
+                  <Label className="text-ent-text">Sync Frequency</Label>
+                  <p className="text-sm text-verza-gray">How often to push updates to Salesforce</p>
                 </div>
                 <Select defaultValue="realtime">
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-[180px] bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -167,14 +167,14 @@ export default function EnterpriseIntegrationSetup() {
                   </SelectContent>
                 </Select>
               </div>
-              <Separator />
+              <Separator className="bg-ent-text/10" />
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Sync Direction</Label>
-                  <p className="text-sm text-muted-foreground">Control data flow direction</p>
+                  <Label className="text-ent-text">Sync Direction</Label>
+                  <p className="text-sm text-verza-gray">Control data flow direction</p>
                 </div>
                 <Select defaultValue="both">
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-[180px] bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -184,14 +184,14 @@ export default function EnterpriseIntegrationSetup() {
                   </SelectContent>
                 </Select>
               </div>
-              <Separator />
+              <Separator className="bg-ent-text/10" />
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Conflict Resolution</Label>
-                  <p className="text-sm text-muted-foreground">Which source wins when data differs</p>
+                  <Label className="text-ent-text">Conflict Resolution</Label>
+                  <p className="text-sm text-verza-gray">Which source wins when data differs</p>
                 </div>
                 <Select defaultValue="verza">
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-[180px] bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -229,18 +229,19 @@ export default function EnterpriseIntegrationSetup() {
               </div>
             </div>
           )}
-        </CardContent>
-        <CardFooter className="flex justify-between">
+        </div>
+        <div className="flex justify-between border-t border-ent-border mt-8 pt-6">
           <Button 
             variant="outline" 
             onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
             disabled={currentStep === 1}
+            className="bg-ent-text/10 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/10"
           >
             Back
           </Button>
           
           {currentStep === 1 ? (
-            <Button onClick={handleConnect} disabled={isConnecting}>
+            <Button onClick={handleConnect} disabled={isConnecting} className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90">
               {isConnecting ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Connecting...
@@ -250,13 +251,13 @@ export default function EnterpriseIntegrationSetup() {
               )}
             </Button>
           ) : (
-            <Button onClick={handleNext}>
+            <Button onClick={handleNext} className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90">
               {currentStep === STEPS.length ? 'Activate Integration' : 'Continue'}
               {currentStep !== STEPS.length && <ChevronRight className="ml-2 h-4 w-4" />}
             </Button>
           )}
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </motion.div>
   );
 }

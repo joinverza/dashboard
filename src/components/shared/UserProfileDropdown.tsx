@@ -15,7 +15,7 @@ import { Link } from 'wouter';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/contexts/ThemeContext';
 
-export default function UserProfileDropdown() {
+export default function UserProfileDropdown({ variant = "default" }: { variant?: "default" | "enterprise" }) {
   const { theme } = useTheme();
   const { user, logout } = useAuth();
 
@@ -34,21 +34,32 @@ export default function UserProfileDropdown() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="flex items-center gap-2 px-2"
+          className={cn(
+            "flex items-center gap-2 px-2 transition-all",
+            variant === "enterprise"
+              ? "bg-ent-muted border border-ent-border hover:bg-ent-card rounded-xl text-ent-text py-2"
+              : ""
+          )}
           data-testid="button-user-profile"
         >
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-gradient-to-br from-verza-emerald to-verza-kelly text-white text-sm font-medium">
-              {user.name.split(' ').map(n => n[0]).join('')}
-            </AvatarFallback>
-          </Avatar>
+          {variant === "enterprise" ? (
+            <div className="h-6 w-6 rounded-full bg-verza-emerald flex items-center justify-center text-[#06140F] text-xs font-bold">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+          ) : (
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-gradient-to-br from-verza-emerald to-verza-kelly text-white text-sm font-medium">
+                {user.name.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+          )}
           <span className="hidden md:inline-block text-sm font-medium">
-            {user.name}
+            {variant === "enterprise" ? "Enterprise" : user.name}
           </span>
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className={cn("w-56", theme === "dark" ? "bg-black" : "bg-white")}>
+      <DropdownMenuContent align="end" className={cn("w-56 bg-background border-border")}>
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium">{user.name}</p>

@@ -27,13 +27,23 @@ import { bankingService, getBankingErrorMessage } from '@/services/bankingServic
 export default function EnterpriseDetail() {
   const [match, params] = useRoute("/admin/enterprises/:id");
   const [, setLocation] = useLocation();
-  if (!match) return null;
+  const enterpriseId = params?.id ?? "";
+  const detailEnabled = match && Boolean(enterpriseId);
   const [enterpriseQuery, teamQuery] = useQueries({
     queries: [
-      { queryKey: ["admin", "enterprise", params.id], queryFn: () => bankingService.getEnterpriseDetail(params.id) },
-      { queryKey: ["admin", "enterprise", params.id, "team"], queryFn: () => bankingService.listEnterpriseTeamMembers(params.id) },
+      {
+        queryKey: ["admin", "enterprise", enterpriseId],
+        queryFn: () => bankingService.getEnterpriseDetail(enterpriseId),
+        enabled: detailEnabled,
+      },
+      {
+        queryKey: ["admin", "enterprise", enterpriseId, "team"],
+        queryFn: () => bankingService.listEnterpriseTeamMembers(enterpriseId),
+        enabled: detailEnabled,
+      },
     ],
   });
+  if (!detailEnabled) return null;
   if (enterpriseQuery.isLoading) return <div className="h-[50vh] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (enterpriseQuery.error || !enterpriseQuery.data) return <div className="text-sm text-red-400">{getBankingErrorMessage(enterpriseQuery.error, "Failed to load enterprise details.")}</div>;
   const enterprise = enterpriseQuery.data;

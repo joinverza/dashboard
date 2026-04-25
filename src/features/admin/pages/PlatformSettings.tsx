@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -41,10 +41,10 @@ const emptyApiSecuritySettings: ApiSecuritySettings = {
 
 export default function PlatformSettings() {
   const queryClient = useQueryClient();
-  const [companySettings, setCompanySettings] = useState<CompanySettings>(emptyCompanySettings);
-  const [apiSettings, setApiSettings] = useState<ApiSecuritySettings>(emptyApiSecuritySettings);
+  const [companyDraft, setCompanyDraft] = useState<Partial<CompanySettings>>({});
+  const [apiDraft, setApiDraft] = useState<Partial<ApiSecuritySettings>>({});
   const [targetPlan, setTargetPlan] = useState<"starter" | "growth" | "enterprise">("enterprise");
-  const [allowedIpInput, setAllowedIpInput] = useState("");
+  const [allowedIpInputOverride, setAllowedIpInputOverride] = useState<string | null>(null);
 
   const [companyQuery, apiQuery, licenseQuery] = useQueries({
     queries: [
@@ -63,43 +63,35 @@ export default function PlatformSettings() {
     ],
   });
 
-  useEffect(() => {
-    if (!companyQuery.data) return;
-    setCompanySettings({
-      ...emptyCompanySettings,
-      ...companyQuery.data,
-      notifications: {
-        ...emptyCompanySettings.notifications,
-        ...(companyQuery.data.notifications ?? {}),
-      },
-      security: {
-        ...emptyCompanySettings.security,
-        ...(companyQuery.data.security ?? {}),
-      },
-    });
-  }, [companyQuery.data]);
+  const companySettings = useMemo<CompanySettings>(() => ({
+    ...emptyCompanySettings,
+    ...(companyQuery.data ?? {}),
+    ...companyDraft,
+    notifications: {
+      ...emptyCompanySettings.notifications,
+      ...(companyQuery.data?.notifications ?? {}),
+      ...(companyDraft.notifications ?? {}),
+    },
+    security: {
+      ...emptyCompanySettings.security,
+      ...(companyQuery.data?.security ?? {}),
+      ...(companyDraft.security ?? {}),
+    },
+  }), [companyDraft, companyQuery.data]);
 
-  useEffect(() => {
-    if (!apiQuery.data) return;
-    setApiSettings(apiQuery.data);
-    setAllowedIpInput((apiQuery.data.allowedIps ?? []).join("\n"));
-  }, [apiQuery.data]);
+  const apiSettings = useMemo<ApiSecuritySettings>(() => ({
+    ...emptyApiSecuritySettings,
+    ...(apiQuery.data ?? {}),
+    ...apiDraft,
+    allowedIps: apiDraft.allowedIps ?? apiQuery.data?.allowedIps ?? emptyApiSecuritySettings.allowedIps,
+  }), [apiDraft, apiQuery.data]);
+
+  const allowedIpInput = allowedIpInputOverride ?? (apiSettings.allowedIps ?? []).join("\n");
 
   const updateCompanyMutation = useMutation({
     mutationFn: (payload: Partial<CompanySettings>) => bankingService.updateCompanySettings(payload),
-    onSuccess: async (next) => {
-      setCompanySettings((prev) => ({
-        ...prev,
-        ...next,
-        notifications: {
-          ...prev.notifications,
-          ...(next.notifications ?? {}),
-        },
-        security: {
-          ...prev.security,
-          ...(next.security ?? {}),
-        },
-      }));
+    onSuccess: async () => {
+      setCompanyDraft({});
       toast.success("Company settings updated.");
       await queryClient.invalidateQueries({ queryKey: ["admin", "settings", "company"] });
     },
@@ -110,9 +102,9 @@ export default function PlatformSettings() {
 
   const updateApiSettingsMutation = useMutation({
     mutationFn: (payload: ApiSecuritySettings) => bankingService.updateApiSecuritySettings(payload),
-    onSuccess: async (next) => {
-      setApiSettings(next);
-      setAllowedIpInput((next.allowedIps ?? []).join("\n"));
+    onSuccess: async () => {
+      setApiDraft({});
+      setAllowedIpInputOverride(null);
       toast.success("API security settings saved.");
       await queryClient.invalidateQueries({ queryKey: ["admin", "settings", "api-security"] });
     },
@@ -220,32 +212,32 @@ export default function PlatformSettings() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Company Name</Label>
-                  <Input value={companySettings.companyName} onChange={(e) => setCompanySettings((prev) => ({ ...prev, companyName: e.target.value }))} />
+                  <Input value={companySettings.companyName} onChange={(e) => setCompanyDraft((prev) => ({ ...prev, companyName: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Support Email</Label>
-                  <Input value={companySettings.email} onChange={(e) => setCompanySettings((prev) => ({ ...prev, email: e.target.value }))} />
+                  <Input value={companySettings.email} onChange={(e) => setCompanyDraft((prev) => ({ ...prev, email: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Website</Label>
-                  <Input value={companySettings.website} onChange={(e) => setCompanySettings((prev) => ({ ...prev, website: e.target.value }))} />
+                  <Input value={companySettings.website} onChange={(e) => setCompanyDraft((prev) => ({ ...prev, website: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Industry</Label>
-                  <Input value={companySettings.industry} onChange={(e) => setCompanySettings((prev) => ({ ...prev, industry: e.target.value }))} />
+                  <Input value={companySettings.industry} onChange={(e) => setCompanyDraft((prev) => ({ ...prev, industry: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Tax ID</Label>
-                  <Input value={companySettings.taxId} onChange={(e) => setCompanySettings((prev) => ({ ...prev, taxId: e.target.value }))} />
+                  <Input value={companySettings.taxId} onChange={(e) => setCompanyDraft((prev) => ({ ...prev, taxId: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Phone</Label>
-                  <Input value={companySettings.phone} onChange={(e) => setCompanySettings((prev) => ({ ...prev, phone: e.target.value }))} />
+                  <Input value={companySettings.phone} onChange={(e) => setCompanyDraft((prev) => ({ ...prev, phone: e.target.value }))} />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Address</Label>
-                <Textarea value={companySettings.address} onChange={(e) => setCompanySettings((prev) => ({ ...prev, address: e.target.value }))} />
+                <Textarea value={companySettings.address} onChange={(e) => setCompanyDraft((prev) => ({ ...prev, address: e.target.value }))} />
               </div>
               <div className="flex justify-end">
                 <Button onClick={persistCompanySettings} disabled={updateCompanyMutation.isPending}>
@@ -271,7 +263,7 @@ export default function PlatformSettings() {
                 </div>
                 <Switch
                   checked={apiSettings.autoRotateSecrets}
-                  onCheckedChange={(checked) => setApiSettings((prev) => ({ ...prev, autoRotateSecrets: checked }))}
+                  onCheckedChange={(checked) => setApiDraft((prev) => ({ ...prev, autoRotateSecrets: checked }))}
                 />
               </div>
               <Separator />
@@ -282,14 +274,14 @@ export default function PlatformSettings() {
                 </div>
                 <Switch
                   checked={apiSettings.ipWhitelistEnabled}
-                  onCheckedChange={(checked) => setApiSettings((prev) => ({ ...prev, ipWhitelistEnabled: checked }))}
+                  onCheckedChange={(checked) => setApiDraft((prev) => ({ ...prev, ipWhitelistEnabled: checked }))}
                 />
               </div>
               <div className="space-y-2">
                 <Label>Allowed IPs / CIDRs (one per line)</Label>
                 <Textarea
                   value={allowedIpInput}
-                  onChange={(e) => setAllowedIpInput(e.target.value)}
+                  onChange={(e) => setAllowedIpInputOverride(e.target.value)}
                   placeholder={"203.0.113.10\n198.51.100.0/24"}
                 />
               </div>
@@ -316,9 +308,9 @@ export default function PlatformSettings() {
                   id="notif-email"
                   checked={companySettings.notifications.email}
                   onCheckedChange={(checked) =>
-                    setCompanySettings((prev) => ({
+                    setCompanyDraft((prev) => ({
                       ...prev,
-                      notifications: { ...prev.notifications, email: checked },
+                      notifications: { ...(prev.notifications ?? companySettings.notifications), email: checked },
                     }))
                   }
                 />
@@ -329,9 +321,9 @@ export default function PlatformSettings() {
                   id="notif-sms"
                   checked={companySettings.notifications.sms}
                   onCheckedChange={(checked) =>
-                    setCompanySettings((prev) => ({
+                    setCompanyDraft((prev) => ({
                       ...prev,
-                      notifications: { ...prev.notifications, sms: checked },
+                      notifications: { ...(prev.notifications ?? companySettings.notifications), sms: checked },
                     }))
                   }
                 />
@@ -342,9 +334,9 @@ export default function PlatformSettings() {
                   id="notif-webhook"
                   checked={companySettings.notifications.webhook}
                   onCheckedChange={(checked) =>
-                    setCompanySettings((prev) => ({
+                    setCompanyDraft((prev) => ({
                       ...prev,
-                      notifications: { ...prev.notifications, webhook: checked },
+                      notifications: { ...(prev.notifications ?? companySettings.notifications), webhook: checked },
                     }))
                   }
                 />

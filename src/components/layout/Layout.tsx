@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StepUpPromptDialog } from "@/components/auth/StepUpPromptDialog";
 import { canAccessRoute } from "@/security/rbacPolicy";
+import { env } from "@/config/env";
+import { cn } from "@/lib/utils";
 
 interface LayoutProps {
   children: ReactNode;
@@ -30,14 +32,30 @@ export default function Layout({ children }: LayoutProps) {
   const [isVerifyingMfaEnrollment, setIsVerifyingMfaEnrollment] = useState(false);
   const { user, permissions, mfaEnrollment, verifyMfaEnrollment, mfaBackupCodes, dismissMfaBackupCodes } = useAuth();
 
-  const roleNavItems = user?.role === "verifier" ? verifierNavItems :
-                   user?.role === "enterprise" ? enterpriseNavItems :
-                   user?.role === "manager" ? managerNavItems :
-                   user?.role === "admin" ? adminNavItems :
-                   userNavItems;
+  const getNavItemsForCurrentRoute = () => {
+    if (location.startsWith("/admin")) return adminNavItems;
+    if (location.startsWith("/manager")) return managerNavItems;
+    if (location.startsWith("/enterprise")) return enterpriseNavItems;
+    if (location.startsWith("/verifier")) return verifierNavItems;
+    if (location.startsWith("/app")) return userNavItems;
+    return user?.role === "verifier" ? verifierNavItems :
+      user?.role === "enterprise" ? enterpriseNavItems :
+        user?.role === "manager" ? managerNavItems :
+          user?.role === "admin" ? adminNavItems :
+            userNavItems;
+  };
+
+  const roleNavItems = env.devUnlockAllRoutes
+    ? getNavItemsForCurrentRoute()
+    : user?.role === "verifier" ? verifierNavItems :
+      user?.role === "enterprise" ? enterpriseNavItems :
+        user?.role === "manager" ? managerNavItems :
+          user?.role === "admin" ? adminNavItems :
+            userNavItems;
   const navItems = user
-    ? roleNavItems.filter((item) => canAccessRoute(user.role, permissions, item.path))
+    ? roleNavItems.filter((item) => env.devUnlockAllRoutes || canAccessRoute(user.role, permissions, item.path))
     : roleNavItems;
+  const isEnterpriseExperience = location.startsWith("/enterprise");
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -80,72 +98,51 @@ export default function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background dark:bg-black text-foreground relative overflow-hidden font-sans selection:bg-verza-emerald/30 selection:text-verza-emerald">
-      {/* Background Elements - God Mode */}
+    <div
+      className={cn(
+        "min-h-screen relative overflow-hidden font-sans selection:bg-verza-emerald/30 selection:text-verza-emerald",
+        isEnterpriseExperience
+          ? "enterprise-stage text-foreground"
+          : "bg-background dark:bg-black text-foreground"
+      )}
+    >
+      {/* Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-verza-emerald/5 via-transparent to-transparent opacity-40 dark:opacity-20 mix-blend-screen" />
-        
-        {/* Dark Mode Green Light Burst */}
-        <div className="hidden dark:block absolute bottom-0 left-1/2 -translate-x-1/2 w-[80vw] h-[40vh] bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-verza-emerald/20 via-verza-forest/10 to-transparent blur-[120px] opacity-40 pointer-events-none" />
-
-        <motion.div
-          animate={{
-            rotate: [0, 360],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 40,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          className="absolute -top-[20%] -left-[10%] w-[1000px] h-[1000px] bg-verza-emerald/10 rounded-full blur-[120px] opacity-40 dark:opacity-10 mix-blend-screen"
-        />
-        <motion.div
-          animate={{
-            rotate: [360, 0],
-            scale: [1, 1.3, 1],
-          }}
-          transition={{
-            duration: 45,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          className="absolute -bottom-[20%] -right-[10%] w-[1000px] h-[1000px] bg-verza-kelly/10 rounded-full blur-[120px] opacity-40 dark:opacity-10 mix-blend-screen"
-        />
-        <motion.div
-          animate={{
-            y: [0, 40, 0],
-            x: [0, 20, 0],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-verza-forest/5 rounded-full blur-[100px] opacity-30 dark:opacity-5 mix-blend-screen"
-        />
-      </div>
-
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block">
-        <Sidebar collapsed={collapsed} onToggle={toggle} navItems={navItems} />
+        {isEnterpriseExperience ? (
+          <div className="absolute inset-0 enterprise-grid opacity-[0.2]" />
+        ) : (
+          <div className="absolute inset-0 bg-transparent opacity-40 dark:opacity-20 mix-blend-screen" />
+        )}
       </div>
 
       {/* Mobile Sidebar */}
-      <MobileSidebar isOpen={mobileOpen} onClose={() => setMobileOpen(false)} navItems={navItems} />
+      <MobileSidebar isOpen={mobileOpen} onClose={() => setMobileOpen(false)} navItems={navItems} variant={isEnterpriseExperience ? "enterprise" : "default"} />
 
-      {/* Main Content */}
-      <motion.div
-        className="flex flex-col min-h-screen relative z-10"
-        animate={{ marginLeft: isMobile ? 0 : collapsed ? 80 : 256 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-      >
-        <Header onMobileMenuOpen={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <PageTransition>{children}</PageTransition>
-        </main>
-      </motion.div>
+      {/* App shell: sidebar + content side-by-side */}
+      <div className="flex w-full min-h-screen relative z-10">
+
+        {/* Desktop Sidebar — sticky so it stays while main scrolls */}
+        <div className="hidden md:flex flex-shrink-0">
+          <Sidebar collapsed={collapsed} onToggle={toggle} navItems={navItems} variant={isEnterpriseExperience ? "enterprise" : "default"} />
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex flex-col flex-1 min-w-0 min-h-screen">
+          <div className={cn(
+            "flex-1 flex flex-col min-h-screen overflow-hidden",
+            isEnterpriseExperience ? "" : ""
+          )}>
+            <Header onMobileMenuOpen={() => setMobileOpen(true)} variant={isEnterpriseExperience ? "enterprise" : "default"} />
+            <main className={cn(
+              "flex-1 overflow-auto",
+              isEnterpriseExperience ? "p-4 sm:p-6 lg:p-8" : "p-4 md:p-6"
+            )}>
+              <PageTransition>{children}</PageTransition>
+            </main>
+          </div>
+        </div>
+
+      </div>
 
       {/* Support Chat FAB */}
       <AnimatePresence>
@@ -187,6 +184,7 @@ export default function Layout({ children }: LayoutProps) {
         )}
       </AnimatePresence>
 
+      {/* MFA Dialogs... */}
       <Dialog open={!!mfaEnrollment}>
         <DialogContent className="sm:max-w-lg" onPointerDownOutside={(event) => event.preventDefault()}>
           <DialogHeader>

@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { useMockData } from "@/contexts/MockDataContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
-export default function NotificationPopover() {
+export default function NotificationPopover({ variant = "default" }: { variant?: "default" | "enterprise" }) {
   const { notifications = [] } = useMockData();
   const { theme } = useTheme();
   const unreadCount = notifications?.filter((n) => !n.isRead).length || 0;
@@ -35,7 +35,12 @@ export default function NotificationPopover() {
         <Button
           variant="ghost"
           size="icon"
-          className={cn("relative", theme === "dark" ? "bg-black" : "bg-white")}
+          className={cn(
+            "relative transition-all", 
+            variant === "enterprise" 
+              ? "bg-ent-muted border border-ent-border hover:bg-ent-card rounded-xl text-ent-text" 
+              : "bg-transparent hover:bg-secondary text-foreground"
+          )}
           data-testid="button-notifications"
         >
           <Bell className="h-5 w-5" />
@@ -50,7 +55,7 @@ export default function NotificationPopover() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className={cn("w-80 p-0", theme === "dark" ? "bg-black" : "bg-white")} align="end">
+      <PopoverContent className={cn("w-80 p-0 bg-background border-border")} align="end">
           <div className="p-4 border-b border-border">
           <h3 className="font-semibold">Notifications</h3>
           <p className="text-sm text-muted-foreground">

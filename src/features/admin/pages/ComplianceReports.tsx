@@ -52,7 +52,7 @@ export default function ComplianceReports() {
     onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to fetch report download link")),
   });
 
-  const reports = reportsQuery.data ?? [];
+  const reports = useMemo(() => reportsQuery.data ?? [], [reportsQuery.data]);
   const filteredReports = useMemo(() => reports.filter(report => {
     const matchesSearch = 
       report.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

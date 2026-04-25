@@ -1,3 +1,9 @@
+import { env } from "@/config/env";
+
+// TEMPORARY DEVELOPMENT ONLY:
+// This file contains short-term route/API RBAC bypasses used for local dashboard editing.
+// Keep future production RBAC changes in the real policy rules, not inside the temporary bypass branches.
+
 export type AppRole = "user" | "verifier" | "enterprise" | "manager" | "admin";
 
 type Requirement = {
@@ -58,6 +64,8 @@ const toRegex = (pattern: string): RegExp => {
 };
 
 const routePolicies: RoutePolicy[] = [
+  { pattern: "/app", roles: ["user"] },
+  { pattern: "/app/*", roles: ["user"] },
   { pattern: "/enterprise", roles: ["enterprise"] },
   { pattern: "/enterprise/bulk", roles: ["enterprise"], requirement: { anyOf: ["kyc:write"] } },
   { pattern: "/enterprise/requests", roles: ["enterprise"], requirement: { anyOf: ["verification:read", "kyc:read"] } },
@@ -105,6 +113,10 @@ const routePolicies: RoutePolicy[] = [
   { pattern: "/verifier/notifications", roles: ["verifier"], requirement: { anyOf: ["verification:read"] } },
   { pattern: "/verifier/settings", roles: ["verifier"], requirement: { anyOf: ["verification:read"] } },
   { pattern: "/verifier/help", roles: ["verifier"], requirement: { anyOf: ["verification:read"] } },
+  { pattern: "/manager", roles: ["manager"] },
+  { pattern: "/manager/*", roles: ["manager"] },
+  { pattern: "/admin", roles: ["admin"] },
+  { pattern: "/admin/*", roles: ["admin"] },
 ];
 
 const apiPolicies: ApiPolicy[] = [
@@ -180,6 +192,14 @@ const apiMatchers = apiPolicies.map((policy) => ({
 export const isPublicRoute = (path: string): boolean => PUBLIC_ROUTES.has(path);
 
 export const canAccessRoute = (role: AppRole, permissions: string[], path: string): boolean => {
+  if (env.devUnlockAllRoutes) {
+    // Temporary development bypass: allow every dashboard route while you are editing cross-role screens.
+    // Set `VITE_DEV_UNLOCK_ALL_ROUTES=false` later to restore the normal RBAC route checks below.
+    void role;
+    void permissions;
+    void path;
+    return true;
+  }
   if (isPublicRoute(path)) return true;
   const match = routeMatchers.find((item) => item.regex.test(path));
   if (!match) return false;
@@ -193,6 +213,15 @@ export const assertApiAccess = (
   method: string,
   path: string,
 ): string | null => {
+  if (env.mockAuthEnabled || env.devUnlockAllRoutes) {
+    // Temporary development bypass: keep banking calls reachable while auth is mocked so pages can still render their flows.
+    // Set `VITE_MOCK_AUTH_ENABLED=false` and `VITE_DEV_UNLOCK_ALL_ROUTES=false` later to restore the live API RBAC checks below.
+    void role;
+    void permissions;
+    void method;
+    void path;
+    return null;
+  }
   const normalizedMethod = method.toUpperCase() as ApiPolicy["methods"][number];
   if (!role) return null;
   if (role === "user") {

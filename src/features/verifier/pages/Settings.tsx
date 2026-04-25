@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Loader2, Bell, Save, Shield } from "lucide-react";
@@ -40,15 +40,10 @@ type NotificationPrefs = {
 export default function VerifierSettings() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [profile, setProfile] = useState<VerifierProfile>(emptyProfile);
-  const [languageInput, setLanguageInput] = useState("");
-  const [specializationInput, setSpecializationInput] = useState("");
-  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>({
-    jobAlerts: true,
-    reviewAlerts: true,
-    payoutAlerts: true,
-    systemUpdates: true,
-  });
+  const [profileDraft, setProfileDraft] = useState<Partial<VerifierProfile>>({});
+  const [languageInputOverride, setLanguageInputOverride] = useState<string | null>(null);
+  const [specializationInputOverride, setSpecializationInputOverride] = useState<string | null>(null);
+  const [notificationPrefsDraft, setNotificationPrefsDraft] = useState<NotificationPrefs | null>(null);
 
   const [profileQuery, notificationsQuery] = useQueries({
     queries: [
@@ -63,35 +58,48 @@ export default function VerifierSettings() {
     ],
   });
 
-  useEffect(() => {
-    if (!profileQuery.data) return;
-    const next = {
-      ...emptyProfile,
-      ...profileQuery.data,
-      email: profileQuery.data.email || user?.email || "",
-    };
-    setProfile(next);
-    setLanguageInput((next.languages ?? []).join(", "));
-    setSpecializationInput((next.specializations ?? []).join(", "));
-  }, [profileQuery.data, user?.email]);
+  const baseProfile = useMemo<VerifierProfile>(() => ({
+    ...emptyProfile,
+    ...(profileQuery.data ?? {}),
+    email: profileQuery.data?.email || user?.email || "",
+  }), [profileQuery.data, user?.email]);
 
-  useEffect(() => {
-    if (!notificationsQuery.data) return;
+  const profile = useMemo<VerifierProfile>(() => ({
+    ...baseProfile,
+    ...profileDraft,
+    languages: baseProfile.languages,
+    specializations: baseProfile.specializations,
+  }), [baseProfile, profileDraft]);
+
+  const languageInput = languageInputOverride ?? (baseProfile.languages ?? []).join(", ");
+  const specializationInput = specializationInputOverride ?? (baseProfile.specializations ?? []).join(", ");
+
+  const baseNotificationPrefs = useMemo<NotificationPrefs>(() => {
+    const defaults: NotificationPrefs = {
+      jobAlerts: true,
+      reviewAlerts: true,
+      payoutAlerts: true,
+      systemUpdates: true,
+    };
+    if (!notificationsQuery.data) return defaults;
     const items = notificationsQuery.data;
     const hasType = (type: string): boolean => items.some((item) => item.type === type);
-    setNotificationPrefs((prev) => ({
-      ...prev,
-      jobAlerts: hasType("transaction") || prev.jobAlerts,
-      reviewAlerts: hasType("alert") || prev.reviewAlerts,
-      payoutAlerts: hasType("transaction") || prev.payoutAlerts,
-      systemUpdates: hasType("update") || prev.systemUpdates,
-    }));
+    return {
+      jobAlerts: hasType("transaction") || defaults.jobAlerts,
+      reviewAlerts: hasType("alert") || defaults.reviewAlerts,
+      payoutAlerts: hasType("transaction") || defaults.payoutAlerts,
+      systemUpdates: hasType("update") || defaults.systemUpdates,
+    };
   }, [notificationsQuery.data]);
+
+  const notificationPrefs = notificationPrefsDraft ?? baseNotificationPrefs;
 
   const updateProfileMutation = useMutation({
     mutationFn: (payload: Partial<VerifierProfile>) => bankingService.updateVerifierProfile(payload),
-    onSuccess: async (next) => {
-      setProfile((prev) => ({ ...prev, ...next }));
+    onSuccess: async () => {
+      setProfileDraft({});
+      setLanguageInputOverride(null);
+      setSpecializationInputOverride(null);
       toast.success("Verifier profile updated.");
       await queryClient.invalidateQueries({ queryKey: ["verifier", "settings", "profile"] });
     },
@@ -189,29 +197,29 @@ export default function VerifierSettings() {
                 </div>
                 <div className="space-y-2">
                   <Label>Title</Label>
-                  <Input value={profile.title ?? ""} onChange={(e) => setProfile((prev) => ({ ...prev, title: e.target.value }))} />
+                  <Input value={profile.title ?? ""} onChange={(e) => setProfileDraft((prev) => ({ ...prev, title: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Location</Label>
-                  <Input value={profile.location ?? ""} onChange={(e) => setProfile((prev) => ({ ...prev, location: e.target.value }))} />
+                  <Input value={profile.location ?? ""} onChange={(e) => setProfileDraft((prev) => ({ ...prev, location: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Website</Label>
-                  <Input value={profile.website ?? ""} onChange={(e) => setProfile((prev) => ({ ...prev, website: e.target.value }))} />
+                  <Input value={profile.website ?? ""} onChange={(e) => setProfileDraft((prev) => ({ ...prev, website: e.target.value }))} />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Description</Label>
-                <Textarea value={profile.description ?? ""} onChange={(e) => setProfile((prev) => ({ ...prev, description: e.target.value }))} />
+                <Textarea value={profile.description ?? ""} onChange={(e) => setProfileDraft((prev) => ({ ...prev, description: e.target.value }))} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Languages (comma-separated)</Label>
-                  <Input value={languageInput} onChange={(e) => setLanguageInput(e.target.value)} placeholder="en, fr, es" />
+                  <Input value={languageInput} onChange={(e) => setLanguageInputOverride(e.target.value)} placeholder="en, fr, es" />
                 </div>
                 <div className="space-y-2">
                   <Label>Specializations (comma-separated)</Label>
-                  <Input value={specializationInput} onChange={(e) => setSpecializationInput(e.target.value)} placeholder="kyc, sanctions, aml" />
+                  <Input value={specializationInput} onChange={(e) => setSpecializationInputOverride(e.target.value)} placeholder="kyc, sanctions, aml" />
                 </div>
               </div>
               <div className="flex justify-end">
@@ -271,19 +279,19 @@ export default function VerifierSettings() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="jobs">Job Alerts</Label>
-                  <Switch id="jobs" checked={notificationPrefs.jobAlerts} onCheckedChange={(checked) => setNotificationPrefs((prev) => ({ ...prev, jobAlerts: checked }))} />
+                  <Switch id="jobs" checked={notificationPrefs.jobAlerts} onCheckedChange={(checked) => setNotificationPrefsDraft((prev) => ({ ...(prev ?? notificationPrefs), jobAlerts: checked }))} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label htmlFor="reviews">Review Alerts</Label>
-                  <Switch id="reviews" checked={notificationPrefs.reviewAlerts} onCheckedChange={(checked) => setNotificationPrefs((prev) => ({ ...prev, reviewAlerts: checked }))} />
+                  <Switch id="reviews" checked={notificationPrefs.reviewAlerts} onCheckedChange={(checked) => setNotificationPrefsDraft((prev) => ({ ...(prev ?? notificationPrefs), reviewAlerts: checked }))} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label htmlFor="payouts">Payout Alerts</Label>
-                  <Switch id="payouts" checked={notificationPrefs.payoutAlerts} onCheckedChange={(checked) => setNotificationPrefs((prev) => ({ ...prev, payoutAlerts: checked }))} />
+                  <Switch id="payouts" checked={notificationPrefs.payoutAlerts} onCheckedChange={(checked) => setNotificationPrefsDraft((prev) => ({ ...(prev ?? notificationPrefs), payoutAlerts: checked }))} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label htmlFor="system">System Updates</Label>
-                  <Switch id="system" checked={notificationPrefs.systemUpdates} onCheckedChange={(checked) => setNotificationPrefs((prev) => ({ ...prev, systemUpdates: checked }))} />
+                  <Switch id="system" checked={notificationPrefs.systemUpdates} onCheckedChange={(checked) => setNotificationPrefsDraft((prev) => ({ ...(prev ?? notificationPrefs), systemUpdates: checked }))} />
                 </div>
               </div>
               <div className="text-xs text-muted-foreground">

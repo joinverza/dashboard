@@ -35,6 +35,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
 import { TabHelpCard } from '@/components/shared/TabHelpCard';
+import BackButton from '@/components/shared/BackButton';
 import { useAuth } from '@/features/auth/AuthContext';
 import { BANKING_REQUEST_DIAGNOSTIC_EVENT, getBankingErrorMessage } from '@/services/bankingService';
 import { bankingService } from '@/services/bankingService';
@@ -396,22 +397,23 @@ export default function ApiManagement() {
   return (
     <ApiErrorBoundary>
       <div className="space-y-6 pb-10">
+      <BackButton to="/enterprise/platform" label="Back to Platform" />
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-verza-primary to-verza-secondary bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight text-ent-text">
             API Management
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-verza-gray mt-1">
             Manage your API keys, webhooks, and integration settings
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border border-border/50">
+          <div className="flex items-center gap-1 bg-ent-muted p-1 rounded-xl border border-ent-border">
             <Button 
               variant={apiKeyFilter === 'all' ? 'secondary' : 'ghost'}
               size="sm" 
               onClick={() => setApiKeyFilter('all')}
-              className="text-xs"
+              className={`text-xs rounded-lg ${apiKeyFilter === 'all' ? 'bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90' : 'text-verza-gray hover:text-ent-text'}`}
             >
               All
             </Button>
@@ -419,7 +421,7 @@ export default function ApiManagement() {
               variant={apiKeyFilter === 'production' ? 'secondary' : 'ghost'}
               size="sm" 
               onClick={() => setApiKeyFilter('production')}
-              className="text-xs"
+              className={`text-xs rounded-lg ${apiKeyFilter === 'production' ? 'bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90' : 'text-verza-gray hover:text-ent-text'}`}
             >
               Production
             </Button>
@@ -427,7 +429,7 @@ export default function ApiManagement() {
               variant={apiKeyFilter === 'sandbox' ? 'secondary' : 'ghost'} 
               size="sm" 
               onClick={() => setApiKeyFilter('sandbox')}
-              className="text-xs"
+              className={`text-xs rounded-lg ${apiKeyFilter === 'sandbox' ? 'bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90' : 'text-verza-gray hover:text-ent-text'}`}
             >
               Sandbox
             </Button>
@@ -443,7 +445,7 @@ export default function ApiManagement() {
             }}
           >
             <DialogTrigger asChild>
-                <Button className="gap-2 bg-verza-primary hover:bg-verza-primary/90">
+                <Button className="gap-2 bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 rounded-full px-6 font-bold shadow-[0_4px_14px_rgba(30,215,96,0.25)]">
                     <Plus className="h-4 w-4" />
                     Create New Key
                 </Button>
@@ -590,149 +592,127 @@ export default function ApiManagement() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Requests This Month</CardTitle>
-            <Server className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">145,203</div>
-            <div className="mt-2 h-2 w-full bg-muted rounded-full overflow-hidden">
-              <div className="bg-blue-500 h-full w-[45%]"></div>
+        <div className="enterprise-card rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[11px] uppercase tracking-wider text-verza-gray/60 font-medium">Requests This Month</p>
+            <Server className="h-4 w-4 text-verza-emerald/40" />
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-ent-text">145,203</div>
+            <div className="mt-4 h-1.5 w-full bg-ent-text/10 rounded-full overflow-hidden">
+              <div className="bg-verza-emerald h-full w-[45%]"></div>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-[10px] text-verza-gray/40 mt-2 uppercase tracking-tight">
               45% of monthly quota used
             </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Latency</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">124ms</div>
-            <div className="flex items-center gap-1 mt-1">
-              <span className="text-verza-emerald text-xs font-medium flex items-center">
-                <CheckCircle className="h-3 w-3 mr-1" /> Healthy
-              </span>
-              <span className="text-xs text-muted-foreground">Global edge network</span>
+          </div>
+        </div>
+        <div className="enterprise-card rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[11px] uppercase tracking-wider text-verza-gray/60 font-medium">Average Latency</p>
+            <Activity className="h-4 w-4 text-verza-emerald/40" />
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-ent-text">124ms</div>
+            <div className="flex items-center gap-1.5 mt-4">
+              <span className="h-1.5 w-1.5 rounded-full bg-verza-emerald shadow-[0_0_8px_rgba(30,215,96,0.6)]" />
+              <span className="text-[10px] text-verza-emerald font-bold uppercase tracking-widest">System Healthy</span>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0.02%</div>
-            <p className="text-xs text-muted-foreground mt-1">
+          </div>
+        </div>
+        <div className="enterprise-card rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[11px] uppercase tracking-wider text-verza-gray/60 font-medium">Error Rate</p>
+            <AlertTriangle className="h-4 w-4 text-red-400/40" />
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-ent-text">0.02%</div>
+            <p className="text-[10px] text-verza-gray/40 mt-4 uppercase tracking-tight">
               Last 24 hours
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className={apiKeyFilter === 'production' ? 'border-blue-500/40' : ''}>
-          <CardHeader>
-            <CardTitle className="text-base">Production Environment</CardTitle>
-            <CardDescription>Live credentials and traffic</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">{productionKeyCount}</div>
-            <p className="text-xs text-muted-foreground">Active keys in production</p>
-          </CardContent>
-        </Card>
-        <Card className={apiKeyFilter === 'sandbox' ? 'border-blue-500/40' : ''}>
-          <CardHeader>
-            <CardTitle className="text-base">Sandbox Environment</CardTitle>
-            <CardDescription>Testing and staging credentials</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">{sandboxKeyCount}</div>
-            <p className="text-xs text-muted-foreground">Active keys in sandbox</p>
-          </CardContent>
-        </Card>
+        <div className={`enterprise-card rounded-2xl p-6 ${apiKeyFilter === 'production' ? 'border-verza-emerald/20' : ''}`}>
+          <p className="text-[11px] uppercase tracking-wider text-verza-gray/60 font-medium">Production Environment</p>
+          <div className="mt-3 text-3xl font-bold text-ent-text">{productionKeyCount}</div>
+          <p className="text-[10px] text-verza-gray/40 mt-2 uppercase tracking-tight">Active keys in production</p>
+        </div>
+        <div className={`enterprise-card rounded-2xl p-6 ${apiKeyFilter === 'sandbox' ? 'border-verza-emerald/20' : ''}`}>
+          <p className="text-[11px] uppercase tracking-wider text-verza-gray/60 font-medium">Sandbox Environment</p>
+          <div className="mt-3 text-3xl font-bold text-ent-text">{sandboxKeyCount}</div>
+          <p className="text-[10px] text-verza-gray/40 mt-2 uppercase tracking-tight">Active keys in sandbox</p>
+        </div>
       </div>
 
-      <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+      <div className="enterprise-card rounded-2xl overflow-hidden">
+        <div className="p-6 border-b border-ent-border flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Request Diagnostics</CardTitle>
-            <CardDescription>Persistent history of request IDs, retries, and outcomes</CardDescription>
+            <h3 className="text-lg font-semibold text-ent-text">Request Diagnostics</h3>
+            <p className="text-sm text-verza-gray mt-1">Persistent history of request IDs, retries, and outcomes</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsDiagnosticsOpen(true)} disabled={requestHistory.length === 0}>
+            <Button variant="outline" size="sm" onClick={() => setIsDiagnosticsOpen(true)} disabled={requestHistory.length === 0} className="border-ent-border text-verza-gray hover:text-ent-text">
               View Full Screen
             </Button>
-            <Button variant="outline" size="sm" onClick={clearRequestHistory} disabled={requestHistory.length === 0}>
+            <Button variant="outline" size="sm" onClick={clearRequestHistory} disabled={requestHistory.length === 0} className="border-ent-border text-verza-gray hover:text-ent-text">
               Clear History
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="p-2">
           {requestHistoryRows.length === 0 ? (
-            <div className="text-sm text-muted-foreground py-3">
+            <div className="text-sm text-verza-gray/40 py-8 text-center">
               No request diagnostics yet. Run API actions to populate this panel.
             </div>
           ) : (
-            <div className="rounded-md border max-h-[360px] overflow-auto">
+            <div className="max-h-[360px] overflow-auto">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Stage</TableHead>
-                    <TableHead>Method</TableHead>
-                    <TableHead>Path</TableHead>
-                    <TableHead>Request ID</TableHead>
-                    <TableHead>Retry</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                <TableHeader className="bg-ent-text/5 hover:bg-transparent">
+                  <TableRow className="border-ent-border hover:bg-transparent">
+                    <TableHead className="text-verza-gray font-medium">Time</TableHead>
+                    <TableHead className="text-verza-gray font-medium">Stage</TableHead>
+                    <TableHead className="text-verza-gray font-medium">Method</TableHead>
+                    <TableHead className="text-verza-gray font-medium">Path</TableHead>
+                    <TableHead className="text-verza-gray font-medium">Request ID</TableHead>
+                    <TableHead className="text-verza-gray font-medium">Retry</TableHead>
+                    <TableHead className="text-verza-gray font-medium">Status</TableHead>
+                    <TableHead className="text-right text-verza-gray font-medium">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {requestHistoryRows.map((item) => (
-                    <TableRow key={`${item.requestId}-${item.stage}-${item.occurredAt}-${item.attempt || 0}`}>
-                      <TableCell className="text-xs">{new Date(item.occurredAt).toLocaleTimeString()}</TableCell>
+                    <TableRow key={`${item.requestId}-${item.stage}-${item.occurredAt}-${item.attempt || 0}`} className="border-ent-border hover:bg-ent-text/5 transition-colors">
+                      <TableCell className="text-xs text-verza-gray/60">{new Date(item.occurredAt).toLocaleTimeString()}</TableCell>
                       <TableCell>
                         <Badge
-                          variant={
-                            item.stage === 'failed' ? 'destructive' : item.stage === 'retrying' ? 'secondary' : 'outline'
-                          }
-                          className="uppercase text-[10px]"
+                          className={`uppercase text-[10px] ${
+                            item.stage === 'failed' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                            item.stage === 'retrying' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                            'bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20'
+                          }`}
                         >
                           {item.stage}
                         </Badge>
                       </TableCell>
-                      <TableCell>{item.method}</TableCell>
-                      <TableCell className="font-mono text-xs">{item.path}</TableCell>
+                      <TableCell className="text-ent-text font-medium">{item.method}</TableCell>
+                      <TableCell className="font-mono text-xs text-verza-gray/60">{item.path}</TableCell>
                       <TableCell className="font-mono text-xs">
-                        <button onClick={() => copyText(item.requestId)} className="hover:underline">
+                        <button onClick={() => copyText(item.requestId)} className="hover:text-verza-emerald text-verza-gray/60 transition-colors">
                           {item.requestId}
                         </button>
                       </TableCell>
-                      <TableCell className="text-xs">
+                      <TableCell className="text-xs text-verza-gray/60">
                         {item.attempt ? `#${item.attempt}${item.retryInMs ? ` · ${Math.round(item.retryInMs / 1000)}s` : ''}` : '-'}
                       </TableCell>
-                      <TableCell>{item.status ?? '-'}</TableCell>
+                      <TableCell className="text-ent-text">{item.status ?? '-'}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => retryDiagnosticRequest(item)}
-                            disabled={isRetryingRequestId === item.requestId}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => retryDiagnosticRequest(item)} disabled={isRetryingRequestId === item.requestId} className="border-ent-border text-verza-gray hover:text-ent-text text-xs">
                             {isRetryingRequestId === item.requestId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Retry'}
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => cancelDiagnosticRequest(item)}
-                            disabled={isCancellingRequestId === item.requestId}
-                          >
+                          <Button variant="ghost" size="sm" className="text-red-400/60 hover:text-red-400 text-xs" onClick={() => cancelDiagnosticRequest(item)} disabled={isCancellingRequestId === item.requestId}>
                             {isCancellingRequestId === item.requestId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Cancel'}
                           </Button>
                         </div>
@@ -743,8 +723,8 @@ export default function ApiManagement() {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       <Dialog open={isDiagnosticsOpen} onOpenChange={setIsDiagnosticsOpen}>
         <DialogContent className="w-[95vw] max-w-[95vw] h-[90vh] p-0 flex flex-col">
           <DialogHeader className="px-6 py-4 border-b">
@@ -828,10 +808,10 @@ export default function ApiManagement() {
       </Dialog>
 
       <Tabs defaultValue="keys" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="keys">API Keys</TabsTrigger>
-          <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+        <TabsList className="bg-ent-muted backdrop-blur-md border border-ent-border p-1 rounded-xl">
+          <TabsTrigger value="keys" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">API Keys</TabsTrigger>
+          <TabsTrigger value="webhooks" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Webhooks</TabsTrigger>
+          <TabsTrigger value="settings" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="keys" className="space-y-6">
@@ -844,73 +824,62 @@ export default function ApiManagement() {
             useWhen="you need to issue credentials for backend services or rotate compromised keys."
             highlights={['Create keys', 'Revoke keys', 'Copy prefixes', 'Environment split']}
           />
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-              <CardHeader>
-                <CardTitle>Active API Keys</CardTitle>
-                <CardDescription>
-                  Manage the API keys used to authenticate your requests.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="enterprise-card rounded-2xl overflow-hidden">
+              <div className="p-6 border-b border-ent-border">
+                <h3 className="text-lg font-semibold text-ent-text">Active API Keys</h3>
+                <p className="text-sm text-verza-gray mt-1">Manage the API keys used to authenticate your requests.</p>
+              </div>
+              <div className="p-2">
                 {!canViewApiKeys ? (
-                  <div className="text-sm text-muted-foreground rounded-md border p-4">
+                  <div className="text-sm text-verza-gray/40 rounded-xl border border-ent-border p-6 m-2">
                     You do not have permission to view API keys. Ask an Admin or Manager for `api_keys:read` access.
                   </div>
                 ) : (
-                <div className="rounded-md border">
+                <div>
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Environment</TableHead>
-                        <TableHead>Key Prefix</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead>Last Used</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                    <TableHeader className="bg-ent-text/5 hover:bg-transparent">
+                      <TableRow className="border-ent-border hover:bg-transparent">
+                        <TableHead className="text-verza-gray font-medium">Name</TableHead>
+                        <TableHead className="text-verza-gray font-medium">Environment</TableHead>
+                        <TableHead className="text-verza-gray font-medium">Key Prefix</TableHead>
+                        <TableHead className="text-verza-gray font-medium">Created</TableHead>
+                        <TableHead className="text-verza-gray font-medium">Last Used</TableHead>
+                        <TableHead className="text-verza-gray font-medium">Status</TableHead>
+                        <TableHead className="text-right text-verza-gray font-medium">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredApiKeys.map((key) => (
-                        <TableRow key={key.id}>
-                          <TableCell className="font-medium">
+                        <TableRow key={key.id} className="border-ent-border hover:bg-ent-text/5 transition-colors">
+                          <TableCell className="font-medium text-ent-text">
                             <div className="flex items-center gap-2">
-                              <Key className="h-4 w-4 text-muted-foreground" />
+                              <Key className="h-4 w-4 text-verza-gray/40" />
                               {key.name}
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={getApiKeyEnvironment(key) === 'production' ? 'destructive' : 'secondary'}>
+                            <Badge className={getApiKeyEnvironment(key) === 'production' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-ent-text/10 text-verza-gray border-ent-border'}>
                               {getApiKeyEnvironment(key).toUpperCase()}
                             </Badge>
                           </TableCell>
-                          <TableCell className="font-mono text-xs">{key.keyPrefix}</TableCell>
-                          <TableCell>{new Date(key.createdAt).toLocaleDateString()}</TableCell>
-                          <TableCell>{key.lastUsed ? new Date(key.lastUsed).toLocaleDateString() : 'Never'}</TableCell>
+                          <TableCell className="font-mono text-xs text-verza-gray/60">{key.keyPrefix}</TableCell>
+                          <TableCell className="text-verza-gray/60 text-sm">{new Date(key.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell className="text-verza-gray/60 text-sm">{key.lastUsed ? new Date(key.lastUsed).toLocaleDateString() : 'Never'}</TableCell>
                           <TableCell>
-                            <Badge variant={String(key.status || 'active').toLowerCase() === 'revoked' ? 'destructive' : 'outline'}>
+                            <Badge className={String(key.status || 'active').toLowerCase() === 'revoked' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-verza-emerald/10 text-verza-emerald border-verza-emerald/20'}>
                               {String(key.status || 'active').toUpperCase()}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyText(key.keyPrefix || '')}>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-verza-gray hover:text-ent-text hover:bg-ent-text/5" onClick={() => copyText(key.keyPrefix || '')}>
                                 <Copy className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => void loadData(apiKeyFilter)} disabled={isLoadingData}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-verza-gray hover:text-ent-text hover:bg-ent-text/5" onClick={() => void loadData(apiKeyFilter)} disabled={isLoadingData}>
                                 <RefreshCw className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                onClick={() => handleDeleteKey(key.id)}
-                                disabled={isDeletingKeyId === key.id}
-                              >
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400/60 hover:text-red-400 hover:bg-red-400/10" onClick={() => handleDeleteKey(key.id)} disabled={isDeletingKeyId === key.id}>
                                 {isDeletingKeyId === key.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                               </Button>
                             </div>
@@ -919,10 +888,8 @@ export default function ApiManagement() {
                       ))}
                       {filteredApiKeys.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
-                            {apiKeyFilter === 'all'
-                              ? 'No API keys found.'
-                              : `No ${apiKeyFilter} API keys found.`}
+                          <TableCell colSpan={7} className="text-center text-verza-gray/40 py-8">
+                            {apiKeyFilter === 'all' ? 'No API keys found.' : `No ${apiKeyFilter} API keys found.`}
                           </TableCell>
                         </TableRow>
                       )}
@@ -930,62 +897,59 @@ export default function ApiManagement() {
                   </Table>
                 </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </motion.div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-              <CardHeader>
-                <CardTitle>Documentation</CardTitle>
-                <CardDescription>Resources to help you integrate</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors cursor-pointer">
-                  <div className="bg-primary/10 p-2 rounded-full text-primary">
+            <div className="enterprise-card rounded-2xl p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-ent-text">Documentation</h3>
+                <p className="text-sm text-verza-gray mt-1">Resources to help you integrate</p>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-4 p-3 rounded-xl border border-ent-border bg-ent-muted hover:bg-ent-card transition-colors cursor-pointer">
+                  <div className="bg-verza-emerald/10 p-2 rounded-lg text-verza-emerald">
                     <Code className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-sm">API Reference</h4>
-                    <p className="text-xs text-muted-foreground">Complete endpoint documentation</p>
+                    <h4 className="font-medium text-sm text-ent-text">API Reference</h4>
+                    <p className="text-xs text-verza-gray/60">Complete endpoint documentation</p>
                   </div>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  <ExternalLink className="h-4 w-4 text-verza-gray/40" />
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors cursor-pointer">
-                  <div className="bg-primary/10 p-2 rounded-full text-primary">
+                <div className="flex items-center gap-4 p-3 rounded-xl border border-ent-border bg-ent-muted hover:bg-ent-card transition-colors cursor-pointer">
+                  <div className="bg-verza-emerald/10 p-2 rounded-lg text-verza-emerald">
                     <Shield className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-sm">Security Guide</h4>
-                    <p className="text-xs text-muted-foreground">Best practices for secure integration</p>
+                    <h4 className="font-medium text-sm text-ent-text">Security Guide</h4>
+                    <p className="text-xs text-verza-gray/60">Best practices for secure integration</p>
                   </div>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  <ExternalLink className="h-4 w-4 text-verza-gray/40" />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-              <CardHeader>
-                <CardTitle>SDKs & Libraries</CardTitle>
-                <CardDescription>Official libraries for your stack</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" className="justify-start gap-2">
-                    <span className="font-bold">JS</span> Node.js
-                  </Button>
-                  <Button variant="outline" className="justify-start gap-2">
-                    <span className="font-bold">PY</span> Python
-                  </Button>
-                  <Button variant="outline" className="justify-start gap-2">
-                    <span className="font-bold">GO</span> Go
-                  </Button>
-                  <Button variant="outline" className="justify-start gap-2">
-                    <span className="font-bold">RB</span> Ruby
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="enterprise-card rounded-2xl p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-ent-text">SDKs &amp; Libraries</h3>
+                <p className="text-sm text-verza-gray mt-1">Official libraries for your stack</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="outline" className="justify-start gap-2 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/5">
+                  <span className="font-bold text-verza-emerald">JS</span> Node.js
+                </Button>
+                <Button variant="outline" className="justify-start gap-2 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/5">
+                  <span className="font-bold text-verza-emerald">PY</span> Python
+                </Button>
+                <Button variant="outline" className="justify-start gap-2 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/5">
+                  <span className="font-bold text-verza-emerald">GO</span> Go
+                </Button>
+                <Button variant="outline" className="justify-start gap-2 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/5">
+                  <span className="font-bold text-verza-emerald">RB</span> Ruby
+                </Button>
+              </div>
+            </div>
           </div>
         </TabsContent>
 
@@ -1006,7 +970,7 @@ export default function ApiManagement() {
             <div className="flex justify-end mb-4">
                  <Dialog open={isWebhookDialogOpen} onOpenChange={setIsWebhookDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="gap-2 bg-verza-primary hover:bg-verza-primary/90">
+                        <Button className="gap-2 bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 rounded-full px-6 font-bold shadow-[0_4px_14px_rgba(30,215,96,0.25)]">
                             <Plus className="h-4 w-4" />
                             Add Webhook
                         </Button>

@@ -3,6 +3,10 @@ import { markStepUpVerified, readSession } from "@/auth/sessionStore";
 import { requestStepUpCode } from "@/auth/stepUpPromptBus";
 import type { ApiEnvelopeSuccess, StepUpResponse } from "@/types/security";
 
+// TEMPORARY DEVELOPMENT ONLY:
+// This file includes a mock step-up path for local development while live auth is not fully wired.
+// Any future production step-up changes should be added to the real request flow, not the mock bypass.
+
 const STEP_UP_PROMPT_MESSAGE = "Enter your 6-digit authenticator code to continue this sensitive action.";
 
 const parseJson = async (res: Response): Promise<unknown> => {
@@ -14,6 +18,20 @@ export const performStepUp = async (code: string): Promise<StepUpResponse> => {
   const session = readSession();
   if (!session?.accessToken) {
     throw new Error("Missing active session. Please sign in again.");
+  }
+
+  if (env.mockAuthEnabled) {
+    // Temporary development bypass: accept any 6-digit code so high-risk flows remain testable without the live auth backend.
+    // Set `VITE_MOCK_AUTH_ENABLED=false` later to restore the real `/auth/step-up` request below.
+    if (!/^\d{6}$/.test(code.trim())) {
+      throw new Error("Enter any 6-digit code while mock auth is enabled.");
+    }
+    const reauthenticatedAt = new Date().toISOString();
+    markStepUpVerified(reauthenticatedAt);
+    return {
+      stepUp: true,
+      reauthenticatedAt,
+    };
   }
 
   const response = await fetch(`${env.ontiverAuthBaseUrl}/auth/step-up`, {
@@ -46,7 +64,7 @@ export const promptForStepUpCode = async (): Promise<string> => {
     throw new Error("Step-up is currently disabled.");
   }
   const code = (await requestStepUpCode(STEP_UP_PROMPT_MESSAGE)).trim();
-  if (!/^\d{6}$/.test(code)) {
+  if (!env.mockAuthEnabled && !/^\d{6}$/.test(code)) {
     throw new Error("A valid 6-digit code is required.");
   }
   return code;

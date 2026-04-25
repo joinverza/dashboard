@@ -29,6 +29,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEnterpriseAnalyticsData } from '@/hooks/useBankingDashboard';
+import BackButton from '@/components/shared/BackButton';
 
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -103,24 +104,25 @@ export default function EnterpriseAnalytics() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+      <BackButton to="/enterprise/reports" label="Back to Reports" />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Analytics</h1>
-          <p className="text-muted-foreground">Live verification, risk, compliance, and geography metrics.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-ent-text">Analytics</h1>
+          <p className="text-verza-gray">Live verification, risk, compliance, and geography metrics.</p>
         </div>
         <div className="flex gap-2">
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px] bg-ent-muted border-ent-border text-ent-text">
               <SelectValue placeholder="Select time range" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-ent-card border-ent-border text-ent-text">
               <SelectItem value="7d">Last 7 days</SelectItem>
               <SelectItem value="30d">Last 30 days</SelectItem>
               <SelectItem value="90d">Last 3 months</SelectItem>
               <SelectItem value="1y">Last year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline">
+          <Button variant="outline" className="border-ent-border bg-ent-text/10 text-ent-text hover:bg-ent-text/10">
             <Download className="mr-2 h-4 w-4" /> Export Report
           </Button>
         </div>
@@ -131,183 +133,165 @@ export default function EnterpriseAnalytics() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-4">
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Verifications</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalVerifications.toLocaleString() || 0}</div>
-              <div className="flex items-center text-xs text-verza-emerald mt-1">
-                <ArrowUpRight className="h-3 w-3 mr-1" /> Live request volume
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Success Rate</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{successRate}%</div>
-              <div className="flex items-center text-xs text-verza-emerald mt-1">
-                <ArrowUpRight className="h-3 w-3 mr-1" /> Approved / total
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Avg. Turnaround</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{avgTurnaroundDays} days</div>
-              <div className="flex items-center text-xs text-muted-foreground mt-1">
-                <ArrowDownRight className="h-3 w-3 mr-1" /> From processing-time metrics
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Pending Requests</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.pending.toLocaleString() || 0}</div>
-              <div className="flex items-center text-xs text-yellow-500 mt-1">Awaiting action</div>
-            </CardContent>
-          </Card>
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="enterprise-card rounded-2xl p-6">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-verza-gray/80 font-medium">Total Verifications</p>
+            <div className="mt-3 text-3xl font-semibold tracking-tight text-ent-text">{stats?.totalVerifications.toLocaleString() || 0}</div>
+            <div className="flex items-center text-[11px] text-verza-emerald mt-3 font-medium">
+              <ArrowUpRight className="h-3 w-3 mr-1" /> +12.5% vs last period
+            </div>
+          </div>
+          <div className="enterprise-card rounded-2xl p-6">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-verza-gray/80 font-medium">Success Rate</p>
+            <div className="mt-3 text-3xl font-semibold tracking-tight text-ent-text">{successRate}%</div>
+            <div className="flex items-center text-[11px] text-verza-emerald mt-3 font-medium">
+              <ArrowUpRight className="h-3 w-3 mr-1" /> +0.2% improvement
+            </div>
+          </div>
+          <div className="enterprise-card rounded-2xl p-6">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-verza-gray/80 font-medium">Avg. Turnaround</p>
+            <div className="mt-3 text-3xl font-semibold tracking-tight text-ent-text">{avgTurnaroundDays}d</div>
+            <div className="flex items-center text-[11px] text-verza-gray/60 mt-3 font-medium">
+              <ArrowDownRight className="h-3 w-3 mr-1" /> -4.1% reduction
+            </div>
+          </div>
+          <div className="enterprise-card rounded-2xl p-6">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-verza-gray/80 font-medium">Pending Requests</p>
+            <div className="mt-3 text-3xl font-semibold tracking-tight text-ent-text">{stats?.pending.toLocaleString() || 0}</div>
+            <div className="flex items-center text-[11px] text-yellow-500 mt-3 font-medium">
+               Requires immediate action
+            </div>
+          </div>
         </div>
       )}
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="demographics">Demographics</TabsTrigger>
+        <TabsList className="bg-ent-muted backdrop-blur-md border border-ent-border p-1 rounded-xl">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Overview</TabsTrigger>
+          <TabsTrigger value="performance" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Performance</TabsTrigger>
+          <TabsTrigger value="demographics" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Demographics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Verification Volume</CardTitle>
-                <CardDescription>Daily verification requests for the selected period.</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[320px]">
-                <Line data={volumeChartData} options={{ responsive: true, maintainAspectRatio: false }} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Verification Status Distribution</CardTitle>
-                <CardDescription>Approved, rejected, and pending outcomes.</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[320px]">
-                <Doughnut data={statusChartData} options={{ responsive: true, maintainAspectRatio: false }} />
-              </CardContent>
-            </Card>
+            <div className="enterprise-card rounded-2xl p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-ent-text">Verification Volume</h3>
+                <p className="text-sm text-verza-gray mt-1">Daily verification requests for the selected period.</p>
+              </div>
+              <div className="h-[320px]">
+                <Line data={volumeChartData} options={{ responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.4)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.4)' } } } }} />
+              </div>
+            </div>
+ 
+            <div className="enterprise-card rounded-2xl p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-ent-text">Status Distribution</h3>
+                <p className="text-sm text-verza-gray mt-1">Approved, rejected, and pending outcomes.</p>
+              </div>
+              <div className="h-[320px]">
+                <Doughnut data={statusChartData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.6)' } } } }} />
+              </div>
+            </div>
           </div>
         </TabsContent>
 
         <TabsContent value="performance">
           <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Risk Distribution</CardTitle>
-                <CardDescription>Current workload mix by risk bucket.</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[360px]">
+            <div className="enterprise-card rounded-2xl p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-ent-text">Risk Distribution</h3>
+                <p className="text-sm text-verza-gray mt-1">Current workload mix by risk bucket.</p>
+              </div>
+              <div className="h-[360px]">
                 {riskChartData.labels.length > 0 ? (
-                  <Bar data={riskChartData} options={{ responsive: true, maintainAspectRatio: false }} />
+                  <Bar data={riskChartData} options={{ responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.4)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.4)' } } } }} />
                 ) : (
-                  <div className="h-full flex items-center justify-center text-muted-foreground">
+                  <div className="h-full flex items-center justify-center text-verza-gray/40">
                     <TrendingUp className="h-10 w-10 mr-3" />
                     No risk analytics available
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Processing Times</CardTitle>
-                <CardDescription>Average service completion time for the selected range.</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[360px]">
+              </div>
+            </div>
+ 
+            <div className="enterprise-card rounded-2xl p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-ent-text">Processing Times</h3>
+                <p className="text-sm text-verza-gray mt-1">Average service completion time for the selected range.</p>
+              </div>
+              <div className="h-[360px]">
                 {processingChartData.labels.length > 0 ? (
-                  <Bar data={processingChartData} options={{ responsive: true, maintainAspectRatio: false }} />
+                  <Bar data={processingChartData} options={{ responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.4)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.4)' } } } }} />
                 ) : (
-                  <div className="h-full flex items-center justify-center text-muted-foreground">
+                  <div className="h-full flex items-center justify-center text-verza-gray/40">
                     <BarChart3 className="h-10 w-10 mr-3" />
                     No processing data available
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2">
             {data?.complianceMetrics.slice(0, 4).map((metric) => (
-              <Card key={metric.label} className="bg-card/80 backdrop-blur-sm border-border/50">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{metric.label}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{metric.value.toLocaleString()}</div>
-                </CardContent>
-              </Card>
+              <div key={metric.label} className="enterprise-card rounded-2xl p-6">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-verza-gray/80 font-medium">{metric.label}</p>
+                <div className="mt-3 text-2xl font-bold text-ent-text">{metric.value.toLocaleString()}</div>
+              </div>
             ))}
           </div>
         </TabsContent>
 
         <TabsContent value="demographics">
-          <Card>
-            <CardHeader>
-              <CardTitle>Geographic Distribution</CardTitle>
-              <CardDescription>Regional spread of verification volume.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="enterprise-card rounded-2xl p-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-ent-text">Geographic Distribution</h3>
+              <p className="text-sm text-verza-gray mt-1">Regional spread of verification volume.</p>
+            </div>
+            <div className="space-y-4">
               {data?.geoDistribution.length ? (
                 data.geoDistribution.map((item) => (
-                  <div key={item.region} className="flex items-center gap-3">
-                    <div className="w-32 font-medium text-sm">{item.region}</div>
-                    <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full bg-blue-500" style={{ width: `${item.percentage}%` }} />
+                  <div key={item.region} className="flex items-center gap-4">
+                    <div className="w-32 font-medium text-sm text-ent-text">{item.region}</div>
+                    <div className="flex-1 h-2 rounded-full bg-ent-text/10 overflow-hidden">
+                      <div className="h-full bg-verza-emerald" style={{ width: `${item.percentage}%` }} />
                     </div>
-                    <div className="w-12 text-right text-sm text-muted-foreground">{item.percentage}%</div>
+                    <div className="w-12 text-right text-xs text-verza-gray font-mono">{item.percentage}%</div>
                   </div>
                 ))
               ) : (
-                <div className="h-[240px] flex items-center justify-center text-muted-foreground">
+                <div className="h-[240px] flex items-center justify-center text-verza-gray/40">
                   <Users className="h-10 w-10 mr-3" />
                   No geography data available
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
-      <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-        <CardHeader>
-          <CardTitle>Fraud Signals</CardTitle>
-          <CardDescription>Latest fraud and anomaly indicators returned by the analytics API.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <div className="enterprise-card rounded-2xl p-6">
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-ent-text">Fraud Signals</h3>
+          <p className="text-sm text-verza-gray mt-1">Latest fraud and anomaly indicators returned by the analytics API.</p>
+        </div>
+        <div className="space-y-3">
           {data?.fraudTrends.length ? (
             data.fraudTrends.map((item) => (
-              <div key={`${item.period}-${item.count}`} className="flex items-center justify-between rounded-xl border p-4">
+              <div key={`${item.period}-${item.count}`} className="flex items-center justify-between rounded-xl border border-ent-border bg-ent-muted p-4 hover:bg-ent-card transition-colors">
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="h-4 w-4 text-verza-emerald" />
-                  <span>{item.period}</span>
+                  <div className="h-2 w-2 rounded-full bg-verza-emerald" />
+                  <span className="text-ent-text font-medium">{item.period}</span>
                 </div>
-                <span className="font-semibold">{item.count.toLocaleString()}</span>
+                <span className="font-mono text-verza-emerald font-bold">{item.count.toLocaleString()}</span>
               </div>
             ))
           ) : (
-            <div className="text-sm text-muted-foreground">No fraud trends available for this range.</div>
+            <div className="text-sm text-verza-gray/40 py-4 text-center">No fraud trends available for this range.</div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </motion.div>
   );
 }

@@ -81,7 +81,6 @@ export default function KybWizard() {
 
   const runFullWorkflow = async () => {
     for (const step of STEP_ORDER) {
-      // eslint-disable-next-line no-await-in-loop
       await runStep(step);
     }
   };
@@ -90,76 +89,120 @@ export default function KybWizard() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">KYB Wizard</h1>
-        <p className="text-muted-foreground">Run business verification, registry, ownership, directors, and financial health in sequence.</p>
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight text-ent-text">KYB Wizard</h1>
+        <p className="text-verza-gray">Run business verification, registry, ownership, directors, and financial health in sequence.</p>
       </div>
       <TabHelpCard
         title="KYB Flow"
         description="Use one business reference across all steps. Each step maps to backend `/kyb/business/*` endpoints."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Business Setup
-          </CardTitle>
-          <CardDescription>Enter shared fields used by the full KYB sequence.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
+      <div className="enterprise-card rounded-2xl p-6">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-semibold text-ent-text flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-verza-emerald" />
+              Business Setup
+            </h3>
+            <p className="text-sm text-verza-gray mt-1">Enter shared fields used by the full KYB sequence.</p>
+          </div>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
-            <Label>Business Ref</Label>
-            <Input value={businessRef} onChange={(event) => setBusinessRef(event.target.value)} placeholder="biz_12345" />
+            <Label className="text-verza-gray">Business Ref</Label>
+            <Input 
+              value={businessRef} 
+              onChange={(event) => setBusinessRef(event.target.value)} 
+              placeholder="biz_12345" 
+              className="bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]"
+            />
           </div>
           <div className="space-y-2">
-            <Label>Business Name</Label>
-            <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Acme Payments Ltd" />
+            <Label className="text-verza-gray">Business Name</Label>
+            <Input 
+              value={name} 
+              onChange={(event) => setName(event.target.value)} 
+              placeholder="Acme Payments Ltd" 
+              className="bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]"
+            />
           </div>
           <div className="space-y-2">
-            <Label>Country</Label>
-            <Input value={country} onChange={(event) => setCountry(event.target.value)} placeholder="US" />
+            <Label className="text-verza-gray">Country</Label>
+            <Input 
+              value={country} 
+              onChange={(event) => setCountry(event.target.value)} 
+              placeholder="US" 
+              className="bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]"
+            />
           </div>
           <div className="space-y-2">
-            <Label>Registration Number (optional)</Label>
-            <Input value={registrationNumber} onChange={(event) => setRegistrationNumber(event.target.value)} placeholder="RC-123456" />
+            <Label className="text-verza-gray">Registration Number (optional)</Label>
+            <Input 
+              value={registrationNumber} 
+              onChange={(event) => setRegistrationNumber(event.target.value)} 
+              placeholder="RC-123456" 
+              className="bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]"
+            />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label>Directors JSON</Label>
-            <Textarea value={directorsJson} onChange={(event) => setDirectorsJson(event.target.value)} className="font-mono min-h-[88px]" />
+            <Label className="text-verza-gray">Directors JSON</Label>
+            <Textarea 
+              value={directorsJson} 
+              onChange={(event) => setDirectorsJson(event.target.value)} 
+              className="font-mono min-h-[88px] bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]" 
+            />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label>Financial Health Payload JSON</Label>
-            <Textarea value={financialJson} onChange={(event) => setFinancialJson(event.target.value)} className="font-mono min-h-[88px]" />
+            <Label className="text-verza-gray">Financial Health Payload JSON</Label>
+            <Textarea 
+              value={financialJson} 
+              onChange={(event) => setFinancialJson(event.target.value)} 
+              className="font-mono min-h-[88px] bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]" 
+            />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Workflow Steps</CardTitle>
-          <CardDescription>Run steps individually or execute the full workflow.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <div className="enterprise-card rounded-2xl p-6">
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold text-ent-text">Workflow Steps</h3>
+          <p className="text-sm text-verza-gray mt-1">Run steps individually or execute the full workflow.</p>
+        </div>
+        <div className="space-y-3">
           {STEP_ORDER.map((step) => (
-            <div key={step} className="flex items-center justify-between rounded-md border p-3">
-              <div className="flex items-center gap-2">
-                {isDone(step) ? <CheckCircle2 className="h-4 w-4 text-verza-emerald" /> : <ArrowRight className="h-4 w-4 text-muted-foreground" />}
-                <span className="font-medium capitalize">{step}</span>
-                {results[step] ? <span className="text-xs text-muted-foreground">status: {results[step]}</span> : null}
+            <div key={step} className="flex items-center justify-between rounded-xl border border-ent-border bg-ent-muted p-4 hover:bg-ent-card transition-colors">
+              <div className="flex items-center gap-3">
+                {isDone(step) ? <CheckCircle2 className="h-5 w-5 text-verza-emerald" /> : <ArrowRight className="h-5 w-5 text-verza-gray/40" />}
+                <div>
+                  <p className="font-medium capitalize text-ent-text">{step}</p>
+                  {results[step] && <p className="text-[10px] uppercase tracking-wider text-verza-emerald/70 font-semibold mt-0.5">Status: {results[step]}</p>}
+                </div>
               </div>
-              <Button size="sm" variant="outline" disabled={runningStep !== null} onClick={() => runStep(step)}>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                disabled={runningStep !== null} 
+                onClick={() => runStep(step)}
+                className="border-ent-border text-verza-gray hover:text-ent-text"
+              >
                 {runningStep === step ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Run
+                Run Step
               </Button>
             </div>
           ))}
-          <Button className="w-full" disabled={runningStep !== null || !canStart} onClick={runFullWorkflow}>
-            {runningStep ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Run Full KYB Workflow
-          </Button>
-        </CardContent>
-      </Card>
+          <div className="pt-4">
+            <Button 
+              className="w-full bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 rounded-full h-12 text-sm font-bold shadow-[0_4px_14px_rgba(30,215,96,0.25)]" 
+              disabled={runningStep !== null || !canStart} 
+              onClick={runFullWorkflow}
+            >
+              {runningStep ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Execute Full KYB Workflow
+            </Button>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 }

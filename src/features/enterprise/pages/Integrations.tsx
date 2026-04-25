@@ -18,6 +18,7 @@ import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
 import { getBankingErrorMessage } from '@/services/bankingService';
 import { webhooksService } from '@/services/apiManagementService';
 import type { WebhookResponse } from '@/types/banking';
+import BackButton from '@/components/shared/BackButton';
 
 // Mock data for integrations
 const INTEGRATIONS = [
@@ -172,6 +173,7 @@ export default function EnterpriseIntegrations() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8"
     >
+      <BackButton to="/enterprise/platform" label="Back to Platform" />
       {webhookError && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
@@ -189,16 +191,16 @@ export default function EnterpriseIntegrations() {
       )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Integrations</h1>
-          <p className="text-muted-foreground">Connect Ontiver with your existing tools and workflows.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-ent-text">Integrations</h1>
+          <p className="text-verza-gray">Connect Ontiver with your existing tools and workflows.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="bg-ent-text/10 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/10">
             <Link href="/enterprise/api/docs">
               <ExternalLink className="mr-2 h-4 w-4" /> API Docs
             </Link>
           </Button>
-          <Button onClick={() => window.open('mailto:partnerships@ontiver.com?subject=New%20Integration%20Request', '_self')}>
+          <Button onClick={() => window.open('mailto:partnerships@ontiver.com?subject=New%20Integration%20Request', '_self')} className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90">
             <Plus className="mr-2 h-4 w-4" /> Request Integration
           </Button>
         </div>
@@ -207,67 +209,67 @@ export default function EnterpriseIntegrations() {
       <div className="space-y-4">
         <Input 
           placeholder="Search integrations..." 
-          className="max-w-sm"
+          className="max-w-sm bg-ent-muted border-ent-border text-ent-text focus:border-verza-emerald/30 focus:bg-white/[0.04]"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredIntegrations.map((integration) => (
-            <Card key={integration.id} className="bg-card/80 backdrop-blur-sm border-border/50 flex flex-col">
-              <CardHeader className="flex-row items-start justify-between space-y-0 pb-2">
-                <div className="h-12 w-12 rounded-lg bg-white p-2 flex items-center justify-center border">
+            <div key={integration.id} className="enterprise-card rounded-2xl flex flex-col p-6">
+              <div className="flex flex-row items-start justify-between space-y-0 pb-2">
+                <div className="h-12 w-12 rounded-lg bg-ent-text/10 p-2 flex items-center justify-center border border-ent-border">
                   {/* Using a placeholder if image fails or for the demo */}
-                  <div className="font-bold text-xl text-black">{integration.name.substring(0, 2)}</div>
+                  <div className="font-bold text-xl text-ent-text">{integration.name.substring(0, 2)}</div>
                 </div>
                 {integration.status === 'connected' && (
-                  <Badge className="bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20">Connected</Badge>
+                  <Badge className="bg-verza-emerald/10 text-verza-emerald hover:bg-verza-emerald/20 border-verza-emerald/20">Connected</Badge>
                 )}
                 {integration.status === 'disconnected' && (
-                  <Badge variant="outline" className="text-muted-foreground">Available</Badge>
+                  <Badge variant="outline" className="text-verza-gray border-ent-border">Available</Badge>
                 )}
                 {integration.status === 'error' && (
                   <Badge variant="destructive" className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20">Error</Badge>
                 )}
-              </CardHeader>
-              <CardContent className="pt-4 flex-1">
-                <CardTitle className="text-lg mb-2">{integration.name}</CardTitle>
-                <CardDescription>{integration.description}</CardDescription>
+              </div>
+              <div className="pt-4 flex-1">
+                <h3 className="text-lg font-semibold text-ent-text mb-2">{integration.name}</h3>
+                <p className="text-sm text-verza-gray">{integration.description}</p>
                 
                 {integration.lastSync && (
-                  <div className="mt-4 text-xs text-muted-foreground flex items-center">
+                  <div className="mt-4 text-xs text-verza-gray flex items-center">
                     <RefreshCw className="mr-1 h-3 w-3" /> Last sync: {integration.lastSync}
                   </div>
                 )}
-              </CardContent>
-              <CardFooter className="pt-2 border-t border-border/50 mt-auto">
+              </div>
+              <div className="pt-6 border-t border-ent-border mt-6">
                 {integration.status === 'connected' ? (
                   <div className="flex gap-2 w-full">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => setLocation(`/enterprise/integrations/setup/${integration.id}`)}>
+                    <Button variant="outline" size="sm" className="flex-1 bg-ent-text/10 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/10" onClick={() => setLocation(`/enterprise/integrations/setup/${integration.id}`)}>
                       <Settings className="mr-2 h-4 w-4" />
                       Configure
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDisconnect(integration.id)}>
+                    <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => handleDisconnect(integration.id)}>
                       Disconnect
                     </Button>
                   </div>
                 ) : (
-                  <Button className="w-full" onClick={() => handleReconnect(integration.id)}>
+                  <Button className="w-full bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90" onClick={() => handleReconnect(integration.id)}>
                     Connect
                   </Button>
                 )}
-              </CardFooter>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       </div>
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Webhooks</h2>
+          <h2 className="text-xl font-semibold text-ent-text">Webhooks</h2>
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="bg-ent-text/10 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/10">
                 <Plus className="mr-2 h-4 w-4" /> Add Webhook
               </Button>
             </DialogTrigger>
@@ -311,26 +313,26 @@ export default function EnterpriseIntegrations() {
           </Dialog>
         </div>
 
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-          <CardContent className="p-0">
+        <div className="enterprise-card rounded-2xl p-6">
+          <div className="space-y-0">
             {isLoadingWebhooks ? (
                 <div className="p-8 flex justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <Loader2 className="h-8 w-8 animate-spin text-verza-emerald" />
                 </div>
             ) : webhooks.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">No webhooks registered.</div>
+                <div className="p-8 text-center text-verza-gray">No webhooks registered.</div>
             ) : (
                 webhooks.map((webhook, index) => (
-              <div key={webhook.id} className={`flex items-center justify-between p-4 ${index !== webhooks.length - 1 ? 'border-b border-border/50' : ''}`}>
+              <div key={webhook.id} className={`flex items-center justify-between py-4 ${index !== webhooks.length - 1 ? 'border-b border-ent-border' : ''}`}>
                 <div className="flex items-center gap-4">
-                  <div className="bg-muted p-2 rounded-md">
-                    <Plug className="h-5 w-5 text-muted-foreground" />
+                  <div className="bg-ent-muted border border-ent-border p-2 rounded-md">
+                    <Plug className="h-5 w-5 text-verza-gray" />
                   </div>
                   <div>
-                    <div className="font-mono text-sm">{webhook.url}</div>
+                    <div className="font-mono text-sm text-ent-text">{webhook.url}</div>
                     <div className="flex gap-2 mt-1">
                       {webhook.events.map(event => (
-                        <Badge key={event} variant="secondary" className="text-xs">{event}</Badge>
+                        <Badge key={event} variant="secondary" className="text-xs bg-ent-text/10 text-verza-gray hover:bg-ent-text/20">{event}</Badge>
                       ))}
                     </div>
                   </div>
@@ -338,16 +340,16 @@ export default function EnterpriseIntegrations() {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <span className={`h-2 w-2 rounded-full ${webhook.isActive ? 'bg-verza-emerald' : 'bg-yellow-500'}`} />
-                    <span className="text-sm text-muted-foreground capitalize">{webhook.isActive ? 'Active' : 'Inactive'}</span>
+                    <span className="text-sm text-verza-gray capitalize">{webhook.isActive ? 'Active' : 'Inactive'}</span>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => handleDeleteWebhook(webhook.id)} disabled={activeWebhookId === webhook.id}>
-                    {activeWebhookId === webhook.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />}
+                  <Button variant="ghost" size="icon" onClick={() => handleDeleteWebhook(webhook.id)} disabled={activeWebhookId === webhook.id} className="text-verza-gray hover:text-red-400 hover:bg-red-500/10">
+                    {activeWebhookId === webhook.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                   </Button>
                 </div>
               </div>
             )))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </motion.div>
     </ApiErrorBoundary>

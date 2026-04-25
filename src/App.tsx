@@ -12,6 +12,11 @@ import { PageLoader } from "@/components/shared/loaders/PageLoader";
 import { BANKING_RETRY_EVENT } from "@/services/bankingService";
 import type { BankingRetryEventDetail } from "@/types/banking";
 import { canAccessRoute, isPublicRoute } from "@/security/rbacPolicy";
+import { env } from "@/config/env";
+
+// TEMPORARY DEVELOPMENT ONLY:
+// This router currently has mock/dev route-mounting support so local editing can continue before live auth/RBAC is finalized.
+// Future production route logic should target the normal role-based path, not the temporary dev-only branches.
 
 // Lazy load pages for code splitting
 const UserDashboard = lazy(() => import("@/features/user/pages/Dashboard"));
@@ -131,12 +136,16 @@ const ForbiddenPage = lazy(() => import("./pages/Forbidden"));
 function Router() {
   const { user, permissions, isBootstrapping } = useAuth();
   const [location] = useLocation();
+  // Temporary development bypass: mount every role's route tree so you can edit any dashboard area from one session.
+  // Set `VITE_DEV_UNLOCK_ALL_ROUTES=false` later to restore the normal role-specific route mounting below.
+  const allowAllRoutes = env.devUnlockAllRoutes;
   const getDefaultRoute = () => {
     if (!user) return "/login";
     if (user.role === "admin") return "/admin";
     if (user.role === "verifier") return "/verifier";
     if (user.role === "enterprise") return "/enterprise";
-    return "/forbidden";
+    if (user.role === "manager") return "/manager";
+    return "/app";
   };
   
   if (isBootstrapping) {
@@ -193,7 +202,7 @@ function Router() {
         <Route path="/forbidden" component={ForbiddenPage} />
         
         {/* User Dashboard Routes */}
-        {user?.role === 'user' && (
+        {(allowAllRoutes || user?.role === 'user') && (
           <>
             <Route path="/app" component={UserDashboard} />
             <Route path="/app/getting-started" component={GettingStartedPage} />
@@ -234,7 +243,7 @@ function Router() {
         )}
 
         {/* Verifier Routes */}
-        {user?.role === 'verifier' && (
+        {(allowAllRoutes || user?.role === 'verifier') && (
           <>
             <Route path="/verifier" component={VerifierDashboard} />
             <Route path="/verifier/jobs" component={VerifierJobBoard} />
@@ -258,7 +267,7 @@ function Router() {
         )}
         
         {/* Enterprise Routes */}
-        {user?.role === 'enterprise' && (
+        {(allowAllRoutes || user?.role === 'enterprise') && (
           <>
             <Route path="/enterprise" component={EnterpriseDashboard} />
             <Route path="/enterprise/bulk" component={EnterpriseBulkVerification} />
@@ -294,7 +303,7 @@ function Router() {
           </>
         )}
 
-        {user?.role === 'manager' && (
+        {(allowAllRoutes || user?.role === 'manager') && (
           <>
             <Route path="/manager" component={EnterpriseDashboard} />
             <Route path="/manager/requests" component={EnterpriseVerificationRequests} />
@@ -313,7 +322,7 @@ function Router() {
         )}
         
         {/* Admin Routes */}
-        {user?.role === 'admin' && (
+        {(allowAllRoutes || user?.role === 'admin') && (
           <>
             <Route path="/admin" component={AdminDashboard} />
             <Route path="/admin/users" component={AdminUserManagement} />

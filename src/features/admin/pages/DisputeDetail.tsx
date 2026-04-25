@@ -15,25 +15,29 @@ export default function DisputeDetail() {
   const [match, params] = useRoute("/admin/disputes/:id");
   const [, setLocation] = useLocation();
   const [notes, setNotes] = useState("");
-  if (!match) return null;
+  const disputeId = params?.id ?? "";
+  const detailEnabled = match && Boolean(disputeId);
 
   const disputeQuery = useQuery({
-    queryKey: ["admin", "dispute", params.id],
-    queryFn: () => bankingService.getDisputeDetail(params.id),
+    queryKey: ["admin", "dispute", disputeId],
+    queryFn: () => bankingService.getDisputeDetail(disputeId),
+    enabled: detailEnabled,
   });
 
   const resolveMutation = useMutation({
     mutationFn: (resolution: "approve_refund" | "reject") =>
-      bankingService.resolveDispute(params.id, { resolution, notes: notes || "Resolved by admin." }),
+      bankingService.resolveDispute(disputeId, { resolution, notes: notes || "Resolved by admin." }),
     onSuccess: async () => {
       toast.success("Dispute resolution submitted.");
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["admin", "dispute", params.id] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "dispute", disputeId] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "disputes"] }),
       ]);
     },
     onError: (error) => toast.error(getBankingErrorMessage(error, "Failed to resolve dispute")),
   });
+
+  if (!detailEnabled) return null;
 
   if (disputeQuery.isLoading) {
     return <div className="h-[50vh] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
