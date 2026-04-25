@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -146,9 +147,9 @@
   --opaque-button-border-intensity: -8;
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
-  --font-sans: Poppins, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-serif: Georgia, serif;
-  --font-mono: Menlo, monospace;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
@@ -276,6 +277,19 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+
+  a[href],
+  a,
+  button,
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer !important;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
   
   .dark body {
     @apply bg-background text-foreground;
@@ -378,18 +392,17 @@
 
   /* ── Subtle Grid Overlay ── */
   .enterprise-grid {
-    background-image: 
-      linear-gradient(var(--enterprise-grid-color) 1px, transparent 1px),
-      linear-gradient(90deg, var(--enterprise-grid-color) 1px, transparent 1px);
-    background-size: 44px 44px;
+    background-color: var(--enterprise-grid-color);
   }
 
   /* ── Shell (main content wrapper) ── */
   .enterprise-shell {
-    background: var(--enterprise-shell-bg);
-    border: 1px solid var(--enterprise-shell-border);
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.08);
-    backdrop-filter: blur(28px);
+    background: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-radius: 24px;
   }
 
   .dark .enterprise-shell {
@@ -398,43 +411,86 @@
 
   /* ── Glass Card (primary transparent card) ── */
   .enterprise-card {
-    background: var(--enterprise-card-bg);
-    border: 1px solid var(--enterprise-card-border);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.04);
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(6, 20, 15, 0.05);
     backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark .enterprise-card {
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+    background: rgba(5, 11, 8, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
 
   .enterprise-card:hover {
-    border-color: rgba(30, 215, 96, 0.22);
+    border-color: rgba(30, 215, 96, 0.3);
     transform: translateY(-2px);
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 12px 40px rgba(6, 20, 15, 0.08);
   }
 
   .dark .enterprise-card:hover {
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
+    border-color: rgba(30, 215, 96, 0.3);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  }
+
+  .enterprise-card-refresh .enterprise-card {
+    background: rgba(255, 255, 255, 0.6);
+    border-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 8px 32px rgba(6, 20, 15, 0.05);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  .enterprise-card-refresh .enterprise-card:hover {
+    border-color: rgba(30, 215, 96, 0.4);
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(6, 20, 15, 0.1);
+  }
+
+  .dark .enterprise-card-refresh .enterprise-card {
+    background: rgba(5, 11, 8, 0.5);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  .dark .enterprise-card-refresh .enterprise-card:hover {
+    background: rgba(7, 15, 11, 0.6);
+    border-color: rgba(30, 215, 96, 0.3);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
   }
 
   /* ── Muted Card ── */
   .enterprise-card-muted {
-    background: var(--enterprise-muted-bg);
-    border: 1px solid var(--enterprise-muted-border);
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .dark .enterprise-card-muted {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
   }
 
   /* ── Active / Highlighted Card ── */
   .enterprise-active-card {
-    background: rgba(30, 215, 96, 0.04);
-    border: 1px solid rgba(30, 215, 96, 0.2);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
+    background: rgba(30, 215, 96, 0.08);
+    border: 1px solid rgba(30, 215, 96, 0.3);
+    box-shadow: 0 12px 32px rgba(30, 215, 96, 0.1);
     backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
   }
 
   .dark .enterprise-active-card {
+    background: rgba(30, 215, 96, 0.05);
+    border: 1px solid rgba(30, 215, 96, 0.2);
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
   }
 
@@ -458,31 +514,37 @@
     background: var(--enterprise-sidebar-bg);
     border-right: none;
     backdrop-filter: blur(34px);
-    border-radius: 0 24px 24px 0;
+    border-radius: 0 50px 50px 0;
     overflow: hidden;
     position: relative;
-    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.1);
+    /* box-shadow: 8px 0 40px rgba(0, 0, 0, 0.1); */
   }
 
   .dark .enterprise-sidebar {
-    box-shadow: 8px 0 60px rgba(0, 0, 0, 0.4);
+    /* box-shadow: 8px 0 60px rgba(0, 0, 0, 0.4); */
   }
 
-  /* Sidebar background image overlay */
-  .enterprise-sidebar::before {
-    content: "";
+  .enterprise-sidebar-media {
     position: absolute;
     inset: 0;
-    background-image: var(--sidebar-bg-image);
-    background-size: cover;
-    background-position: center;
-    opacity: 0.3;
+    overflow: hidden;
+    pointer-events: none;
     z-index: 0;
     border-radius: inherit;
   }
 
-  .dark .enterprise-sidebar::before {
-    opacity: 0.18;
+  .enterprise-sidebar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.8) brightness(0.35) contrast(1.05);
+    transform: scale(1.08);
+  }
+
+  .enterprise-sidebar-video-tint {
+    position: absolute;
+    inset: 0;
+    background: rgba(6, 20, 15, 0.137);
   }
 
   /* Sidebar inner gradient overlay for readability */
@@ -490,16 +552,18 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(6, 20, 15, 0.3) 0%, rgba(6, 20, 15, 0.6) 50%, rgba(6, 20, 15, 0.4) 100%);
+    background: rgba(6, 20, 15, 0.5);
     z-index: 0;
     border-radius: inherit;
     pointer-events: none;
   }
 
-  .enterprise-sidebar > * {
+  .enterprise-sidebar > :not(.enterprise-sidebar-media) {
     position: relative;
     z-index: 1;
   }
+
+
 
   /* ── Header ── */
   .enterprise-header {
@@ -515,21 +579,29 @@
 
   /* ── Decorative Light Streak ── */
   .enterprise-light-streak {
-    background: linear-gradient(90deg, transparent, rgba(30, 215, 96, 0.15), transparent);
+    background: rgba(30, 215, 96, 0.15);
     filter: blur(15px);
     pointer-events: none;
   }
 
   /* ── Table Rows ── */
   .enterprise-table-row {
-    background: var(--enterprise-muted-bg);
-    border-bottom: 1px solid var(--enterprise-muted-border);
+    background: rgba(255, 255, 255, 0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     transition: background 0.2s ease;
   }
 
+  .dark .enterprise-table-row {
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
   .enterprise-table-row:hover {
-    background: var(--enterprise-muted-bg);
-    filter: brightness(1.02);
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  .dark .enterprise-table-row:hover {
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .enterprise-table-row:last-child {
@@ -544,12 +616,17 @@
 
   /* ── Monitor Shell (Dashboard wrapper) ── */
   .enterprise-monitor-shell {
-    background: var(--enterprise-shell-bg);
-    border: 1px solid var(--enterprise-shell-border);
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-radius: 24px;
   }
 
   .dark .enterprise-monitor-shell {
+    background: rgba(5, 11, 8, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
   }
 

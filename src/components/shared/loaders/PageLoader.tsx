@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 const mulberry32 = (seed: number) => {
   let t = seed >>> 0;
   return () => {
-    t += 0x6D2B79F5;
+    t += 0x6d2b79f5;
     let r = Math.imul(t ^ (t >>> 15), 1 | t);
     r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
     return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
@@ -21,12 +22,12 @@ const GlitchLine = ({ seed }: { seed: number }) => {
       className="h-1 bg-[#1ED760] rounded-full"
       animate={{
         width: widths,
-        opacity: [0.2, 0.8, 0.2]
+        opacity: [0.2, 0.8, 0.2],
       }}
       transition={{
         duration: duration,
         repeat: Infinity,
-        repeatType: "reverse"
+        repeatType: "reverse",
       }}
     />
   );
@@ -59,7 +60,11 @@ const LoadingText = () => {
   );
 };
 
-export const PageLoader = () => {
+interface PageLoaderProps {
+  className?: string;
+}
+
+export const PageLoader = ({ className }: PageLoaderProps) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -74,14 +79,19 @@ export const PageLoader = () => {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex items-center justify-center overflow-hidden">
+    <div
+      className={cn(
+        "relative isolate flex min-h-[60vh] w-full items-center justify-center overflow-hidden rounded-[2rem] border border-verza-forest/10 bg-[#050505] shadow-[0_24px_80px_rgba(0,0,0,0.24)]",
+        className,
+      )}
+    >
       {/* Background Grid */}
       <div className="absolute inset-0 opacity-20">
-        <div 
-          className="absolute inset-0" 
+        <div
+          className="absolute inset-0"
           style={{
             backgroundImage: `radial-gradient(circle at 50% 50%, rgba(30, 215, 96, 0.1) 1px, transparent 1px)`,
-            backgroundSize: '30px 30px'
+            backgroundSize: "30px 30px",
           }}
         />
         <motion.div
@@ -114,8 +124,12 @@ export const PageLoader = () => {
         <div className="absolute inset-0 flex items-center justify-center">
           <motion.div
             className="w-32 h-32 rounded-full border border-[#1ED760]/30 flex items-center justify-center relative"
-            animate={{ 
-              boxShadow: ["0 0 10px rgba(30,215,96,0.1)", "0 0 30px rgba(30,215,96,0.3)", "0 0 10px rgba(30,215,96,0.1)"] 
+            animate={{
+              boxShadow: [
+                "0 0 10px rgba(30,215,96,0.1)",
+                "0 0 30px rgba(30,215,96,0.3)",
+                "0 0 10px rgba(30,215,96,0.1)",
+              ],
             }}
             transition={{ duration: 2, repeat: Infinity }}
           >
@@ -128,7 +142,11 @@ export const PageLoader = () => {
                 strokeWidth="2"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               />
               <motion.path
                 d="M50 20 L75 35 L75 65 L50 80 L25 65 L25 35 Z"
@@ -147,11 +165,16 @@ export const PageLoader = () => {
             key={i}
             className="absolute w-full h-full"
             animate={{ rotate: [0, 360] }}
-            transition={{ duration: 3 + i, repeat: Infinity, ease: "linear", delay: i * 0.5 }}
+            transition={{
+              duration: 3 + i,
+              repeat: Infinity,
+              ease: "linear",
+              delay: i * 0.5,
+            }}
           >
-            <div 
+            <div
               className="w-1 h-8 bg-gradient-to-b from-transparent via-[#1ED760] to-transparent absolute top-0 left-1/2 -translate-x-1/2 opacity-50"
-              style={{ filter: 'blur(1px)' }}
+              style={{ filter: "blur(1px)" }}
             />
           </motion.div>
         ))}
@@ -160,18 +183,18 @@ export const PageLoader = () => {
       {/* Bottom Status Area */}
       <div className="absolute bottom-12 left-0 right-0 flex flex-col items-center gap-4">
         <LoadingText />
-        
+
         {/* Progress Bar */}
         <div className="w-64 h-1 bg-[#1ED760]/10 rounded-full overflow-hidden relative">
           <motion.div
             className="absolute top-0 left-0 h-full bg-[#1ED760]"
             style={{ width: `${Math.min(progress, 100)}%` }}
             animate={{
-              boxShadow: "0 0 10px #1ED760"
+              boxShadow: "0 0 10px #1ED760",
             }}
           />
         </div>
-        
+
         <div className="text-[#1ED760]/50 text-[10px] font-mono">
           SYSTEM INTEGRITY: {Math.min(Math.floor(progress), 100)}%
         </div>

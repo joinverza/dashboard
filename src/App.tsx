@@ -149,7 +149,7 @@ function Router() {
   };
   
   if (isBootstrapping) {
-    return <PageLoader />;
+    return <PageLoader className="min-h-screen rounded-none border-none shadow-none" />;
   }
 
   if (

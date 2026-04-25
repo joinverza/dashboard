@@ -8,6 +8,8 @@ interface PageTransitionProps {
   children: ReactNode;
 }
 
+const PAGE_LOADER_DELAY_MS = 800;
+
 export default function PageTransition({ children }: PageTransitionProps) {
   const [location] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +24,7 @@ export default function PageTransition({ children }: PageTransitionProps) {
         setCurrentChildren(children);
         setCurrentLocation(location);
         setIsLoading(false);
-      }, 1500); // Wait for 1.5s to let the loader animation play out
+      }, PAGE_LOADER_DELAY_MS);
       return () => clearTimeout(timer);
     } else {
       setCurrentChildren(children);

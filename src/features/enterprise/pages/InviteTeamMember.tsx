@@ -1,0 +1,1 @@
+export default function InviteTeamMember() { return <div>Placeholder</div>; }

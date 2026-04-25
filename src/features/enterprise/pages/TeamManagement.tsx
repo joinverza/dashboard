@@ -1,0 +1,1 @@
+export default function TeamManagement() { return <div>Placeholder</div>; }

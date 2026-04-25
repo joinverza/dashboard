@@ -1,14 +1,15 @@
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import versalogo from "@/assets/ONTIVER Green.svg";
-import sidebarBg from "@/assets/sidebar-bg.png";
 import type { NavItem } from "@/config/navigation";
 import { useMemo } from "react";
+import {
+  ENTERPRISE_SIDEBAR_IMAGE_URL,
+  groupNavItems,
+  isSidebarItemActive,
+} from "./sidebarShared";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -17,18 +18,12 @@ interface SidebarProps {
   variant?: "default" | "enterprise";
 }
 
-/** Group navigation items by their `group` property, preserving insertion order. */
-function groupNavItems(items: NavItem[]): { group: string; items: NavItem[] }[] {
-  const map = new Map<string, NavItem[]>();
-  for (const item of items) {
-    const key = item.group ?? "";
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(item);
-  }
-  return Array.from(map.entries()).map(([group, groupItems]) => ({ group, items: groupItems }));
-}
-
-export default function Sidebar({ collapsed, onToggle, navItems, variant = "default" }: SidebarProps) {
+export default function Sidebar({
+  collapsed,
+  onToggle,
+  navItems,
+  variant = "default",
+}: SidebarProps) {
   const [location] = useLocation();
   const isEnterprise = variant === "enterprise";
   const grouped = useMemo(() => groupNavItems(navItems), [navItems]);
@@ -37,21 +32,31 @@ export default function Sidebar({ collapsed, onToggle, navItems, variant = "defa
     <motion.aside
       className={cn(
         isEnterprise
-          ? "enterprise-sidebar sticky top-0 z-30 self-stretch"
+          ? "enterprise-sidebar sticky top-0 z-30 self-stretch min-h-screen"
           : "glass-sidebar self-stretch sticky top-0 z-30",
         "transition-all duration-300 ease-in-out flex flex-col overflow-hidden",
-        collapsed ? "w-20" : "w-64"
+        collapsed ? "w-20" : "w-64",
       )}
-      style={isEnterprise ? { "--sidebar-bg-image": `url(${sidebarBg})`, minHeight: "100vh" } as React.CSSProperties : undefined}
       animate={{ width: collapsed ? 80 : 256 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
+      {isEnterprise && (
+        <div aria-hidden className="enterprise-sidebar-media">
+          <img
+            src={ENTERPRISE_SIDEBAR_IMAGE_URL}
+            alt=""
+            className="enterprise-sidebar-image"
+          />
+          <div className="enterprise-sidebar-video-tint" />
+        </div>
+      )}
+
       <div className="p-5 flex-1 overflow-y-auto scrollbar-thin">
         {/* Logo */}
         <motion.div
           className={cn(
             "flex items-center mb-8 mt-8",
-            collapsed ? "justify-center" : "gap-3"
+            collapsed ? "justify-center" : "gap-3",
           )}
           whileHover={{ scale: 1.02 }}
         >
@@ -60,7 +65,7 @@ export default function Sidebar({ collapsed, onToggle, navItems, variant = "defa
               "relative overflow-hidden",
               isEnterprise
                 ? "p-1.5 bg-white/[0.08] border border-white/10"
-                : "p-1 bg-white/5 border border-white/5"
+                : "p-1 bg-white/5 border border-white/5",
             )}
           >
             <img
@@ -77,16 +82,20 @@ export default function Sidebar({ collapsed, onToggle, navItems, variant = "defa
                 exit={{ opacity: 0, width: 0 }}
                 className="flex flex-col min-w-0 overflow-hidden whitespace-nowrap"
               >
-                <span className={cn(
-                  "text-lg font-bold tracking-tight",
-                  isEnterprise ? "text-white!" : "text-foreground"
-                )}>
+                <span
+                  className={cn(
+                    "text-lg font-bold tracking-tight",
+                    isEnterprise ? "text-white!" : "text-foreground",
+                  )}
+                >
                   Ontiver
                 </span>
-                <span className={cn(
-                  "text-[10px] uppercase tracking-[0.2em] font-semibold",
-                  isEnterprise ? "text-verza-emerald" : "text-verza-emerald"
-                )}>
+                <span
+                  className={cn(
+                    "text-[10px] uppercase tracking-[0.2em] font-semibold",
+                    isEnterprise ? "text-verza-emerald" : "text-verza-emerald",
+                  )}
+                >
                   {isEnterprise ? "Enterprise" : "Dashboard"}
                 </span>
               </motion.div>
@@ -144,19 +153,23 @@ export default function Sidebar({ collapsed, onToggle, navItems, variant = "defa
       </div>
 
       {/* Footer / Toggle */}
-      <div className={cn(
-        "p-4",
-        isEnterprise ? "border-t border-white/[0.07]" : "border-t border-white/10"
-      )}>
+      <div
+        className={cn(
+          "p-4",
+          isEnterprise
+            ? "border-t border-white/[0.07]"
+            : "border-t border-white/10",
+        )}
+      >
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={onToggle}
           className={cn(
-            "w-full py-2.5 px-3 flex items-center justify-center gap-2 transition-all duration-200 text-sm font-medium text-white!",
+            "w-full py-2.5 px-3 flex items-center justify-center gap-2 transition-all duration-200 text-sm font-medium text-white! cursor-pointer",
             isEnterprise
-              ? "bg-ent-text/5 hover:bg-ent-text/10 border border-ent-text/10 text-ent-text/60 hover:text-ent-text"
-              : "bg-white/5 hover:bg-white/10 border border-white/5 text-muted-foreground hover:text-foreground"
+              ? "text-ent-text/60 hover:text-ent-text"
+              : "bg-white/5 hover:bg-white/10 border border-white/5 text-muted-foreground hover:text-foreground",
           )}
         >
           {collapsed ? (
@@ -187,10 +200,7 @@ function SidebarNavItem({
   isEnterprise: boolean;
   location: string;
 }) {
-  const isDashboard = item.path === '/enterprise' || item.path === '/app';
-  const isActive = isDashboard 
-    ? location === item.path 
-    : (location === item.path || (item.path !== "/" && location.startsWith(item.path)));
+  const isActive = isSidebarItemActive(item.path, location);
   const Icon = item.icon;
 
   return (
@@ -210,7 +220,7 @@ function SidebarNavItem({
               : "bg-verza-emerald/10 border border-verza-emerald/20"
             : isEnterprise
               ? "hover:bg-ent-text/5"
-              : "text-muted-foreground hover:text-foreground hover:bg-white/[0.03]"
+              : "text-muted-foreground hover:text-foreground hover:bg-white/[0.03]",
         )}
       >
         {/* Active left bar indicator */}
@@ -223,19 +233,21 @@ function SidebarNavItem({
         )}
 
         {/* Icon container */}
-        <div className={cn(
-          "p-2.5 transition-all duration-200",
-          isActive
-            ? isEnterprise
-              ? "bg-white/[0.08] border border-verza-emerald/10 text-verza-emerald"
-              : "bg-white/[0.08] border border-verza-emerald/10 text-verza-emerald"
-            : isEnterprise
-              ? "bg-transparent text-white! opacity-70 group-hover:bg-white/8 group-hover:text-verza-emerald! group-hover:opacity-100"
-              : "bg-white/5 text-muted-foreground group-hover:bg-white/10 group-hover:text-foreground"
-        )}>
+        <div
+          className={cn(
+            "p-2.5 transition-all duration-200",
+            isActive
+              ? isEnterprise
+                ? "bg-white/[0.08] border border-verza-emerald/10 text-verza-emerald"
+                : "bg-white/[0.08] border border-verza-emerald/10 text-verza-emerald"
+              : isEnterprise
+                ? "bg-transparent text-white! opacity-70 group-hover:bg-white/8 group-hover:text-verza-emerald! group-hover:opacity-100"
+                : "bg-white/5 text-muted-foreground group-hover:bg-white/10 group-hover:text-foreground",
+          )}
+        >
           <Icon className="w-[18px] h-[18px]" />
         </div>
-        
+
         <AnimatePresence mode="wait">
           {!collapsed && (
             <motion.span
@@ -245,17 +257,19 @@ function SidebarNavItem({
               className={cn(
                 "font-semibold text-[15px] tracking-wide whitespace-nowrap overflow-hidden text-white!",
                 isActive
-                  ? isEnterprise ? "text-ent-text" : "text-foreground"
+                  ? isEnterprise
+                    ? "text-ent-text"
+                    : "text-foreground"
                   : isEnterprise
                     ? "text-ent-text opacity-70 group-hover:opacity-100"
-                    : "text-muted-foreground group-hover:text-foreground"
+                    : "text-muted-foreground group-hover:text-foreground",
               )}
             >
               {item.label}
             </motion.span>
           )}
         </AnimatePresence>
-        
+
         {!collapsed && isActive && (
           <motion.div
             layoutId="active-dot"
@@ -263,7 +277,7 @@ function SidebarNavItem({
               "ml-auto w-1.5 h-1.5 rounded-full",
               isEnterprise
                 ? "bg-verza-emerald shadow-[0_0_8px_rgba(30,215,96,0.6)]"
-                : "bg-verza-emerald"
+                : "bg-verza-emerald",
             )}
           />
         )}

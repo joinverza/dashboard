@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -49,46 +49,6 @@ export default function EnterpriseBilling() {
     }
     return null;
   });
-
-  const displayPrice = useMemo(() => {
-    const price = PLAN_PRICE_MAP[currentPlan][interval];
-    return price === null ? 'Custom' : `$${price.toLocaleString()}`;
-  }, [currentPlan, interval]);
-
-  const promoteDefaultMethod = (id: number) => {
-    setPaymentMethods((current) =>
-      current.map((item) => ({ ...item, isDefault: item.id === id })),
-    );
-  };
-
-  const removeMethod = (id: number) => {
-    setPaymentMethods((current) => {
-      const filtered = current.filter((item) => item.id !== id);
-      if (filtered.length > 0 && !filtered.some((item) => item.isDefault)) {
-        filtered[0] = { ...filtered[0], isDefault: true };
-      }
-      return filtered;
-    });
-  };
-
-  const addPaymentMethod = () => {
-    const last = paymentMethods.length + 1;
-    setPaymentMethods((current) => [
-      ...current,
-      { id: Date.now(), type: 'Visa', last4: `${(1000 + last).toString().slice(-4)}`, expiry: '10/28', isDefault: current.length === 0 },
-    ]);
-    toast.success('Payment method added');
-  };
-
-  const continueToCheckout = () => {
-    if (!pendingPlan) return;
-    setLocation(`/enterprise/billing/checkout?plan=${pendingPlan.plan}&interval=${pendingPlan.interval}`);
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
 
   const displayPrice = useMemo(() => {
     const price = PLAN_PRICE_MAP[currentPlan][interval];

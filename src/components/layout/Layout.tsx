@@ -26,7 +26,6 @@ export default function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
   const { collapsed, toggle } = useSidebarState();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isSupportChatOpen, setIsSupportChatOpen] = useState(false);
   const [mfaEnrollmentCode, setMfaEnrollmentCode] = useState("");
   const [isVerifyingMfaEnrollment, setIsVerifyingMfaEnrollment] = useState(false);
@@ -56,19 +55,14 @@ export default function Layout({ children }: LayoutProps) {
     ? roleNavItems.filter((item) => env.devUnlockAllRoutes || canAccessRoute(user.role, permissions, item.path))
     : roleNavItems;
   const isEnterpriseExperience = location.startsWith("/enterprise");
+  const preserveEnterpriseHubCards =
+    location === "/enterprise/reports" || location === "/enterprise/platform";
+  const shouldRefreshEnterpriseCards =
+    isEnterpriseExperience && !preserveEnterpriseHubCards;
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   useEffect(() => {
     setMfaEnrollmentCode("");
@@ -109,7 +103,18 @@ export default function Layout({ children }: LayoutProps) {
       {/* Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         {isEnterpriseExperience ? (
-          <div className="absolute inset-0 enterprise-grid opacity-[0.2]" />
+          <>
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover opacity-[0.25]"
+              src="https://assets.mixkit.co/videos/preview/mixkit-abstract-technology-lines-in-white-background-30006-large.mp4"
+            />
+            <div className="absolute inset-0 enterprise-grid opacity-[0.4]" />
+            <div className="absolute inset-0 bg-white/40 dark:bg-black/60 mix-blend-overlay" />
+          </>
         ) : (
           <div className="absolute inset-0 bg-transparent opacity-40 dark:opacity-20 mix-blend-screen" />
         )}
@@ -135,7 +140,8 @@ export default function Layout({ children }: LayoutProps) {
             <Header onMobileMenuOpen={() => setMobileOpen(true)} variant={isEnterpriseExperience ? "enterprise" : "default"} />
             <main className={cn(
               "flex-1 overflow-auto",
-              isEnterpriseExperience ? "p-4 sm:p-6 lg:p-8" : "p-4 md:p-6"
+              isEnterpriseExperience ? "p-4 sm:p-6 lg:p-8" : "p-4 md:p-6",
+              shouldRefreshEnterpriseCards && "enterprise-card-refresh",
             )}>
               <PageTransition>{children}</PageTransition>
             </main>

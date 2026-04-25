@@ -78,7 +78,7 @@ export default function Header({ onMobileMenuOpen, variant = "default" }: Header
 
       <div className="flex items-center gap-2 md:gap-4">
         {isEnterprise && (
-          <div className="hidden lg:flex items-center gap-2 rounded-full border border-verza-emerald/20 bg-verza-emerald/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-verza-emerald shadow-[0_0_15px_rgba(30,215,96,0.1)]">
+          <div className="hidden lg:flex items-center gap-2 rounded-full border border-verza-emerald/20 bg-verza-emerald/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-verza-emerald">
             <ShieldCheck className="h-3.5 w-3.5" />
             <span className="font-semibold">Secure session</span>
           </div>

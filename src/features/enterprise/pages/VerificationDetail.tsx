@@ -1,0 +1,1 @@
+export default function VerificationDetail() { return <div>Placeholder</div>; }

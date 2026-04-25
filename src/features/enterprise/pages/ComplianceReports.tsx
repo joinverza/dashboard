@@ -104,7 +104,7 @@ export default function ComplianceReports() {
           
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-verza-primary hover:bg-verza-primary/90 text-ent-text shadow-glow">
+              <Button className="bg-verza-primary hover:bg-verza-primary/90 text-ent-text" variant="outline">
                 <FileText className="mr-2 h-4 w-4" /> Generate New Report
               </Button>
             </DialogTrigger>
