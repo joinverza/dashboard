@@ -14,6 +14,7 @@
   --color-verza-gray: #9ca3af;
   --color-verza-kelly: #06140F;
 
+
   /* Enterprise Dynamic Colors */
   --color-ent-text: var(--enterprise-text);
   --color-ent-bg: var(--enterprise-bg);
@@ -26,6 +27,7 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --color-background-overlay: rgba(6, 20, 15, 0.137);
   
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
@@ -92,6 +94,7 @@
   --border: 140 12% 90%;
   --input: 140 12% 90%;
   --ring: 145 63% 42%;
+  --background-overlay: rgba(4, 65, 26, 0.281);
   
   --card: 0 0% 100%;
   --card-foreground: 150 40% 6%;
@@ -198,6 +201,8 @@
   --border: 160 10% 14%;
   --input: 160 10% 14%;
   --ring: 145 63% 42%;
+  --background-overlay: rgba(16, 59, 21, 0.137);
+  
 
   --card: 160 18% 6%;
   --card-foreground: 0 0% 97%;
@@ -537,14 +542,14 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: saturate(0.8) brightness(0.35) contrast(1.05);
+    filter: saturate(0.8) brightness(1) contrast(1.05);
     transform: scale(1.08);
   }
 
   .enterprise-sidebar-video-tint {
     position: absolute;
     inset: 0;
-    background: rgba(6, 20, 15, 0.137);
+    background: var(--background-overlay);
   }
 
   /* Sidebar inner gradient overlay for readability */
@@ -552,7 +557,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: rgba(6, 20, 15, 0.5);
+    background: var(--background-overlay);
     z-index: 0;
     border-radius: inherit;
     pointer-events: none;
