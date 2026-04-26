@@ -101,24 +101,15 @@ export default function Layout({ children }: LayoutProps) {
       )}
     >
       {/* Background Elements */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {isEnterpriseExperience ? (
-          <>
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover opacity-[0.25]"
-              src="https://assets.mixkit.co/videos/preview/mixkit-abstract-technology-lines-in-white-background-30006-large.mp4"
-            />
-            <div className="absolute inset-0 enterprise-grid opacity-[0.4]" />
-            <div className="absolute inset-0 bg-white/40 dark:bg-[rgba(2,18,8,0.72)] mix-blend-overlay" />
-          </>
-        ) : (
-          <div className="absolute inset-0 bg-transparent opacity-40 dark:opacity-20 mix-blend-screen" />
-        )}
-      </div>
+      {/* <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <img
+          src="/dark_green_bg.png"
+          alt="Background"
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.45] dark:opacity-[0.25]"
+        />
+        <div className="absolute inset-0 enterprise-grid opacity-[0.3]" />
+        <div className="absolute inset-0 bg-white/40 dark:bg-black/40 mix-blend-overlay" />
+      </div> */}
 
       {/* Mobile Sidebar */}
       <MobileSidebar isOpen={mobileOpen} onClose={() => setMobileOpen(false)} navItems={navItems} variant={isEnterpriseExperience ? "enterprise" : "default"} />

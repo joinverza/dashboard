@@ -167,17 +167,17 @@
   --destructive-border: hsl(var(--destructive));
 
   /* Enterprise Theme Variables — Light Mode */
-  --enterprise-bg: #f0f5f2;
+  --enterprise-bg: #f5f8f6;
   --enterprise-text: #06140F;
-  --enterprise-card-bg: rgba(255, 255, 255, 0.72);
-  --enterprise-card-border: rgba(6, 20, 15, 0.08);
-  --enterprise-shell-bg: rgba(255, 255, 255, 0.65);
-  --enterprise-shell-border: rgba(6, 20, 15, 0.09);
+  --enterprise-card-bg: #ffffff;
+  --enterprise-card-border: #e2e8e4;
+  --enterprise-shell-bg: #ffffff;
+  --enterprise-shell-border: #e2e8e4;
   --enterprise-sidebar-bg: #122a20;
-  --enterprise-header-bg: rgba(255, 255, 255, 0.82);
-  --enterprise-muted-bg: rgba(6, 20, 15, 0.03);
-  --enterprise-muted-border: rgba(6, 20, 15, 0.06);
-  --enterprise-grid-color: rgba(6, 20, 15, 0.03);
+  --enterprise-header-bg: #ffffff;
+  --enterprise-muted-bg: #f8faf9;
+  --enterprise-muted-border: #ecefec;
+  --enterprise-grid-color: rgba(6, 20, 15, 0.02);
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -195,24 +195,26 @@
   --verza-mint: #9cd8ab;
   --verza-gray: #90a796;
   --verza-kelly: #06210d;
+  --card-border: hsla( 137, 44%, 6%, 0.737);
+
 
   /* UI System Colors — Dark */
-  --background: 136 56% 5%;
+  --background: 133 53% 3%;
   --foreground: 135 20% 94%;
-  --border: 136 28% 16%;
-  --input: 136 28% 16%;
+  --border: 137 42% 12%;
+  --input: 137 42% 12%;
   --ring: 136 68% 36%;
-  --background-overlay: rgba(1, 22, 8, 0.76) !important;
-  --filter: saturate(0.9) brightness(0.32) contrast(1.8);
+  --background-overlay: rgba(4, 24, 7, 0.234) !important;
+  --filter: saturate(0.5) brightness(0.4) contrast(3.05);
 
 
-  --card: 136 38% 7%;
+  --card: 133 53% 4%;
   --card-foreground: 135 20% 94%;
-  --card-border: 136 24% 18%;
+  --card-border: 137 44% 10% / 0.737;
 
-  --popover: 136 42% 6%;
+  --popover: 133 53% 4%;
   --popover-foreground: 135 20% 94%;
-  --popover-border: 136 24% 18%;
+  --popover-border: 137 42% 12%;
 
   --primary: 136 72% 38%;
   --primary-foreground: 0 0% 100%;
@@ -220,10 +222,10 @@
   --secondary: 136 24% 12%;
   --secondary-foreground: 135 20% 94%;
 
-  --muted: 136 22% 11%;
+  --muted: 135 43% 5%;
   --muted-foreground: 136 11% 64%;
 
-  --accent: 136 26% 13%;
+  --accent: 138 43% 8%;
   --accent-foreground: 135 20% 94%;
 
   --destructive: 0 58% 34%;
@@ -260,16 +262,16 @@
   --elevate-2: rgba(83, 124, 91, 0.14);
 
   /* Enterprise Theme Variables — Dark Mode */
-  --enterprise-bg: #041108;
+  --enterprise-bg: #020804;
   --enterprise-text: #eff8f1;
-  --enterprise-card-bg: rgba(6, 25, 11, 0.72);
-  --enterprise-card-border: rgba(65, 116, 78, 0.26);
-  --enterprise-shell-bg: rgba(4, 18, 8, 0.78);
-  --enterprise-shell-border: rgba(70, 122, 83, 0.24);
-  --enterprise-sidebar-bg: rgba(4, 22, 9, 0.9);
-  --enterprise-header-bg: rgba(3, 14, 7, 0.84);
-  --enterprise-muted-bg: rgba(55, 98, 66, 0.12);
-  --enterprise-muted-border: rgba(70, 122, 83, 0.2);
+  --enterprise-card-bg: #040D06;
+  --enterprise-card-border: #09170dbc;
+  --enterprise-shell-bg: #040D06;
+  --enterprise-shell-border: #09170dbc;
+  --enterprise-sidebar-bg: #040D06;
+  --enterprise-header-bg: #020804;
+  --enterprise-muted-bg: #061208;
+  --enterprise-muted-border: #09170dbc;
   --enterprise-grid-color: rgba(33, 84, 45, 0.12);
 }
 
@@ -313,50 +315,50 @@
     @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm;
   }
   .dark .glass-panel {
-    background: rgba(6, 22, 10, 0.72);
-    border: 1px solid rgba(63, 116, 76, 0.18);
+    background: #040D06;
+    border: 1px solid #09170dbc;
     box-shadow: none;
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .glass-card {
     @apply bg-white/60 backdrop-blur-md border border-white/30 shadow-sm hover:shadow-md transition-all duration-300;
   }
   .dark .glass-card {
-    background: rgba(6, 22, 10, 0.78);
-    border: 1px solid rgba(63, 116, 76, 0.18);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    background: #040D06;
+    border: 1px solid #09170dbc;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .dark .glass-card:hover {
-    background: rgba(8, 28, 13, 0.88);
-    border-color: rgba(24, 162, 73, 0.28);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+    background: #05140A;
+    border-color: #09170dbc;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
   }
 
   .glass-sidebar {
     @apply bg-white/80 backdrop-blur-2xl border-r border-white/20 shadow-xl;
   }
   .dark .glass-sidebar {
-    background: rgba(3, 19, 8, 0.84);
-    border-right: 1px solid rgba(63, 116, 76, 0.18);
-    box-shadow: 18px 0 50px rgba(0, 0, 0, 0.24);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
+    background: #040D06;
+    border-right: 1px solid #09170dbc;
+    box-shadow: 18px 0 50px rgba(0, 0, 0, 0.4);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .glass-header {
     @apply bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-sm;
   }
   .dark .glass-header {
-    background: rgba(4, 19, 8, 0.78);
-    border-bottom: 1px solid rgba(63, 116, 76, 0.16);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    background: #040D06;
+    border-bottom: 1px solid #09170dbc;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   /* ── Typography Effects ── */
@@ -426,11 +428,11 @@
 
   /* ── Shell (main content wrapper) ── */
   .enterprise-shell {
-    background: rgba(255, 255, 255, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.05);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
+    background: var(--enterprise-shell-bg);
+    border: 1px solid var(--enterprise-shell-border);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.04);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     border-radius: 24px;
   }
 
@@ -442,20 +444,20 @@
 
   /* ── Glass Card (primary transparent card) ── */
   .enterprise-card {
-    background: rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 8px 32px rgba(6, 20, 15, 0.05);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: var(--enterprise-card-bg);
+    border: 1px solid var(--enterprise-card-border);
+    box-shadow: 0 4px 20px rgba(6, 20, 15, 0.04);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark .enterprise-card {
     background: var(--enterprise-card-bg);
     border: 1px solid var(--enterprise-card-border);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .enterprise-card:hover {
@@ -470,11 +472,11 @@
   }
 
   .enterprise-card-refresh .enterprise-card {
-    background: rgba(255, 255, 255, 0.6);
-    border-color: rgba(255, 255, 255, 0.8);
-    box-shadow: 0 8px 32px rgba(6, 20, 15, 0.05);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    background: #ffffff;
+    border-color: #e2e8e4;
+    box-shadow: 0 4px 24px rgba(6, 20, 15, 0.03);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .enterprise-card-refresh .enterprise-card:hover {
@@ -484,45 +486,49 @@
   }
 
   .dark .enterprise-card-refresh .enterprise-card {
-    background: rgba(6, 25, 11, 0.82);
-    border-color: rgba(65, 116, 78, 0.3);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    background: #05140A;
+    border-color: #09170dbc;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .dark .enterprise-card-refresh .enterprise-card:hover {
-    background: rgba(8, 30, 14, 0.88);
-    border-color: rgba(24, 162, 73, 0.32);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.36);
+    background: #06190C;
+    border-color: #09170dbc;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
   }
 
   /* ── Muted Card ── */
   .enterprise-card-muted {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: #f8faf9;
+    border: 1px solid #ecefec;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .dark .enterprise-card-muted {
-    background: rgba(55, 98, 66, 0.12);
-    border: 1px solid rgba(70, 122, 83, 0.18);
+    background: #030A05;
+    border: 1px solid #09170dbc;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   /* ── Active / Highlighted Card ── */
   .enterprise-active-card {
-    background: rgba(30, 215, 96, 0.08);
-    border: 1px solid rgba(30, 215, 96, 0.3);
-    box-shadow: 0 12px 32px rgba(30, 215, 96, 0.1);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    background: rgba(30, 215, 96, 0.04);
+    border: 1px solid rgba(30, 215, 96, 0.2);
+    box-shadow: 0 12px 32px rgba(30, 215, 96, 0.04);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .dark .enterprise-active-card {
-    background: rgba(24, 162, 73, 0.12);
-    border: 1px solid rgba(24, 162, 73, 0.28);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.24);
+    background: #071C0E;
+    border: 1px solid rgba(24, 162, 73, 0.5);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   /* ── Pill badges ── */
