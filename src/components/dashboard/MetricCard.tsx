@@ -35,7 +35,7 @@ export default function MetricCard({ metric, index }: MetricCardProps) {
       <div
         className={cn(
           "glass-card p-6 rounded-2xl transition-all duration-500 group relative overflow-hidden",
-          "hover:bg-white/50 dark:hover:bg-zinc-900/90 hover:shadow-[0_0_30px_-5px_rgba(30,215,96,0.3)] hover:border-verza-emerald/30",
+          "hover:bg-white/50 dark:hover:bg-[rgba(8,28,13,0.92)] hover:shadow-[0_0_30px_-5px_rgba(30,215,96,0.3)] hover:border-verza-emerald/30",
           "before:absolute before:inset-0 before:bg-gradient-to-br before:from-transparent before:via-white/5 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500"
         )}
         data-testid={`metric-card-${metric.id}`}

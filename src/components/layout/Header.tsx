@@ -59,7 +59,7 @@ export default function Header({ onMobileMenuOpen, variant = "default" }: Header
           {isEnterprise ? (
             <>
               <div className="flex flex-col leading-tight">
-                <span className="text-sm font-semibold text-white">Enterprise Dashboard</span>
+                <span className="text-sm font-semibold text-enterprise-bg">Enterprise Dashboard</span>
                 <span className="text-[11px] uppercase tracking-[0.18em] text-verza-gray/80">{enterprisePageTitle}</span>
               </div>
             </>

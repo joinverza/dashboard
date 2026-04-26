@@ -269,7 +269,7 @@ export default function SettingsPage() {
                       )}
                       data-testid="theme-dark"
                     >
-                      <div className="w-full h-20 rounded-md bg-gray-900 border border-gray-700 mb-3" />
+                      <div className="w-full h-20 rounded-md bg-[#031707] border border-[#163420] mb-3" />
                       <p className="font-medium text-center">Dark</p>
                     </motion.div>
                   </div>

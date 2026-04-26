@@ -216,10 +216,10 @@ function SidebarNavItem({
           collapsed ? "justify-center" : "",
           isActive
             ? isEnterprise
-              ? "bg-ent-text/5"
+              ? "bg-white/5"
               : "bg-verza-emerald/10 border border-verza-emerald/20"
             : isEnterprise
-              ? "hover:bg-ent-text/5"
+              ? "hover:bg-white/8"
               : "text-muted-foreground hover:text-foreground hover:bg-white/[0.03]",
         )}
       >

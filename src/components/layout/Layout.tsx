@@ -85,7 +85,7 @@ export default function Layout({ children }: LayoutProps) {
 
   if (isAuthPage || !user) {
     return (
-      <div className="min-h-screen bg-background dark:bg-black text-foreground relative font-sans selection:bg-verza-emerald/30 selection:text-verza-emerald">
+      <div className="min-h-screen bg-background text-foreground relative font-sans selection:bg-verza-emerald/30 selection:text-verza-emerald">
         {children}
       </div>
     );
@@ -97,7 +97,7 @@ export default function Layout({ children }: LayoutProps) {
         "min-h-screen relative overflow-hidden font-sans selection:bg-verza-emerald/30 selection:text-verza-emerald",
         isEnterpriseExperience
           ? "enterprise-stage text-foreground"
-          : "bg-background dark:bg-black text-foreground"
+          : "bg-background text-foreground"
       )}
     >
       {/* Background Elements */}
@@ -113,7 +113,7 @@ export default function Layout({ children }: LayoutProps) {
               src="https://assets.mixkit.co/videos/preview/mixkit-abstract-technology-lines-in-white-background-30006-large.mp4"
             />
             <div className="absolute inset-0 enterprise-grid opacity-[0.4]" />
-            <div className="absolute inset-0 bg-white/40 dark:bg-black/60 mix-blend-overlay" />
+            <div className="absolute inset-0 bg-white/40 dark:bg-[rgba(2,18,8,0.72)] mix-blend-overlay" />
           </>
         ) : (
           <div className="absolute inset-0 bg-transparent opacity-40 dark:opacity-20 mix-blend-screen" />
