@@ -189,10 +189,10 @@ export default function EnterpriseIntegrations() {
           </AlertDescription>
         </Alert>
       )}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-ent-text">Integrations</h1>
-          <p className="text-verza-gray">Connect Ontiver with your existing tools and workflows.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
+          <p className="text-muted-foreground mt-1">Connect Ontiver with your existing tools and workflows.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild className="bg-ent-text/10 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/10">

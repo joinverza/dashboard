@@ -96,10 +96,10 @@ export default function EnterpriseBilling() {
         title="Billing & Plans"
         description="Manage payment methods, invoices, and complete plan changes after successful payment."
       />
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-ent-text">Billing & Plans</h1>
-          <p className="text-verza-gray">Manage your subscription, payment methods, and invoices.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Billing & Plans</h1>
+          <p className="text-muted-foreground mt-1">Manage your subscription, payment methods, and invoices.</p>
         </div>
         <Button asChild className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 rounded-full px-6">
            <Link href="/enterprise/pricing">Upgrade Plan</Link>

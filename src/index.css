@@ -89,9 +89,10 @@
   --verza-kelly: #06140F;
 
   /* UI System Colors — Light */
-  --background: 140 18% 97%;
+  /* --background: 140 18% 97%; */
+  --background: 0 0% 100%;
   --foreground: 150 40% 6%;
-  --border: 140 12% 90%;
+  --border: 140 12% 91%;
   --input: 140 12% 90%;
   --ring: 145 63% 42%;
   --background-overlay: rgba(0, 141, 9, 0.077) !important;
@@ -140,7 +141,7 @@
   --radius: 0.75rem;
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.08-), 0 4px 6px -4px rgb(0 0 0 / 0.05);
   --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.04);
   --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.15);
   --shadow-glow: 0 0 15px rgba(30, 215, 96, 0.3);
@@ -167,16 +168,20 @@
   --destructive-border: hsl(var(--destructive));
 
   /* Enterprise Theme Variables — Light Mode */
+  --card: 0 0% 100%;
+  --card-foreground: 150 40% 6%;
+  --card-border: 140 12% 91%;
+
   --enterprise-bg: #f5f8f6;
   --enterprise-text: #06140F;
   --enterprise-card-bg: #ffffff;
-  --enterprise-card-border: #e2e8e4;
+  --enterprise-card-border: #e2e9e4;
   --enterprise-shell-bg: #ffffff;
-  --enterprise-shell-border: #e2e8e4;
+  --enterprise-shell-border: #e2e9e4;
   --enterprise-sidebar-bg: #122a20;
   --enterprise-header-bg: #ffffff;
   --enterprise-muted-bg: #f8faf9;
-  --enterprise-muted-border: #ecefec;
+  --enterprise-muted-border: #e2e9e4;
   --enterprise-grid-color: rgba(6, 20, 15, 0.02);
 }
 

@@ -378,19 +378,15 @@ export default function EnterpriseDashboard() {
       <div data-enterprise-shell className="space-y-6">
         
         {/* Header Section */}
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between px-2">
+        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between px-2">
           <div className="min-w-0">
-            <div data-enterprise-reveal className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-verza-emerald/10 border border-verza-emerald/20 text-[10px] uppercase tracking-[0.2em] text-verza-emerald font-semibold mb-3">
-              <span className="h-1.5 w-1.5 rounded-full bg-verza-emerald animate-pulse" />
-              Live Workspace
-            </div>
             <h1
               data-enterprise-reveal
               className="text-3xl font-bold tracking-tight text-ent-text sm:text-4xl"
             >
               Enterprise Overview
             </h1>
-            <p data-enterprise-reveal className="mt-2 text-sm text-verza-gray/80 max-w-xl leading-relaxed">
+            <p data-enterprise-reveal className="mt-1 text-sm text-muted-foreground max-w-xl leading-relaxed">
               Real-time monitoring of your verification operations, team performance, and compliance metrics.
             </p>
           </div>

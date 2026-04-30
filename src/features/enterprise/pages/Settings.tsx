@@ -135,16 +135,15 @@ export default function EnterpriseSettings() {
       className="space-y-6"
     >
       <BackButton to="/enterprise/platform" label="Back to Platform" />
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-ent-text">
-          Settings
-        </h1>
-        <p className="text-verza-gray">
-          Manage your company profile and preferences.
-        </p>
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="text-muted-foreground mt-1">Manage your company profile and preferences.</p>
+        </div>
+        <div className="text-xs text-muted-foreground" role="status" aria-live="polite">Ready</div>
       </div>
       <Tabs defaultValue="company" className="space-y-6">
-        <TabsList className="bg-ent-muted backdrop-blur-md border border-ent-border p-1 rounded-xl">
+        <TabsList className="bg-ent-muted border border-ent-border p-1 rounded-xl">
           <TabsTrigger
             value="company"
             className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]"

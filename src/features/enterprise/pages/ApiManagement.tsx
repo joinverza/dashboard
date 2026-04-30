@@ -398,14 +398,10 @@ export default function ApiManagement() {
     <ApiErrorBoundary>
       <div className="space-y-6 pb-10">
       <BackButton to="/enterprise/platform" label="Back to Platform" />
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-ent-text">
-            API Management
-          </h1>
-          <p className="text-verza-gray mt-1">
-            Manage your API keys, webhooks, and integration settings
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">API Management</h1>
+          <p className="text-muted-foreground mt-1">Manage your API keys, webhooks, and integration settings.</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1 bg-ent-muted p-1 rounded-xl border border-ent-border">

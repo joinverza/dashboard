@@ -37,11 +37,14 @@ export default function EnterpriseUsersPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-        <p className="text-muted-foreground mt-1">
-          User directory derived from verification activity. Select a user record to inspect related verification details.
-        </p>
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+          <p className="text-muted-foreground mt-1">
+            User directory derived from verification activity. Select a user record to inspect related verification details.
+          </p>
+        </div>
+        <div className="text-xs text-muted-foreground" role="status" aria-live="polite">Ready</div>
       </div>
 
       <Card>

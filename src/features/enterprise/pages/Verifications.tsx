@@ -121,9 +121,12 @@ export default function VerificationsPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-verza-primary to-verza-secondary bg-clip-text text-transparent">Verifications</h1>
-        <p className="text-muted-foreground mt-1">Direct API verification workbench migrated from Tools.</p>
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Verifications</h1>
+          <p className="text-muted-foreground mt-1">Direct API verification workbench migrated from Tools.</p>
+        </div>
+        <div className="text-xs text-muted-foreground" role="status" aria-live="polite">Ready</div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">

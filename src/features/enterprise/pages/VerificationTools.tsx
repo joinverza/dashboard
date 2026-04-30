@@ -216,9 +216,12 @@ export default function VerificationTools() {
   return (
     <ApiErrorBoundary>
     <div className="space-y-6 pb-10">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-verza-primary to-verza-secondary bg-clip-text text-transparent">Operations Hub</h1>
-        <p className="text-muted-foreground mt-1">Enterprise onboarding, risk, governance, webhook, and SLA tooling.</p>
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Operations Hub</h1>
+          <p className="text-muted-foreground mt-1">Enterprise onboarding, risk, governance, webhook, and SLA tooling.</p>
+        </div>
+        <div className="text-xs text-muted-foreground" role="status" aria-live="polite">Ready</div>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 xl:grid-cols-5">

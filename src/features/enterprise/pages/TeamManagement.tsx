@@ -1,1 +1,30 @@
-export default function TeamManagement() { return <div>Placeholder</div>; }
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+export default function TeamManagement() {
+  return (
+    <div className="space-y-6 pb-10">
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Team Management</h1>
+          <p className="text-muted-foreground mt-1">Manage team members, roles, and access permissions.</p>
+        </div>
+        <Button className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90">Invite Member</Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-verza-emerald" />
+            Organization Members
+          </CardTitle>
+          <CardDescription>View and manage access for all users in your enterprise workspace.</CardDescription>
+        </CardHeader>
+        <CardContent className="h-64 flex items-center justify-center text-muted-foreground">
+          You are the only member in this workspace.
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

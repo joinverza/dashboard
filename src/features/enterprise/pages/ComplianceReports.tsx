@@ -92,10 +92,10 @@ export default function ComplianceReports() {
       className="space-y-6"
     >
       <BackButton to="/enterprise/reports" label="Back to Reports" />
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Compliance Reports</h1>
-          <p className="text-muted-foreground">Access and download your verification compliance reports.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Compliance Reports</h1>
+          <p className="text-muted-foreground mt-1">Access and download your verification compliance reports.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">
@@ -166,7 +166,7 @@ export default function ComplianceReports() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Overall Status</CardTitle>
           </CardHeader>
@@ -178,7 +178,7 @@ export default function ComplianceReports() {
             <p className="text-xs text-muted-foreground mt-1">Last audit passed on Oct 15, 2023</p>
           </CardContent>
         </Card>
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Reports</CardTitle>
           </CardHeader>
@@ -190,7 +190,7 @@ export default function ComplianceReports() {
             <p className="text-xs text-muted-foreground mt-1">Archive available from Jan 2022</p>
           </CardContent>
         </Card>
-        <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Next Audit</CardTitle>
           </CardHeader>
@@ -204,7 +204,7 @@ export default function ComplianceReports() {
         </Card>
       </div>
 
-      <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+      <Card className="bg-card border-border">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>

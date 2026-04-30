@@ -76,23 +76,15 @@ export default function ReportsHub() {
   return (
     <div className="space-y-8 pb-10">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col md:flex-row md:items-end justify-between gap-4"
-      >
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-verza-emerald/10 border border-verza-emerald/20 text-[10px] uppercase tracking-[0.2em] text-verza-emerald font-semibold mb-3">
-            <span className="h-1.5 w-1.5 rounded-full bg-verza-emerald animate-pulse" />
-            Reporting Center
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight text-ent-text sm:text-4xl">Reports</h1>
-          <p className="text-verza-gray/80 mt-2 max-w-lg leading-relaxed">
+          <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
+          <p className="text-muted-foreground mt-1">
             Analytics, compliance, and audit reporting — all in one unified workspace.
           </p>
         </div>
-      </motion.div>
+        <div className="text-xs text-muted-foreground" role="status" aria-live="polite">Ready</div>
+      </div>
 
       {/* Summary Stats Bar */}
       <motion.div
@@ -109,7 +101,7 @@ export default function ReportsHub() {
             transition={{ delay: 0.1 + i * 0.06 }}
             className="enterprise-card rounded-2xl p-4 flex items-center gap-3"
           >
-            <div className="p-2 rounded-xl bg-verza-emerald/10 border border-verza-emerald/15 text-verza-emerald flex-shrink-0">
+            <div className="p-2 rounded-xl bg-ent-muted border border-ent-border text-verza-emerald flex-shrink-0">
               <stat.icon className="h-4 w-4" />
             </div>
             <div className="min-w-0">
