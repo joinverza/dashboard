@@ -131,11 +131,11 @@ export default function VerificationsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="kyc">Individual KYC</TabsTrigger>
-              <TabsTrigger value="document">Documents</TabsTrigger>
-              <TabsTrigger value="biometrics">Biometrics</TabsTrigger>
-              <TabsTrigger value="screening">Screening</TabsTrigger>
+            <TabsList className="bg-ent-muted border border-ent-border p-1 rounded-xl grid grid-cols-4">
+              <TabsTrigger value="kyc" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Individual KYC</TabsTrigger>
+              <TabsTrigger value="document" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Documents</TabsTrigger>
+              <TabsTrigger value="biometrics" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Biometrics</TabsTrigger>
+              <TabsTrigger value="screening" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Screening</TabsTrigger>
             </TabsList>
             <TabsContent value="kyc">
               <Card>

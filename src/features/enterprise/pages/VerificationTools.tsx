@@ -224,12 +224,12 @@ export default function VerificationTools() {
         <div className="text-xs text-muted-foreground" role="status" aria-live="polite">Ready</div>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
-          <TabsTrigger value="bulk">Bulk KYC</TabsTrigger>
-          <TabsTrigger value="risk">Risk Sandbox</TabsTrigger>
-          <TabsTrigger value="audit">Audit Explorer</TabsTrigger>
-          <TabsTrigger value="webhooks">Webhook Manager</TabsTrigger>
-          <TabsTrigger value="sla">Usage & SLA</TabsTrigger>
+        <TabsList className="bg-ent-muted border border-ent-border p-1 rounded-xl grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+          <TabsTrigger value="bulk" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Bulk KYC</TabsTrigger>
+          <TabsTrigger value="risk" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Risk Sandbox</TabsTrigger>
+          <TabsTrigger value="audit" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Audit Explorer</TabsTrigger>
+          <TabsTrigger value="webhooks" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Webhook Manager</TabsTrigger>
+          <TabsTrigger value="sla" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Usage & SLA</TabsTrigger>
         </TabsList>
         <TabsContent value="bulk">
           <TabHelpCard

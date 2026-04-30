@@ -84,12 +84,7 @@ function EnterpriseMetricCard({
       transition={{ duration: 0.3, ease: "easeOut" }}
       className="enterprise-card relative overflow-hidden rounded-2xl p-6 flex flex-col justify-between"
     >
-      {accent === "positive" && (
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-verza-emerald/10 blur-3xl rounded-full pointer-events-none" />
-      )}
-      {accent === "warning" && (
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-yellow-500/10 blur-3xl rounded-full pointer-events-none" />
-      )}
+
 
       <div className="flex items-start justify-between relative z-10">
         <div>
@@ -126,7 +121,6 @@ function EnterpriseMetricCard({
 function EnterpriseActivityMap() {
   return (
     <div className="enterprise-card relative min-h-[300px] overflow-hidden rounded-2xl p-6">
-      <div data-enterprise-sweep className="enterprise-light-streak absolute left-[-30%] top-[42%] h-12 w-[60%]" />
       
       <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
         <svg viewBox="0 0 520 250" className="w-full h-full">

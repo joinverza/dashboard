@@ -24,31 +24,31 @@ export function TabHelpCard({
 }: TabHelpCardProps) {
   const toneStyles = {
     neutral: {
-      card: 'bg-white/[0.02]',
-      icon: 'border-white/10 bg-white/5 text-verza-gray',
-      chip: 'border-white/10 bg-white/5',
-      panel: 'border-white/5 bg-white/[0.02]',
+      card: 'bg-ent-muted',
+      icon: 'border-ent-border bg-ent-card text-verza-gray',
+      chip: 'border-ent-border bg-ent-card',
+      panel: 'border-ent-border bg-ent-card',
     },
     blue: {
-      card: 'bg-white/[0.03]',
+      card: 'bg-ent-muted',
       icon: 'border-verza-emerald/30 bg-verza-emerald/10 text-verza-emerald',
       chip: 'border-verza-emerald/20 bg-verza-emerald/5',
-      panel: 'border-verza-emerald/10 bg-verza-emerald/[0.02]',
+      panel: 'border-ent-border bg-ent-card',
     },
     violet: {
-      card: 'bg-white/[0.03]',
+      card: 'bg-ent-muted',
       icon: 'border-violet-500/30 bg-violet-500/15 text-violet-400',
       chip: 'border-violet-500/30 bg-violet-500/10',
       panel: 'border-violet-500/20 bg-violet-500/5',
     },
     emerald: {
-      card: 'bg-white/[0.03]',
+      card: 'bg-ent-muted',
       icon: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-400',
       chip: 'border-emerald-500/30 bg-emerald-500/10',
       panel: 'border-emerald-500/20 bg-emerald-500/5',
     },
     amber: {
-      card: 'bg-white/[0.03]',
+      card: 'bg-ent-muted',
       icon: 'border-amber-500/30 bg-amber-500/15 text-amber-400',
       chip: 'border-amber-500/30 bg-amber-500/10',
       panel: 'border-amber-500/20 bg-amber-500/5',

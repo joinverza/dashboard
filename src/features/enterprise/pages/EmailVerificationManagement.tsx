@@ -304,10 +304,10 @@ export default function EmailVerificationManagement() {
       </div>
 
       <Tabs defaultValue="submit" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="submit">Submit Requests</TabsTrigger>
-          <TabsTrigger value="monitor">Monitor Results</TabsTrigger>
-          <TabsTrigger value="audit">Audit & Export</TabsTrigger>
+        <TabsList className="bg-ent-muted border border-ent-border p-1 rounded-xl grid w-full grid-cols-3">
+          <TabsTrigger value="submit" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Submit Requests</TabsTrigger>
+          <TabsTrigger value="monitor" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Monitor Results</TabsTrigger>
+          <TabsTrigger value="audit" className="data-[state=active]:bg-verza-emerald data-[state=active]:text-[#06140F]">Audit & Export</TabsTrigger>
         </TabsList>
 
         <TabsContent value="submit" className="space-y-4">
