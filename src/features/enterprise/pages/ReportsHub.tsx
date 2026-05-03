@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { useAuth } from "@/features/auth/AuthContext";
 import { motion } from "framer-motion";
 import { BarChart3, FileClock, Shield, ArrowRight, TrendingUp, FileText, AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -73,6 +74,7 @@ const summaryStats = [
 ];
 
 export default function ReportsHub() {
+  const { hasPermission, permissions, user } = useAuth();
   return (
     <div className="space-y-8 pb-10">
       {/* Header */}

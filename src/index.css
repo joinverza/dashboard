@@ -426,6 +426,141 @@
     color: var(--enterprise-text);
   }
 
+  .enterprise-shell-theme {
+    --background: 140 18% 97%;
+    --foreground: 150 40% 6%;
+    --border: 140 12% 91%;
+    --input: 140 12% 90%;
+    --ring: 145 63% 42%;
+    --card: 0 0% 100%;
+    --card-foreground: 150 40% 6%;
+    --card-border: 140 12% 91%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 40% 6%;
+    --popover-border: 140 12% 90%;
+    --secondary: 140 16% 95%;
+    --secondary-foreground: 150 40% 6%;
+    --muted: 140 14% 95%;
+    --muted-foreground: 150 10% 42%;
+    --accent: 145 40% 92%;
+    --accent-foreground: 145 60% 22%;
+    --button-outline: rgba(6, 20, 15, 0.08);
+  }
+
+  .dark.enterprise-shell-theme {
+    --background: 133 35% 3%;
+    --foreground: 135 20% 94%;
+    --border: 137 42% 12%;
+    --input: 137 42% 12%;
+    --ring: 136 68% 36%;
+    --card: 133 53% 4%;
+    --card-foreground: 135 20% 94%;
+    --card-border: 137 44% 10%;
+    --popover: 133 53% 4%;
+    --popover-foreground: 135 20% 94%;
+    --popover-border: 137 42% 12%;
+    --secondary: 136 24% 12%;
+    --secondary-foreground: 135 20% 94%;
+    --muted: 135 43% 5%;
+    --muted-foreground: 136 11% 64%;
+    --accent: 138 43% 8%;
+    --accent-foreground: 135 20% 94%;
+    --button-outline: rgba(24, 162, 73, 0.2);
+  }
+
+  .enterprise-shell-theme .shadcn-card {
+    background: var(--enterprise-card-bg);
+    border-color: var(--enterprise-card-border);
+    box-shadow: 0 4px 20px rgba(6, 20, 15, 0.04);
+  }
+
+  .enterprise-shell-theme [class*="bg-gradient-to-"] {
+    background-image: none !important;
+  }
+
+  .enterprise-shell-theme [class*="bg-gradient-to-"]:not(.bg-clip-text) {
+    background-color: var(--enterprise-muted-bg);
+  }
+
+  .enterprise-shell-theme .bg-clip-text.text-transparent {
+    background-color: transparent !important;
+    color: var(--enterprise-text) !important;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    -webkit-text-fill-color: currentColor;
+  }
+
+  .dark.enterprise-shell-theme .shadcn-card {
+    background: var(--enterprise-card-bg);
+    border-color: var(--enterprise-card-border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .enterprise-shell-theme .shadcn-card:hover {
+    border-color: rgba(30, 215, 96, 0.3);
+    box-shadow: 0 12px 40px rgba(6, 20, 15, 0.08);
+  }
+
+  .dark.enterprise-shell-theme .shadcn-card:hover {
+    border-color: rgba(24, 162, 73, 0.32);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.32);
+  }
+
+  .enterprise-shell-theme [class*="backdrop-blur"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .enterprise-shell-theme input,
+  .enterprise-shell-theme textarea,
+  .enterprise-shell-theme [role="combobox"] {
+    background: var(--enterprise-muted-bg);
+    border-color: var(--enterprise-muted-border);
+    color: var(--enterprise-text);
+  }
+
+  .enterprise-shell-theme input::placeholder,
+  .enterprise-shell-theme textarea::placeholder {
+    color: var(--verza-gray);
+  }
+
+  .enterprise-shell-theme input:focus,
+  .enterprise-shell-theme textarea:focus,
+  .enterprise-shell-theme [role="combobox"]:focus,
+  .enterprise-shell-theme [role="combobox"][data-state="open"] {
+    background: var(--enterprise-card-bg);
+    border-color: rgba(30, 215, 96, 0.3);
+  }
+
+  .enterprise-shell-theme [role="tablist"] {
+    background: var(--enterprise-muted-bg);
+    border: 1px solid var(--enterprise-muted-border);
+  }
+
+  .enterprise-shell-theme [role="tab"][data-state="active"] {
+    background: var(--enterprise-card-bg);
+  }
+
+  .enterprise-shell-theme table thead tr,
+  .enterprise-shell-theme table tbody tr {
+    border-color: var(--enterprise-muted-border);
+  }
+
+  .enterprise-shell-theme .w-\[150px\],
+  .enterprise-shell-theme .w-\[180px\] {
+    width: 100%;
+  }
+
+  @media (min-width: 640px) {
+    .enterprise-shell-theme .w-\[150px\] {
+      width: 150px;
+    }
+
+    .enterprise-shell-theme .w-\[180px\] {
+      width: 180px;
+    }
+  }
+
   /* ── Subtle Grid Overlay ── */
   .enterprise-grid {
     background-color: var(--enterprise-grid-color);
@@ -560,6 +695,10 @@
     overflow: hidden;
     position: relative;
     /* box-shadow: 8px 0 40px rgba(0, 0, 0, 0.1); */
+  }
+
+  .enterprise-sidebar-collapsed {
+    border-radius: 0 28px 28px 0;
   }
 
   .dark .enterprise-sidebar {

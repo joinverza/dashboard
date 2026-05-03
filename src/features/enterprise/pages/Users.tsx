@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useAuth } from "@/features/auth/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { bankingService } from "@/services/bankingService";
 
 export default function EnterpriseUsersPage() {
+  const { hasPermission, permissions, user } = useAuth();
+  const canRead = permissions.length === 0 || hasPermission("settings:read");
+
   const { data, isLoading } = useQuery({
     queryKey: ["enterprise", "users-from-verifications"],
     queryFn: () => bankingService.getVerificationRequests({ limit: 200 }),

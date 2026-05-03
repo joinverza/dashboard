@@ -4,6 +4,7 @@ import {
   Plus, Trash2, Shield, Calendar 
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useAuth } from '@/features/auth/AuthContext';
 import { Button } from '@/components/ui/button';
 
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +34,9 @@ const PLAN_PRICE_MAP = {
 } as const;
 
 export default function EnterpriseBilling() {
+  const { hasPermission, permissions, user } = useAuth();
+  const canAdmin = permissions.length === 0 || hasPermission("settings:read");
+
   const [, setLocation] = useLocation();
   const [paymentMethods, setPaymentMethods] = useState(PAYMENT_METHODS);
   const [billingHistory] = useState(BILLING_HISTORY);
@@ -72,6 +76,10 @@ export default function EnterpriseBilling() {
   };
 
   const addPaymentMethod = () => {
+    if (!canAdmin) {
+      toast.error('You do not have permission to manage payment methods.');
+      return;
+    }
     const last = paymentMethods.length + 1;
     setPaymentMethods((current) => [
       ...current,
@@ -81,6 +89,10 @@ export default function EnterpriseBilling() {
   };
 
   const continueToCheckout = () => {
+    if (!canAdmin) {
+      toast.error('You do not have permission to change plans.');
+      return;
+    }
     if (!pendingPlan) return;
     setLocation(`/enterprise/billing/checkout?plan=${pendingPlan.plan}&interval=${pendingPlan.interval}`);
   };

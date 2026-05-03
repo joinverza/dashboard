@@ -10,11 +10,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Progress } from '@/components/ui/progress';
 
 import { bankingService } from '@/services/bankingService';
+import { useAuth } from '@/features/auth/AuthContext';
+import { toast } from 'sonner';
 import type { BulkVerificationResponse } from '@/types/banking';
 
 type CsvRow = Record<string, string>;
 
 export default function BulkVerification() {
+  const { hasPermission, permissions, user } = useAuth();
+  const canWrite = permissions.length === 0 || hasPermission("verification:write") || hasPermission("kyc:write");
+
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<CsvRow[]>([]);
@@ -130,6 +135,10 @@ export default function BulkVerification() {
   };
 
   const startProcessing = async () => {
+    if (!canWrite) {
+      toast.error('You do not have permission to initiate bulk verification.');
+      return;
+    }
     setStep(3);
     setProcessingProgress(10);
     
@@ -286,7 +295,7 @@ export default function BulkVerification() {
                 )}
 
                 <div className="flex justify-end">
-                  <Button onClick={startUpload} disabled={!file || isUploading} className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 transition-all rounded-full px-6">
+                  <Button onClick={startUpload} disabled={!file || isUploading || !canWrite} className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 transition-all rounded-full px-6">
                     {isUploading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading
@@ -405,7 +414,7 @@ export default function BulkVerification() {
 
                 <div className="flex justify-between">
                   <Button variant="outline" onClick={() => setStep(1)} className="border-ent-border text-verza-gray hover:text-ent-text">Back</Button>
-                  <Button onClick={startProcessing} className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 rounded-full px-6">
+                  <Button onClick={startProcessing} disabled={!canWrite} className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 rounded-full px-6">
                     Process Requests <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>

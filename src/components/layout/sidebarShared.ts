@@ -1,6 +1,7 @@
 import type { NavItem } from "@/config/navigation";
 
 export const ENTERPRISE_SIDEBAR_IMAGE_URL = "/sidebar-bg.png";
+const DROPDOWN_GROUPS = new Set(["OPERATIONS", "OVERSIGHT", "PLATFORM"]);
 
 export function groupNavItems(
   items: NavItem[],
@@ -22,10 +23,24 @@ export function groupNavItems(
 }
 
 export function isSidebarItemActive(itemPath: string, location: string) {
-  const isDashboard = itemPath === "/enterprise" || itemPath === "/app";
+  const isDashboard = new Set([
+    "/app",
+    "/verifier",
+    "/enterprise",
+    "/manager",
+    "/admin",
+  ]).has(itemPath);
 
   return isDashboard
     ? location === itemPath
     : location === itemPath ||
         (itemPath !== "/" && location.startsWith(itemPath));
+}
+
+export function isSidebarDropdownGroup(group: string, enabled: boolean) {
+  return enabled && DROPDOWN_GROUPS.has(group);
+}
+
+export function groupHasActiveItem(items: NavItem[], location: string) {
+  return items.some((item) => isSidebarItemActive(item.path, location));
 }

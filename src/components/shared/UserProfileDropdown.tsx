@@ -13,13 +13,18 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from "@/features/auth/AuthContext";
 import { Link } from 'wouter';
 import { cn } from '@/lib/utils';
-import { useTheme } from '@/contexts/ThemeContext';
 
 export default function UserProfileDropdown({ variant = "default" }: { variant?: "default" | "enterprise" }) {
-  const { theme } = useTheme();
   const { user, logout } = useAuth();
+  const usesEnterpriseShell = variant === "enterprise";
 
   if (!user) return null;
+  const shellLabel =
+    user.role === "admin"
+      ? "Admin"
+      : user.role === "enterprise"
+        ? "Enterprise"
+        : "Workspace";
   const settingsPath =
     user.role === "admin"
       ? "/admin/settings"
@@ -36,13 +41,13 @@ export default function UserProfileDropdown({ variant = "default" }: { variant?:
           variant="ghost"
           className={cn(
             "flex items-center gap-2 px-2 transition-all",
-            variant === "enterprise"
+            usesEnterpriseShell
               ? "bg-ent-muted border border-ent-border hover:bg-ent-card rounded-xl text-ent-text py-2"
               : ""
           )}
           data-testid="button-user-profile"
         >
-          {variant === "enterprise" ? (
+          {usesEnterpriseShell ? (
             <div className="h-6 w-6 rounded-full bg-verza-emerald flex items-center justify-center text-[#06140F] text-xs font-bold">
               {user.name.charAt(0).toUpperCase()}
             </div>
@@ -54,9 +59,9 @@ export default function UserProfileDropdown({ variant = "default" }: { variant?:
             </Avatar>
           )}
           <span className="hidden md:inline-block text-sm font-medium">
-            {variant === "enterprise" ? "Enterprise" : user.name}
+            {usesEnterpriseShell ? shellLabel : user.name}
           </span>
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <ChevronDown className={cn("h-4 w-4", usesEnterpriseShell ? "text-verza-gray/70" : "text-muted-foreground")} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className={cn("w-56 bg-background border-border")}>

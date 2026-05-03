@@ -9,11 +9,10 @@ import {
 // import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from "@/lib/utils";
 import { useMockData } from "@/contexts/MockDataContext";
-import { useTheme } from "@/contexts/ThemeContext";
 
 export default function NotificationPopover({ variant = "default" }: { variant?: "default" | "enterprise" }) {
   const { notifications = [] } = useMockData();
-  const { theme } = useTheme();
+  const usesEnterpriseShell = variant === "enterprise";
   const unreadCount = notifications?.filter((n) => !n.isRead).length || 0;
 
   const getTypeStyles = (type: string) => {
@@ -37,7 +36,7 @@ export default function NotificationPopover({ variant = "default" }: { variant?:
           size="icon"
           className={cn(
             "relative transition-all", 
-            variant === "enterprise" 
+            usesEnterpriseShell
               ? "bg-ent-muted border border-ent-border hover:bg-ent-card rounded-xl text-ent-text" 
               : "bg-transparent hover:bg-secondary text-foreground"
           )}

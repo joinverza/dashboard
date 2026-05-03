@@ -18,10 +18,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
+import { useAuth } from '@/features/auth/AuthContext';
 import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 import type { VerificationStatsResponse, IndividualKYCRequest, VerificationRequestResponse } from '@/types/banking';
 
 export default function VerificationRequests() {
+  const { hasPermission, permissions, user } = useAuth();
+  const canRead = permissions.length === 0 || hasPermission("verification:read") || hasPermission("kyc:read");
+  const canWrite = permissions.length === 0 || hasPermission("verification:write") || hasPermission("kyc:write");
+
   const [activeTab, setActiveTab] = useState("all");
   const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
   const [stats, setStats] = useState<VerificationStatsResponse | null>(null);
@@ -66,6 +71,10 @@ export default function VerificationRequests() {
   }, []);
 
   const handleCreateRequest = async () => {
+    if (!canWrite) {
+      toast.error('You do not have permission to create verification requests.');
+      return;
+    }
     setIsSubmitting(true);
     try {
         if (requestType === 'kyc_individual') {
@@ -232,7 +241,10 @@ export default function VerificationRequests() {
           
           <Dialog open={isNewRequestOpen} onOpenChange={setIsNewRequestOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2 bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 transition-all rounded-full px-6">
+              <Button 
+                className="gap-2 bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 transition-all rounded-full px-6"
+                disabled={!canWrite}
+              >
                 <ArrowUpRight className="h-4 w-4" />
                 New Request
               </Button>
@@ -478,10 +490,13 @@ export default function VerificationRequests() {
                             <DropdownMenuItem onClick={() => checkStatus(req.verificationId)}>
                               <Activity className="mr-2 h-4 w-4" /> Check Status
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem disabled={!canRead}>
                               <Download className="mr-2 h-4 w-4" /> Download Proof
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => { if(canWrite) { checkStatus(req.verificationId); } else { toast.error("No write permission"); } }} 
+                              disabled={!canWrite}
+                            >
                               <RefreshCw className="mr-2 h-4 w-4" /> Re-verify
                             </DropdownMenuItem>
                           </DropdownMenuContent>

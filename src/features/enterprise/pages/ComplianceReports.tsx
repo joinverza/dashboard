@@ -13,10 +13,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { bankingService } from '@/services/bankingService';
+import { useAuth } from '@/features/auth/AuthContext';
+import { toast } from 'sonner';
 import type { ComplianceReport } from '@/types/banking';
 import BackButton from '@/components/shared/BackButton';
 
 export default function ComplianceReports() {
+  const { hasPermission, permissions, user } = useAuth();
+  const canWrite = permissions.length === 0 || hasPermission("reports:write") || hasPermission("audit:read");
   const [filterType, setFilterType] = useState('all');
   const [reports, setReports] = useState<ComplianceReport[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -42,6 +46,10 @@ export default function ComplianceReports() {
     : reports.filter(r => r.type.toLowerCase() === filterType);
 
   const handleCreateReport = async () => {
+    if (!canWrite) {
+      toast.error('You do not have permission to generate reports.');
+      return;
+    }
     setIsCreating(true);
     try {
       const res = await bankingService.createReport({
@@ -104,7 +112,11 @@ export default function ComplianceReports() {
           
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-verza-primary hover:bg-verza-primary/90 text-ent-text" variant="outline">
+              <Button 
+                className="bg-verza-primary hover:bg-verza-primary/90 text-ent-text" 
+                variant="outline"
+                disabled={!canWrite}
+              >
                 <FileText className="mr-2 h-4 w-4" /> Generate New Report
               </Button>
             </DialogTrigger>

@@ -2,16 +2,21 @@ import { motion } from 'framer-motion';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ variant = "default" }: { variant?: "default" | "enterprise" }) {
   const { theme, toggleTheme } = useTheme();
+  const usesEnterpriseShell = variant === "enterprise";
 
   return (
     <Button
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className="relative overflow-visible"
+      className={cn(
+        "relative overflow-visible transition-all",
+        usesEnterpriseShell && "rounded-xl border border-ent-border bg-ent-muted text-ent-text hover:bg-ent-card"
+      )}
       data-testid="button-theme-toggle"
     >
       <motion.div

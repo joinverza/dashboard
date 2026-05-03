@@ -1,7 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { History } from "lucide-react";
+import { useAuth } from "@/features/auth/AuthContext";
 
 export default function AuditTrail() {
+  const { hasPermission, permissions, user } = useAuth();
   return (
     <div className="space-y-6 pb-10">
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">

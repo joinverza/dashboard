@@ -11,11 +11,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 import { useMockData } from "@/contexts/MockDataContext";
-import { useTheme } from "@/contexts/ThemeContext";
 
 export default function MessagePopover({ variant = "default" }: { variant?: "default" | "enterprise" }) {
   const { messages = [] } = useMockData();
-  const { theme } = useTheme();
+  const usesEnterpriseShell = variant === "enterprise";
   const unreadCount = messages?.filter((m) => !m.isRead).length || 0;
 
   return (
@@ -26,7 +25,7 @@ export default function MessagePopover({ variant = "default" }: { variant?: "def
           size="icon"
           className={cn(
             "relative transition-all", 
-            variant === "enterprise" 
+            usesEnterpriseShell
               ? "bg-ent-muted border border-ent-border hover:bg-ent-card rounded-xl text-ent-text" 
               : "bg-transparent hover:bg-secondary text-foreground"
           )}

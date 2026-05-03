@@ -3,12 +3,11 @@ import {
   CheckCircle, AlertTriangle, Activity,
   Database, Server, Shield,
   Globe, Clock,
-  Eye, Gavel, FileText, Loader2,
-  TrendingUp, Users, ArrowRight, Zap, BarChart3
+  Eye, Gavel, FileText,
+  TrendingUp, ArrowRight, Zap, BarChart3
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -171,8 +170,8 @@ export default function AdminDashboard() {
       label: "Active Verifiers",
       value: String(activeVerifiers),
       icon: Shield,
-      color: "text-purple-400",
-      bg: "bg-purple-500/10 border-purple-500/20",
+      color: "text-verza-gray",
+      bg: "bg-ent-muted border-ent-border",
       trend: "Online now",
       trendPos: true,
     },
@@ -362,7 +361,7 @@ export default function AdminDashboard() {
                 <AlertTriangle className={cn(
                   "h-4 w-4 mt-0.5 shrink-0",
                   alert.type === "alert" ? "text-red-400" :
-                  alert.type === "transaction" ? "text-yellow-400" : "text-blue-400"
+                  alert.type === "transaction" ? "text-yellow-400" : "text-verza-gray"
                 )} />
                 <div className="min-w-0">
                   <p className="text-[13px] font-medium text-ent-text/90 truncate">{alert.message || alert.title}</p>
@@ -424,7 +423,7 @@ export default function AdminDashboard() {
               <p className="text-sm font-semibold text-ent-text">Geographic Distribution</p>
               <p className="text-[11px] text-verza-gray/70 mt-0.5">User activity by region</p>
             </div>
-            <Globe className="h-4 w-4 text-blue-400" />
+            <Globe className="h-4 w-4 text-verza-emerald" />
           </div>
           <div className="space-y-3 flex-1">
             {geoDistribution.length > 0 ? geoDistribution.map((region, i) => (

@@ -19,8 +19,9 @@ import {
   AlertCircle,
   Clock
 } from "lucide-react";
-import { Link } from "wouter";
 import { toast } from "sonner";
+import { Link } from "wouter";
+import { useAuth } from "@/features/auth/AuthContext";
 import { useEnterpriseDashboardData } from "@/hooks/useBankingDashboard";
 import type { VerificationRequestResponse } from "@/types/banking";
 import { cn } from "@/lib/utils";
@@ -238,6 +239,7 @@ function EnterpriseVolumeChart({
 }
 
 export default function EnterpriseDashboard() {
+  const { hasPermission, permissions, user } = useAuth();
   const { stats, recentVerifications, licenseUsage, isLoading, error } = useEnterpriseDashboardData();
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearch = useDeferredValue(searchTerm);
@@ -450,20 +452,27 @@ export default function EnterpriseDashboard() {
                 <p className="text-sm font-semibold text-ent-text">Quick Actions</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {quickActions.map((action) => (
-                  <Link key={action.href} href={action.href}>
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="flex flex-col items-start gap-3 rounded-xl border border-ent-border bg-ent-muted p-4 hover:bg-verza-emerald/5 hover:border-verza-emerald/30 transition-all group cursor-pointer h-full"
-                    >
-                      <div className="p-2 rounded-lg bg-ent-text/5 group-hover:bg-verza-emerald/10 border border-transparent group-hover:border-verza-emerald/20 transition-colors">
-                        <action.icon className="h-4 w-4 text-verza-gray group-hover:text-verza-emerald transition-colors" />
-                      </div>
-                      <span className="text-[12px] font-medium text-ent-text/90 leading-tight group-hover:text-verza-emerald transition-colors">{action.label}</span>
-                    </motion.div>
-                  </Link>
-                ))}
+                {quickActions
+                  .filter(action => {
+                    if (action.href === "/enterprise/bulk") return hasPermission("verification:write") || permissions.length === 0;
+                    if (action.href === "/enterprise/api") return hasPermission("api_keys:read") || permissions.length === 0;
+                    if (action.href === "/enterprise/team/invite") return hasPermission("settings:read") || permissions.length === 0;
+                    return true;
+                  })
+                  .map((action) => (
+                    <Link key={action.href} href={action.href}>
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="flex flex-col items-start gap-3 rounded-xl border border-ent-border bg-ent-muted p-4 hover:bg-verza-emerald/5 hover:border-verza-emerald/30 transition-all group cursor-pointer h-full"
+                      >
+                        <div className="p-2 rounded-lg bg-ent-text/5 group-hover:bg-verza-emerald/10 border border-transparent group-hover:border-verza-emerald/20 transition-colors">
+                          <action.icon className="h-4 w-4 text-verza-gray group-hover:text-verza-emerald transition-colors" />
+                        </div>
+                        <span className="text-[12px] font-medium text-ent-text/90 leading-tight group-hover:text-verza-emerald transition-colors">{action.label}</span>
+                      </motion.div>
+                    </Link>
+                  ))}
               </div>
             </motion.div>
 

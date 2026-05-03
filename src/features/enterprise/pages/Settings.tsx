@@ -11,6 +11,7 @@ import {
   Bell,
   Loader2,
 } from "lucide-react";
+import { useAuth } from "@/features/auth/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -40,6 +41,9 @@ import { TabHelpCard } from "@/components/shared/TabHelpCard";
 import BackButton from "@/components/shared/BackButton";
 
 export default function EnterpriseSettings() {
+  const { hasPermission, permissions, user } = useAuth();
+  const canAdmin = permissions.length === 0 || hasPermission("settings:read");
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [settings, setSettings] = useState<CompanySettings | null>(null);
@@ -67,6 +71,10 @@ export default function EnterpriseSettings() {
   };
 
   const handleSave = async () => {
+    if (!canAdmin) {
+      toast.error("You do not have permission to modify settings.");
+      return;
+    }
     if (!settings || !apiSecurity) return;
 
     try {
@@ -87,6 +95,10 @@ export default function EnterpriseSettings() {
   };
 
   const handleLogoUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (!canAdmin) {
+      toast.error("You do not have permission to modify settings.");
+      return;
+    }
     const file = event.target.files?.[0];
     if (!file || !settings) return;
     if (!file.type.startsWith("image/")) {
@@ -342,7 +354,7 @@ export default function EnterpriseSettings() {
             <div className="flex justify-end border-t border-ent-border mt-8 pt-6">
               <Button
                 onClick={handleSave}
-                disabled={isSaving}
+                disabled={isSaving || !canAdmin}
                 className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 transition-all rounded-full px-8"
               >
                 {isSaving ? (
@@ -452,7 +464,7 @@ export default function EnterpriseSettings() {
             <div className="flex justify-end border-t border-ent-border mt-8 pt-6">
               <Button
                 onClick={handleSave}
-                disabled={isSaving}
+                disabled={isSaving || !canAdmin}
                 className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 transition-all rounded-full px-8"
               >
                 {isSaving ? (
@@ -582,7 +594,7 @@ export default function EnterpriseSettings() {
             <div className="flex justify-end border-t border-ent-border mt-8 pt-6">
               <Button
                 onClick={handleSave}
-                disabled={isSaving}
+                disabled={isSaving || !canAdmin}
                 className="bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 transition-all rounded-full px-8"
               >
                 {isSaving ? (

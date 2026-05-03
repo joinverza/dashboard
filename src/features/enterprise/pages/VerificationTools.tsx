@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ApiErrorBoundary } from '@/components/shared/ApiErrorBoundary';
 import { TabHelpCard } from '@/components/shared/TabHelpCard';
+import { useAuth } from '@/features/auth/AuthContext';
 import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 import { webhooksService } from '@/services/apiManagementService';
 import type { AuditLogResponse, LicenseUsageMetrics, RiskSimulationResponse, WebhookResponse, WebhookRetryItem } from '@/types/banking';
@@ -28,6 +29,12 @@ const triggerFileDownload = (name: string, content: string, mime = 'text/plain')
 };
 
 export default function VerificationTools() {
+  const { hasPermission, permissions, user } = useAuth();
+  
+  // RBAC guards: allow if permissions are empty (dev/mock) or if specific scopes exist
+  const canRead = permissions.length === 0 || hasPermission("audit:read") || hasPermission("analytics:read");
+  const canWrite = permissions.length === 0 || hasPermission("documents:write") || hasPermission("screening:write") || hasPermission("kyc:write") || hasPermission("webhooks:write");
+  const canAdmin = permissions.length === 0 || hasPermission("settings:read") || hasPermission("api_keys:write");
   const [activeTab, setActiveTab] = useState('bulk');
   const [csvName, setCsvName] = useState('');
   const [csvRows, setCsvRows] = useState<Array<Record<string, string>>>([]);
@@ -63,6 +70,10 @@ export default function VerificationTools() {
   };
 
   const validateBulk = async () => {
+    if (!canWrite) {
+      toast.error('You do not have permission to validate data.');
+      return;
+    }
     if (!csvRows.length) {
       toast.error('Upload CSV rows before validation');
       return;
@@ -83,6 +94,10 @@ export default function VerificationTools() {
   };
 
   const importBulk = async () => {
+    if (!canWrite) {
+      toast.error('You do not have permission to import data.');
+      return;
+    }
     if (!csvRows.length) return;
     setLoading(true);
     try {
@@ -96,6 +111,10 @@ export default function VerificationTools() {
   };
 
   const runRiskSimulation = async () => {
+    if (!canWrite) {
+      toast.error('You do not have permission to run risk simulations.');
+      return;
+    }
     setLoading(true);
     try {
       const result = await bankingService.simulateRiskScore({
@@ -130,6 +149,10 @@ export default function VerificationTools() {
   };
 
   const searchAuditLogs = async () => {
+    if (!canRead) {
+      toast.error('You do not have permission to search audit logs.');
+      return;
+    }
     setLoading(true);
     try {
       const result = await bankingService.searchAuditTrail({
@@ -171,6 +194,10 @@ export default function VerificationTools() {
   };
 
   const registerWebhook = async () => {
+    if (!canWrite) {
+      toast.error('You do not have permission to register webhooks.');
+      return;
+    }
     if (!webhookForm.url.trim()) return;
     await webhooksService.register({
       url: webhookForm.url.trim(),
@@ -182,11 +209,19 @@ export default function VerificationTools() {
   };
 
   const rotateSecret = async (webhookId: string) => {
+    if (!canWrite) {
+      toast.error('You do not have permission to rotate secrets.');
+      return;
+    }
     const result = await bankingService.rotateWebhookSecret(webhookId);
     toast.success(`Secret rotated (${result.newSecret.slice(-4)})`);
   };
 
   const testWebhook = async (webhookId: string) => {
+    if (!canWrite) {
+      toast.error('You do not have permission to test webhooks.');
+      return;
+    }
     const result = await bankingService.testWebhookEndpoint(webhookId);
     toast.success(`Test status=${result.status} event=${result.eventType}`);
   };
@@ -204,6 +239,10 @@ export default function VerificationTools() {
   };
 
   const changePlan = async (targetPlan: 'starter' | 'growth' | 'enterprise') => {
+    if (!canAdmin) {
+      toast.error('You do not have permission to change plans.');
+      return;
+    }
     try {
       await bankingService.changeLicensePlan(targetPlan);
       toast.success(`Plan change request submitted: ${targetPlan}`);
@@ -254,8 +293,8 @@ export default function VerificationTools() {
               <div className="text-sm text-muted-foreground">Parsed rows: {csvRows.length}</div>
               <Progress value={bulkProgress} />
               <div className="flex gap-2">
-                <Button onClick={validateBulk} disabled={loading}><Upload className="mr-2 h-4 w-4" />Validate</Button>
-                <Button onClick={importBulk} variant="outline" disabled={loading || csvRows.length === 0}><ShieldCheck className="mr-2 h-4 w-4" />Import</Button>
+                <Button onClick={validateBulk} disabled={loading || !canWrite}><Upload className="mr-2 h-4 w-4" />Validate</Button>
+                <Button onClick={importBulk} variant="outline" disabled={loading || csvRows.length === 0 || !canWrite}><ShieldCheck className="mr-2 h-4 w-4" />Import</Button>
                 <Button onClick={() => triggerFileDownload('bulk-errors.csv', toCsvErrorReport(bulkIssues), 'text/csv')} variant="secondary" disabled={bulkIssues.length === 0}><Download className="mr-2 h-4 w-4" />Error Report</Button>
               </div>
               {!!bulkIssues.length && (
@@ -301,7 +340,7 @@ export default function VerificationTools() {
                 </div>
               ))}
               <div className="flex gap-2">
-                <Button onClick={runRiskSimulation} disabled={loading}><BarChart3 className="mr-2 h-4 w-4" />Run Simulation</Button>
+                <Button onClick={runRiskSimulation} disabled={loading || !canWrite}><BarChart3 className="mr-2 h-4 w-4" />Run Simulation</Button>
                 <Button onClick={exportRiskPdf} variant="outline" disabled={!riskResult}><Download className="mr-2 h-4 w-4" />Export PDF</Button>
               </div>
               {riskResult && <div className="rounded-lg border p-4"><div className="text-2xl font-semibold">Score {riskResult.score}</div><div className="text-sm text-muted-foreground">Level: {riskResult.riskLevel} · {riskResult.recommendation}</div></div>}
@@ -331,8 +370,8 @@ export default function VerificationTools() {
                 <div className="space-y-2"><Label>Event Type</Label><Input value={auditFilters.eventType} onChange={(event) => setAuditFilters({ ...auditFilters, eventType: event.target.value })} /></div>
               </div>
               <div className="flex gap-2">
-                <Button onClick={searchAuditLogs} disabled={loading}>Search</Button>
-                <Button onClick={exportSignedLogs} variant="outline" disabled={auditLogs.length === 0}><Download className="mr-2 h-4 w-4" />Export Signed</Button>
+                <Button onClick={searchAuditLogs} disabled={loading || !canRead}>Search</Button>
+                <Button onClick={exportSignedLogs} variant="outline" disabled={auditLogs.length === 0 || !canRead}><Download className="mr-2 h-4 w-4" />Export Signed</Button>
               </div>
               <div className="space-y-2 max-h-72 overflow-auto">
                 {auditLogs.map((log) => (
@@ -367,16 +406,16 @@ export default function VerificationTools() {
                 <div className="space-y-2"><Label>Events (comma-separated)</Label><Input value={webhookForm.events} onChange={(event) => setWebhookForm({ ...webhookForm, events: event.target.value })} /></div>
               </div>
               <div className="flex gap-2">
-                <Button onClick={registerWebhook}>Register</Button>
-                <Button onClick={loadWebhooks} variant="outline">Refresh Queue</Button>
+                <Button onClick={registerWebhook} disabled={!canWrite}>Register</Button>
+                <Button onClick={loadWebhooks} variant="outline" disabled={!canRead}>Refresh Queue</Button>
               </div>
               <div className="space-y-2">
                 {webhooks.map((webhook) => (
                   <div className="border rounded-md p-3 flex justify-between items-center" key={webhook.id}>
                     <div><div className="font-medium">{webhook.url}</div><div className="text-xs text-muted-foreground">{webhook.events.join(', ')}</div></div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => testWebhook(webhook.id)}>Test</Button>
-                      <Button size="sm" variant="outline" onClick={() => rotateSecret(webhook.id)}>Rotate Secret</Button>
+                      <Button size="sm" variant="outline" onClick={() => testWebhook(webhook.id)} disabled={!canWrite}>Test</Button>
+                      <Button size="sm" variant="outline" onClick={() => rotateSecret(webhook.id)} disabled={!canWrite}>Rotate Secret</Button>
                     </div>
                   </div>
                 ))}
@@ -407,9 +446,9 @@ export default function VerificationTools() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
-                <Button onClick={loadUsage}>Load Usage</Button>
-                <Button onClick={() => changePlan('starter')} variant="outline">Downgrade</Button>
-                <Button onClick={() => changePlan('growth')} variant="outline">Upgrade</Button>
+                <Button onClick={loadUsage} disabled={!canRead}>Load Usage</Button>
+                <Button onClick={() => changePlan('starter')} variant="outline" disabled={!canAdmin}>Downgrade</Button>
+                <Button onClick={() => changePlan('growth')} variant="outline" disabled={!canAdmin}>Upgrade</Button>
               </div>
               {usage ? (
                 <div className="space-y-3">

@@ -54,15 +54,44 @@ export default function Layout({ children }: LayoutProps) {
   const navItems = user
     ? roleNavItems.filter((item) => env.devUnlockAllRoutes || canAccessRoute(user.role, permissions, item.path))
     : roleNavItems;
-  const isEnterpriseExperience = location.startsWith("/enterprise");
+  const isEnterpriseRoute = location.startsWith("/enterprise");
+  const isAdminRoute = location.startsWith("/admin");
+  const usesEnterpriseShell = isEnterpriseRoute || isAdminRoute;
+  const shellLabel = isAdminRoute ? "Admin" : "Enterprise";
   const preserveEnterpriseHubCards =
-    location === "/enterprise/reports" || location === "/enterprise/platform";
+    isEnterpriseRoute && (location === "/enterprise/reports" || location === "/enterprise/platform");
   const shouldRefreshEnterpriseCards =
-    isEnterpriseExperience && !preserveEnterpriseHubCards;
+    usesEnterpriseShell && !preserveEnterpriseHubCards;
+  const isAuthPage = ['/', '/login', '/signup', '/user/signup', '/portal/login', '/portal/signup', '/verifier/login', '/verifier/signup', '/admin/login', '/admin/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/onboarding'].includes(location);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("enterprise-shell-theme", usesEnterpriseShell && !isAuthPage && !!user);
+
+    return () => {
+      root.classList.remove("enterprise-shell-theme");
+    };
+  }, [isAuthPage, user, usesEnterpriseShell]);
+
+  useEffect(() => {
+    if (!mobileOpen) {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [mobileOpen]);
 
   useEffect(() => {
     setMfaEnrollmentCode("");
@@ -81,8 +110,6 @@ export default function Layout({ children }: LayoutProps) {
     }
   };
 
-  const isAuthPage = ['/', '/login', '/signup', '/user/signup', '/portal/login', '/portal/signup', '/verifier/login', '/verifier/signup', '/admin/login', '/admin/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/onboarding'].includes(location);
-
   if (isAuthPage || !user) {
     return (
       <div className="min-h-screen bg-background text-foreground relative font-sans selection:bg-verza-emerald/30 selection:text-verza-emerald">
@@ -95,7 +122,7 @@ export default function Layout({ children }: LayoutProps) {
     <div
       className={cn(
         "min-h-screen relative overflow-hidden font-sans selection:bg-verza-emerald/30 selection:text-verza-emerald",
-        isEnterpriseExperience
+        usesEnterpriseShell
           ? "enterprise-stage text-foreground"
           : "bg-background text-foreground"
       )}
@@ -112,26 +139,42 @@ export default function Layout({ children }: LayoutProps) {
       </div> */}
 
       {/* Mobile Sidebar */}
-      <MobileSidebar isOpen={mobileOpen} onClose={() => setMobileOpen(false)} navItems={navItems} variant={isEnterpriseExperience ? "enterprise" : "default"} />
+      <MobileSidebar
+        isOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        navItems={navItems}
+        roleLabel={shellLabel}
+        variant={usesEnterpriseShell ? "enterprise" : "default"}
+      />
 
       {/* App shell: sidebar + content side-by-side */}
       <div className="flex w-full min-h-screen relative z-10">
 
         {/* Desktop Sidebar — sticky so it stays while main scrolls */}
         <div className="hidden md:flex flex-shrink-0">
-          <Sidebar collapsed={collapsed} onToggle={toggle} navItems={navItems} variant={isEnterpriseExperience ? "enterprise" : "default"} />
+          <Sidebar
+            collapsed={collapsed}
+            onToggle={toggle}
+            navItems={navItems}
+            roleLabel={shellLabel}
+            variant={usesEnterpriseShell ? "enterprise" : "default"}
+          />
         </div>
 
         {/* Main Content Area */}
         <div className="flex flex-col flex-1 min-w-0 min-h-screen">
           <div className={cn(
             "flex-1 flex flex-col min-h-screen overflow-hidden",
-            isEnterpriseExperience ? "" : ""
+            usesEnterpriseShell ? "" : ""
           )}>
-            <Header onMobileMenuOpen={() => setMobileOpen(true)} variant={isEnterpriseExperience ? "enterprise" : "default"} />
+            <Header
+              onMobileMenuOpen={() => setMobileOpen(true)}
+              roleLabel={shellLabel}
+              variant={usesEnterpriseShell ? "enterprise" : "default"}
+            />
             <main className={cn(
               "flex-1 overflow-auto",
-              isEnterpriseExperience ? "p-4 sm:p-6 lg:p-8" : "p-4 md:p-6",
+              usesEnterpriseShell ? "p-4 sm:p-6 lg:p-8" : "p-4 md:p-6",
               shouldRefreshEnterpriseCards && "enterprise-card-refresh",
             )}>
               <PageTransition>{children}</PageTransition>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/features/auth/AuthContext';
 import { motion } from 'framer-motion';
 import { 
   Plug, Plus, 
@@ -73,6 +74,9 @@ const INTEGRATIONS = [
 ];
 
 export default function EnterpriseIntegrations() {
+  const { hasPermission, permissions, user } = useAuth();
+  const canWrite = permissions.length === 0 || hasPermission("webhooks:write") || hasPermission("settings:read");
+
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [integrations, setIntegrations] = useState(INTEGRATIONS);
@@ -112,6 +116,10 @@ export default function EnterpriseIntegrations() {
   };
 
   const handleAddWebhook = async () => {
+    if (!canWrite) {
+      toast.error('You do not have permission to add webhooks.');
+      return;
+    }
     if (!isValidUrl(newWebhookUrl)) {
       toast.error('Enter a valid webhook URL');
       return;
@@ -150,6 +158,10 @@ export default function EnterpriseIntegrations() {
   };
 
   const handleDeleteWebhook = async (webhookId: string) => {
+    if (!canWrite) {
+      toast.error('You do not have permission to delete webhooks.');
+      return;
+    }
     setActiveWebhookId(webhookId);
     try {
       await webhooksService.delete(webhookId);
@@ -269,7 +281,12 @@ export default function EnterpriseIntegrations() {
           <h2 className="text-xl font-semibold text-ent-text">Webhooks</h2>
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="bg-ent-text/10 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/10">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="bg-ent-text/10 border-ent-border text-verza-gray hover:text-ent-text hover:bg-ent-text/10"
+                disabled={!canWrite}
+              >
                 <Plus className="mr-2 h-4 w-4" /> Add Webhook
               </Button>
             </DialogTrigger>

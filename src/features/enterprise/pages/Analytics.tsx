@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEnterpriseAnalyticsData } from "@/hooks/useBankingDashboard";
+import { useAuth } from "@/features/auth/AuthContext";
 import BackButton from "@/components/shared/BackButton";
 
 ChartJS.register(
@@ -56,6 +57,7 @@ ChartJS.register(
 );
 
 export default function EnterpriseAnalytics() {
+  const { hasPermission, permissions, user } = useAuth();
   const [timeRange, setTimeRange] = useState("30d");
   const { data, isLoading, error } = useEnterpriseAnalyticsData(timeRange);
 

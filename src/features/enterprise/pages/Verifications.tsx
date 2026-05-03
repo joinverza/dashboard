@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/features/auth/AuthContext';
 import { bankingService, getBankingErrorMessage } from '@/services/bankingService';
 import type { IndividualKYCRequest } from '@/types/banking';
 
@@ -49,6 +50,11 @@ const validateSelectedFile = (file: File, acceptedKind: 'image' | 'video'): stri
 };
 
 export default function VerificationsPage() {
+  const { hasPermission, permissions, user } = useAuth();
+  
+  const canRead = permissions.length === 0 || hasPermission("verification:read") || hasPermission("kyc:read");
+  const canWrite = permissions.length === 0 || hasPermission("verification:write") || hasPermission("kyc:write") || hasPermission("documents:write") || hasPermission("biometrics:write") || hasPermission("screening:write");
+
   const [activeTab, setActiveTab] = useState("kyc");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ToolResult | null>(null);
@@ -106,6 +112,10 @@ export default function VerificationsPage() {
   };
 
   const executeRequest = async (fn: () => Promise<unknown>) => {
+    if (!canWrite) {
+      setError("You do not have permission to execute verification requests.");
+      return;
+    }
     setLoading(true);
     setResult(null);
     setError(null);
@@ -157,8 +167,8 @@ export default function VerificationsPage() {
                     <div className="space-y-2"><Label>ID Number</Label><Input value={kycData.idDocumentNumber} onChange={e => setKycData({ ...kycData, idDocumentNumber: e.target.value })} /></div>
                   </div>
                   <div className="flex gap-2 pt-4">
-                    <Button onClick={() => executeRequest(() => bankingService.verifyIndividual(kycData))} disabled={loading} className="flex-1">{loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shield className="mr-2 h-4 w-4" />}Full Verification</Button>
-                    <Button onClick={() => executeRequest(() => bankingService.verifyIndividualBasic(kycData))} variant="outline" disabled={loading} className="flex-1">Basic Check</Button>
+                    <Button onClick={() => executeRequest(() => bankingService.verifyIndividual(kycData))} disabled={loading || !canWrite} className="flex-1">{loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shield className="mr-2 h-4 w-4" />}Full Verification</Button>
+                    <Button onClick={() => executeRequest(() => bankingService.verifyIndividualBasic(kycData))} variant="outline" disabled={loading || !canWrite} className="flex-1">Basic Check</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -184,8 +194,8 @@ export default function VerificationsPage() {
                     {docImage && <div className="mt-2 text-xs text-verza-emerald flex items-center"><CheckCircle className="h-3 w-3 mr-1" />Image loaded</div>}
                   </div>
                   <div className="flex gap-2 pt-4">
-                    <Button onClick={() => executeRequest(() => bankingService.verifyDocument({ documentImage: docImage, documentType: docType, issuingCountry: docCountry.trim().toUpperCase(), useOcr: true }))} disabled={loading} className="flex-1">Verify Authenticity</Button>
-                    <Button onClick={() => executeRequest(() => bankingService.extractDocumentData({ documentImage: docImage }))} variant="outline" disabled={loading} className="flex-1">Extract Data</Button>
+                    <Button onClick={() => executeRequest(() => bankingService.verifyDocument({ documentImage: docImage, documentType: docType, issuingCountry: docCountry.trim().toUpperCase(), useOcr: true }))} disabled={loading || !canWrite} className="flex-1">Verify Authenticity</Button>
+                    <Button onClick={() => executeRequest(() => bankingService.extractDocumentData({ documentImage: docImage }))} variant="outline" disabled={loading || !canWrite} className="flex-1">Extract Data</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -209,8 +219,8 @@ export default function VerificationsPage() {
                   </div>
                   <div className="space-y-2"><Label>Liveness Video URL</Label><Input value={bioVideoUrl} onChange={e => setBioVideoUrl(e.target.value)} placeholder="https://cdn.example.com/liveness.mp4" /></div>
                   <div className="flex gap-2 pt-4">
-                    <Button onClick={() => executeRequest(() => bankingService.matchFace({ selfieImage: bioSelfie, documentImage: bioDoc }))} disabled={loading} className="flex-1">Match Face</Button>
-                    <Button onClick={() => executeRequest(() => bankingService.checkLiveness({ selfieImage: bioSelfie || undefined, videoUrl: bioVideoUrl.trim() || bioVideoInline || undefined }))} variant="outline" disabled={loading} className="flex-1"><Activity className="mr-2 h-4 w-4" />Check Liveness</Button>
+                    <Button onClick={() => executeRequest(() => bankingService.matchFace({ selfieImage: bioSelfie, documentImage: bioDoc }))} disabled={loading || !canWrite} className="flex-1">Match Face</Button>
+                    <Button onClick={() => executeRequest(() => bankingService.checkLiveness({ selfieImage: bioSelfie || undefined, videoUrl: bioVideoUrl.trim() || bioVideoInline || undefined }))} variant="outline" disabled={loading || !canWrite} className="flex-1"><Activity className="mr-2 h-4 w-4" />Check Liveness</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -225,9 +235,9 @@ export default function VerificationsPage() {
                   <div className="space-y-2"><Label>Full Name</Label><Input value={screenName} onChange={e => setScreenName(e.target.value)} placeholder="John Doe" /></div>
                   <div className="space-y-2"><Label>Country</Label><Input value={screenCountry} onChange={e => setScreenCountry(e.target.value)} placeholder="US" /></div>
                   <div className="flex gap-2 pt-4 flex-wrap">
-                    <Button onClick={() => executeRequest(() => bankingService.checkSanctions({ name: screenName, country: screenCountry }))} disabled={loading} className="flex-1">Sanctions Check</Button>
-                    <Button onClick={() => executeRequest(() => bankingService.checkPEP({ name: screenName, country: screenCountry }))} disabled={loading} className="flex-1" variant="secondary">PEP Check</Button>
-                    <Button onClick={() => executeRequest(() => bankingService.calculateRiskScore({ customerData: { firstName: screenName.split(' ')[0] || '', lastName: screenName.split(' ').slice(1).join(' ') || '', dob: '1990-01-01', email: 'sandbox@example.com', phone: '555-0101', address: { street: '1 Main', city: 'N/A', state: 'N/A', zipCode: '00000', country: screenCountry }, idDocumentType: 'passport', idDocumentNumber: 'X1234567' } }))} disabled={loading} className="flex-1" variant="outline">Risk Score</Button>
+                    <Button onClick={() => executeRequest(() => bankingService.checkSanctions({ name: screenName, country: screenCountry }))} disabled={loading || !canWrite} className="flex-1">Sanctions Check</Button>
+                    <Button onClick={() => executeRequest(() => bankingService.checkPEP({ name: screenName, country: screenCountry }))} disabled={loading || !canWrite} className="flex-1" variant="secondary">PEP Check</Button>
+                    <Button onClick={() => executeRequest(() => bankingService.calculateRiskScore({ customerData: { firstName: screenName.split(' ')[0] || '', lastName: screenName.split(' ').slice(1).join(' ') || '', dob: '1990-01-01', email: 'sandbox@example.com', phone: '555-0101', address: { street: '1 Main', city: 'N/A', state: 'N/A', zipCode: '00000', country: screenCountry }, idDocumentType: 'passport', idDocumentNumber: 'X1234567' } }))} disabled={loading || !canWrite} className="flex-1" variant="outline">Risk Score</Button>
                   </div>
                 </CardContent>
               </Card>

@@ -344,7 +344,10 @@ export default function ApiManagement() {
   };
 
   const requestHistoryRows = useMemo(() => requestHistory.slice(0, 20), [requestHistory]);
-  const canViewApiKeys = hasPermission('api_keys:read') || user?.role === 'admin' || user?.role === 'manager' || user?.role === 'enterprise';
+  const canViewApiKeys = permissions.length === 0 || hasPermission('api_keys:read');
+  const canWriteApiKeys = permissions.length === 0 || hasPermission('api_keys:write');
+  const canViewWebhooks = permissions.length === 0 || hasPermission('webhooks:read');
+  const canWriteWebhooks = permissions.length === 0 || hasPermission('webhooks:write');
   const getApiKeyEnvironment = (key: ApiKeyResponse): ApiKeyEnvironment => {
     const explicit = String((key as ApiKeyResponse & { environment?: string }).environment ?? '').toLowerCase();
     if (explicit === 'production' || explicit === 'sandbox') return explicit;
@@ -441,7 +444,10 @@ export default function ApiManagement() {
             }}
           >
             <DialogTrigger asChild>
-                <Button className="gap-2 bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 rounded-full px-6 font-bold shadow-[0_4px_14px_rgba(30,215,96,0.25)]">
+                <Button 
+                  className="gap-2 bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 rounded-full px-6 font-bold shadow-[0_4px_14px_rgba(30,215,96,0.25)]"
+                  disabled={!canWriteApiKeys}
+                >
                     <Plus className="h-4 w-4" />
                     Create New Key
                 </Button>
@@ -966,7 +972,10 @@ export default function ApiManagement() {
             <div className="flex justify-end mb-4">
                  <Dialog open={isWebhookDialogOpen} onOpenChange={setIsWebhookDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="gap-2 bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 rounded-full px-6 font-bold shadow-[0_4px_14px_rgba(30,215,96,0.25)]">
+                        <Button 
+                          className="gap-2 bg-verza-emerald text-[#06140F] hover:bg-verza-emerald/90 rounded-full px-6 font-bold shadow-[0_4px_14px_rgba(30,215,96,0.25)]"
+                          disabled={!canWriteWebhooks}
+                        >
                             <Plus className="h-4 w-4" />
                             Add Webhook
                         </Button>
