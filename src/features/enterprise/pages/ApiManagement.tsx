@@ -48,7 +48,7 @@ type ApiKeyEnvironment = 'production' | 'sandbox';
 type ApiKeyFilter = 'all' | ApiKeyEnvironment;
 
 export default function ApiManagement() {
-  const { user, hasPermission } = useAuth();
+  const { user, hasPermission, permissions } = useAuth();
   const [apiKeys, setApiKeys] = useState<ApiKeyResponse[]>([]);
   const [filteredApiKeys, setFilteredApiKeys] = useState<ApiKeyResponse[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookResponse[]>([]);
